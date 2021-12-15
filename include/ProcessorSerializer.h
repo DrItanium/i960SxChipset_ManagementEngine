@@ -227,7 +227,7 @@ public:
     static void begin() noexcept;
     [[nodiscard]] static constexpr Address getAddress() noexcept { return address_.getWholeValue(); }
     [[nodiscard]] static SplitWord16 getDataBits() noexcept {
-        if constexpr (TargetBoard::onAtmega1284p_Type1() || TargetBoard::onAtmega1284p_Type2()) {
+        if constexpr (TargetBoard::onType1() || TargetBoard::onType2()) {
             return readGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>();
         } else {
             // stub out
@@ -235,7 +235,7 @@ public:
         }
     }
     static void setDataBits(uint16_t value) noexcept {
-        if constexpr (TargetBoard::onAtmega1284p_Type1() || TargetBoard::onAtmega1284p_Type2()) {
+        if constexpr (TargetBoard::onType1() || TargetBoard::onType2()) {
             // the latch is preserved in between data line changes
             // okay we are still pointing as output values
             // check the latch and see if the output value is the same as what is latched
@@ -251,7 +251,7 @@ public:
     [[nodiscard]] static bool isReadOperation() noexcept { return DigitalPin<i960Pinout::W_R_>::isAsserted(); }
     [[nodiscard]] static auto getCacheOffsetEntry() noexcept { return cacheOffsetEntry_; }
     inline static void setupDataLinesForWrite() noexcept {
-        if constexpr (TargetBoard::onAtmega1284p_Type1() || TargetBoard::onAtmega1284p_Type2()) {
+        if constexpr (TargetBoard::onType1() || TargetBoard::onType2()) {
             if (!dataLinesDirection_) {
                 dataLinesDirection_ = ~dataLinesDirection_;
                 writeDirection<ProcessorInterface::IOExpanderAddress::DataLines>(0xFFFF);
@@ -261,7 +261,7 @@ public:
         }
     }
     inline static void setupDataLinesForRead() noexcept {
-        if constexpr (TargetBoard::onAtmega1284p_Type1() || TargetBoard::onAtmega1284p_Type2()) {
+        if constexpr (TargetBoard::onType1() || TargetBoard::onType2()) {
             if (dataLinesDirection_) {
                 dataLinesDirection_ = ~dataLinesDirection_;
                 writeDirection<ProcessorInterface::IOExpanderAddress::DataLines>(0);
@@ -276,7 +276,7 @@ private:
         if constexpr (!useInterrupts) {
             return 0;
         } else {
-            if constexpr (TargetBoard::onAtmega1284p_Type1()) {
+            if constexpr (TargetBoard::onType1()) {
                 switch (PIND & 0b1001'0000) {
                     case 0b0000'0000: return 0b0000;
                     case 0b0001'0000: return 0b0011;
@@ -284,7 +284,7 @@ private:
                     case 0b1001'0000: return 0b1111;
                     default: return 0b0000;
                 }
-            } else if constexpr (TargetBoard::onAtmega1284p_Type2()) {
+            } else if constexpr (TargetBoard::onType2()) {
                 // even though three of the four pins are actually in use, I want to eventually diagnose the problem itself
                 // so this code is ready for that day
                 return PINA & 0b0000'1111;

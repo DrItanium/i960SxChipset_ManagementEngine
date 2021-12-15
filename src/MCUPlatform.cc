@@ -32,6 +32,12 @@ namespace {
             if constexpr (TargetBoard::getCPUFrequency() != 20_MHz) {
                 ERR_STATE("Expecting the 1248p to run at 20MHz");
             }
+        } else if constexpr (TargetBoard::onSAMD51()) {
+            if constexpr (TargetBoard::onGrandCentralM4()) {
+                if constexpr (TargetBoard::getCPUFrequency() != 120_MHz) {
+                    ERR_STATE("Expecting the Grand Central M4 to run at 120_MHz");
+                }
+            }
         }
 #undef ERR_STATE
     return true;

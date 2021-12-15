@@ -117,6 +117,7 @@ static_assert(!is_same_v<ClosestBitValue_t<10>, ClosestBitValue_t<4>>);
 enum class TargetMCU {
     ATmega1284p_Type1,
     ATmega1284p_Type2,
+    GrandCentralM4_Type3,
     Unknown,
 };
 class MCUConfiguration final {
@@ -156,6 +157,13 @@ constexpr MCUConfiguration BoardDescription<TargetMCU::ATmega1284p_Type2> = {
         10_MHz // due to the current design, we have to run the psram at 5 Mhz
 };
 
+template<>
+constexpr MCUConfiguration BoardDescription<TargetMCU::GrandCentralM4_Type3> = {
+        256_KB,
+        10_MHz,
+        33_MHz // due to the current design, we have to run the psram at 5 Mhz
+};
+
 class TargetBoard {
 public:
     [[nodiscard]] static constexpr auto getCPUFrequency() noexcept { return F_CPU; }
@@ -168,6 +176,8 @@ public:
 #else
         return TargetMCU::Unknown;
 #endif
+#elif defined(CHIPSET_TYPE3)
+        return TargetMCU::GrandCentralM4_Type3;
 #else
         return TargetMCU::Unknown;
 #endif
@@ -178,9 +188,12 @@ public:
     [[nodiscard]] static constexpr auto targetMCUIsOneOfThese() noexcept {
         return (targetMCUIs<rest>() || ...);
     }
-    [[nodiscard]] static constexpr auto onAtmega1284p_Type1() noexcept { return targetMCUIs<TargetMCU::ATmega1284p_Type1>(); }
-    [[nodiscard]] static constexpr auto onAtmega1284p_Type2() noexcept { return targetMCUIs<TargetMCU::ATmega1284p_Type2>(); }
+    [[nodiscard]] static constexpr auto onType1() noexcept { return targetMCUIs<TargetMCU::ATmega1284p_Type1>(); }
+    [[nodiscard]] static constexpr auto onType2() noexcept { return targetMCUIs<TargetMCU::ATmega1284p_Type2>(); }
+    [[nodiscard]] static constexpr auto onType3() noexcept { return targetMCUIs<TargetMCU::GrandCentralM4_Type3>(); }
     [[nodiscard]] static constexpr auto onAtmega1284p() noexcept { return targetMCUIsOneOfThese<TargetMCU::ATmega1284p_Type1, TargetMCU::ATmega1284p_Type2>(); }
+    [[nodiscard]] static constexpr auto onSAMD51() noexcept { return targetMCUIsOneOfThese<TargetMCU::GrandCentralM4_Type3>(); }
+    [[nodiscard]] static constexpr auto onGrandCentralM4() noexcept { return onType3(); }
     [[nodiscard]] static constexpr auto onUnknownTarget() noexcept { return targetMCUIs<TargetMCU::Unknown>(); }
     [[nodiscard]] static constexpr auto getSRAMAmountInBytes() noexcept { return BoardDescription<getMCUTarget()>.getSramAmount(); }
     [[nodiscard]] static constexpr auto runIOExpanderSPIInterfaceAt() noexcept { return BoardDescription<getMCUTarget()>.runIOExpanderSPIInterfaceAt(); }

@@ -41,7 +41,7 @@ ProcessorInterface::begin() noexcept {
         write16<ProcessorInterface::IOExpanderAddress::DataLines, MCP23x17Registers::IOCON, false>(0b0000'1000'0000'1000);
         write16<ProcessorInterface::IOExpanderAddress::Upper16Lines, MCP23x17Registers::IOCON, false>(0b0000'1000'0000'1000);
         write16<ProcessorInterface::IOExpanderAddress::Lower16Lines, MCP23x17Registers::IOCON, false>(0b0000'1000'0000'1000);
-        if constexpr (TargetBoard::onAtmega1284p_Type1()) {
+        if constexpr (TargetBoard::onType1()) {
             // now all devices tied to this ~CS pin have separate addresses
             // make each of these inputs
             writeDirection<IOExpanderAddress::Lower16Lines, false>(0xFFFF);
@@ -61,7 +61,7 @@ ProcessorInterface::begin() noexcept {
             write16<IOExpanderAddress::DataLines, MCP23x17Registers::OLAT, false>(latchedDataOutput.getWholeValue());
             updateTargetFunctions<true>();
             updateTargetFunctions<false>();
-        } else if constexpr (TargetBoard::onAtmega1284p_Type2()) {
+        } else if constexpr (TargetBoard::onType2()) {
             writeDirection<IOExpanderAddress::Lower16Lines, false>(0xFFFF);
             writeDirection<IOExpanderAddress::Upper16Lines, false>(0xFFFF);
             writeDirection<IOExpanderAddress::DataLines, false>(0xFFFF);
