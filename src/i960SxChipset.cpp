@@ -328,9 +328,6 @@ inline void invocationBody() noexcept {
     // we can just check if we are in ram, otherwise it is considered to be chipset. This means that everything not ram is chipset
     // and so we are actually continually mirroring the mapping for the sake of simplicity
     ProcessorInterface::newDataCycle<inDebugMode, decltype(theCache)::CacheEntryMask, useInterrupts>();
-    if constexpr (TargetBoard::onType3()) {
-        delay(10);
-    }
 }
 template<bool allowAddressDebuggingCodePath, bool useInterrupts>
 void doInvocationBody() noexcept {
