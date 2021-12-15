@@ -417,7 +417,8 @@ void setupDispatchTable() noexcept {
         lookupTable_Debug[ConfigurationSpace::SectionID] = handleExternalDeviceRequest<true, ConfigurationSpace>;
     }
 }
-void setupChipsetType1() noexcept {
+
+void setupChipsetVersionSpecificPins() noexcept {
 #ifdef CHIPSET_TYPE1
     Serial.println(F("Bringing up type1 specific aspects!"));
     setupPins(OUTPUT,
@@ -434,9 +435,8 @@ void setupChipsetType1() noexcept {
               i960Pinout::BA2,
               i960Pinout::BA3);
 #endif
-}
-void setupSecondSPIBus() noexcept {
 #ifdef CHIPSET_TYPE2
+    Serial.println(F("Bringing up type2 specific aspects!"));
     UBRR1 = 0x0000;
     pinMode(i960Pinout::SCK1, OUTPUT); // setup XCK1 which is actually SCK1
     UCSR1C = _BV(UMSEL11) | _BV(UMSEL10); // set usart spi mode of operation and SPI data mode 1,1
@@ -444,27 +444,15 @@ void setupSecondSPIBus() noexcept {
     // set the baud rate. IMPORTANT: The Baud Rate must be set after the Transmitter is enabled
     UBRR1 = 0x0000; // where maximum speed of FCPU/2 = 0x0000
     // make sure we setup the PSRAM enable pins
-#endif
-}
-void setupChipsetType2() noexcept {
-#ifdef CHIPSET_TYPE2
-    Serial.println(F("Bringing up type2 specific aspects!"));
-    setupSecondSPIBus();
     pinMode(i960Pinout::INT_EN2, INPUT);
     pinMode(i960Pinout::INT_EN3, INPUT);
     pinMode(i960Pinout::PSRAM_EN1, OUTPUT);
     digitalWrite<i960Pinout::PSRAM_EN1, HIGH>();
 #endif
-}
-
-void setupChipsetVersionSpecificPins() noexcept {
-    if constexpr (TargetBoard::onType1()) {
-        setupChipsetType1();
-    } else if constexpr (TargetBoard::onType2()) {
-        setupChipsetType2();
-    } else {
-        // do nothing
-    }
+#ifdef CHIPSET_TYPE3
+    DigitalPin<i960Pinout::INT_EN2>::configure();
+    DigitalPin<i960Pinout::INT_EN3>::configure();
+#endif
 }
 void failWentLowAgain() noexcept {
     signalHaltState("CHECKSUM FAILURE!");
@@ -488,8 +476,7 @@ void waitForBootSignal() noexcept {
     } else {
         while (DigitalPin<i960Pinout::FAIL>::read() == LOW);
         attachInterrupt(digitalPinToInterrupt(static_cast<byte>(i960Pinout::FAIL)),
-                        failWentLowAgain,
-                        LOW);
+                        []() { signalHaltState("CHECKSUM FAILURE"); }, LOW);
     }
 }
 // the setup routine runs once when you press reset:
@@ -612,23 +599,23 @@ void loop() {
 
 [[noreturn]]
 void
-signalHaltState(const __FlashStringHelper* haltMsg) {
+signalHaltState(const __FlashStringHelper* haltMsg) noexcept {
     Serial.print(F("CHIPSET HALT: "));
     Serial.println(haltMsg);
     while(true) {
         delay(1000);
     }
 }
-#ifdef __arm__
 [[noreturn]]
 void
-signalHaltState(const char* haltMsg) {
+signalHaltState(const char* haltMsg) noexcept {
     Serial.print("CHIPSET HALT: ");
     Serial.println(haltMsg);
     while(true) {
         delay(1000);
     }
 }
+#ifdef __arm__
 [[noreturn]]
 void
 signalHaltState(const std::string& haltMsg) {

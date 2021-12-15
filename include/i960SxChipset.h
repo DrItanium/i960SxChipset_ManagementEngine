@@ -44,9 +44,9 @@ BodyFunction getBody(byte index) noexcept {
     }
 }
 
-[[noreturn]] void signalHaltState(const __FlashStringHelper* msg);
-#ifdef __arm__
+[[noreturn]] void signalHaltState(const __FlashStringHelper* msg) noexcept;
 [[noreturn]] void signalHaltState(const char* msg) noexcept;
+#ifdef __arm__
 [[noreturn]] void signalHaltState(const std::string& msg) noexcept;
 #endif
 
