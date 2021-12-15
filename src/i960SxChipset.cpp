@@ -59,8 +59,8 @@ constexpr auto Serial0BaseAddress = 0xFB00'0000;
 constexpr auto DisplayBaseAddress = 0xFC00'0000;
 constexpr auto SDBaseAddress = 0xFD00'0000;
 constexpr auto MaximumNumberOfOpenFiles = 16;
-constexpr auto CompileInAddressDebuggingSupport = false;
-constexpr auto AddressDebuggingEnabledOnStartup = false;
+constexpr auto CompileInAddressDebuggingSupport = true;
+constexpr auto AddressDebuggingEnabledOnStartup = true;
 constexpr auto UsePSRAMForType2 = false;
 constexpr auto ValidateTransferDuringInstall = TargetBoard::onType2() && UsePSRAMForType2;
 constexpr auto UseSingleChannelConfigurationForType2 = true;
@@ -206,6 +206,7 @@ inline void handleMemoryInterface() noexcept {
             // Only pay for what we need even if it is slower
             ProcessorInterface::setDataBits(outcome);
             if (informCPU()) {
+                delayMicroseconds(2);
                 break;
             }
             // so if I don't increment the address, I think we run too fast xD based on some experimentation
@@ -227,6 +228,7 @@ inline void handleMemoryInterface() noexcept {
             }
             theEntry.set(i, ProcessorInterface::getStyle(), bits);
             if (informCPU()) {
+                delayMicroseconds(2);
                 break;
             }
             // the manual doesn't state that the burst transaction will always have BE0 and BE1 pulled low and this is very true, you must
@@ -235,6 +237,7 @@ inline void handleMemoryInterface() noexcept {
             ProcessorInterface::burstNext<LeaveAddressAlone>();
         }
     }
+    delayMicroseconds(2);
 }
 
 template<bool inDebugMode, typename T>
@@ -260,6 +263,7 @@ inline void handleExternalDeviceRequest() noexcept {
             }
             ProcessorInterface::setDataBits(result);
             if (informCPU()) {
+                delayMicroseconds(2);
                 break;
             }
             ProcessorInterface::burstNext<IncrementAddress>();
@@ -281,6 +285,7 @@ inline void handleExternalDeviceRequest() noexcept {
                      ProcessorInterface::getStyle(),
                      dataBits);
             if (informCPU()) {
+                delayMicroseconds(2);
                 break;
             }
             // be careful of querying i960 state at this point because the chipset runs at twice the frequency of the i960
@@ -288,6 +293,7 @@ inline void handleExternalDeviceRequest() noexcept {
             ProcessorInterface::burstNext<IncrementAddress>();
         }
     }
+    delayMicroseconds(2);
 }
 
 template<bool inDebugMode, bool useInterrupts>
