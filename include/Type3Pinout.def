@@ -3,8 +3,8 @@
    BLAST_ = 28,
    DEN_ = 23,
    W_R_ = 37,
-   BE0_ = 36,
-   BE1_ = 35,
+   BE0 = 36,
+   BE1 = 35,
    Reset960 = 17,
    Ready = 16,
    PSRAM_EN = Analog0,
@@ -18,3 +18,4 @@
    INT_EN3 = 31,
    GPIOSelect = 53,
    SD_EN = SDCARD_CS,
+    Int0_ = Count, // not connected

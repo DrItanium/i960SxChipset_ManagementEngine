@@ -170,7 +170,11 @@ inline void fallbackBody() noexcept {
         ProcessorInterface::setupDataLinesForWrite();
         for (;;) {
             // put four cycles worth of delay into this to make damn sure we are ready with the i960
+#ifdef ARDUINO_AVR_ATmega1284
             __builtin_avr_nops(4);
+#else
+            delayMicroseconds(2);
+#endif
             // need to introduce some delay
             if (informCPU()) {
                 break;
