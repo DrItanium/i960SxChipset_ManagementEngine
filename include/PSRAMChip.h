@@ -31,4 +31,5 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // include all of them at the same time but only one should be active at a given point in time
 #include "Type1PSRAMChip.h"
 #include "Type2PSRAMChip.h"
+#include "Type3PSRAMChip.h"
 #endif //I960SXCHIPSET_PSRAMCHIP_H
