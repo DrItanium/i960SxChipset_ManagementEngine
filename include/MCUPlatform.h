@@ -105,8 +105,14 @@ static_assert(getNumberOfBitsForNumberOfEntries(256/4) == 6);
 template<byte numBits>
 using ClosestBitValue_t = conditional_t<numBits <= 8, byte,
                                         conditional_t<numBits <= 16, uint16_t,
+#ifdef __AVR__
                                         conditional_t<numBits <= 24, uint24_t,
-                                        conditional_t<numBits <= 32, uint32_t, uint64_t>>>>;
+#endif
+                                        conditional_t<numBits <= 32, uint32_t, uint64_t>
+#ifdef __AVR__
+                                        >
+#endif
+                                        >>;
 
 static_assert(is_same_v<ClosestBitValue_t<1>, ClosestBitValue_t<4>>);
 static_assert(is_same_v<ClosestBitValue_t<4>, byte>);
