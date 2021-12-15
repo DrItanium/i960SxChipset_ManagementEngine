@@ -308,25 +308,19 @@ inline void handleExternalDeviceRequest() noexcept {
     }
 }
 volatile bool addressStart = false;
-volatile bool newCycle = false;
 void addressCycleStart() noexcept {
    addressStart = true;
-}
-void dataCycleStart() noexcept {
-    newCycle = true;
 }
 
 template<bool inDebugMode, bool useInterrupts>
 inline void invocationBody() noexcept {
     // wait until AS goes from low to high
     // then wait until the DEN state is asserted
-    if constexpr (TargetBoard::onAtmega1284p()) {
-        while (DigitalPin<i960Pinout::DEN_>::isDeasserted());
-    } else {
-        while (!addressStart && !newCycle);
-        newCycle = false;
+    if constexpr (TargetBoard::onType3()) {
+        while (!addressStart);
         addressStart = false;
     }
+        while (DigitalPin<i960Pinout::DEN_>::isDeasserted());
     // keep processing data requests until we
     // when we do the transition, record the information we need
     // there are only two parts to this code, either we map into ram or chipset functions
@@ -486,8 +480,8 @@ void setupChipsetVersionSpecificPins() noexcept {
     DigitalPin<i960Pinout::INT_EN3>::configure();
     DigitalPin<i960Pinout::DEN_>::configure();
     pinMode(i960Pinout::AS_, INPUT_PULLUP);
-    pinMode(i960Pinout::DEN_, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(static_cast<byte>(i960Pinout::DEN_)), dataCycleStart, FALLING);
+    //pinMode(i960Pinout::DEN_, INPUT_PULLUP);
+    //attachInterrupt(digitalPinToInterrupt(static_cast<byte>(i960Pinout::DEN_)), dataCycleStart, FALLING);
     attachInterrupt(digitalPinToInterrupt(static_cast<byte>(i960Pinout::AS_)), addressCycleStart, FALLING);
 #endif
 }
