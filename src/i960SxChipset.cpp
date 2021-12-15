@@ -526,6 +526,8 @@ void setup() {
     pinMode(i960Pinout::Reset960, OUTPUT) ;
     digitalWrite<i960Pinout::Reset960, LOW>();
 #ifdef CHIPSET_TYPE3
+    // make sure that the 4809 has enough time
+    delay(1);
     DigitalPin<i960Pinout::Reset4809>::deassertPin();
 #endif
     Serial.begin(115200);
