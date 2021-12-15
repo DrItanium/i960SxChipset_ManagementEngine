@@ -44,7 +44,9 @@ using uint24_t = __uint24;
 using int24_t = int32_t;
 using uint24_t = uint32_t;
 #endif
-
+#ifndef _BV
+#define _BV(bit) (1 << (bit))
+#endif
 
 template<typename E>
 constexpr bool isValidPin(E pin) noexcept {
