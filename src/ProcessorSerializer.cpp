@@ -80,7 +80,9 @@ ProcessorInterface::begin() noexcept {
             updateTargetFunctions<false>();
             // make sure we clear out any interrupt flags
         } else if constexpr (TargetBoard::onType3()) {
-            writeDirection<IOExpanderAddress::Lower16Lines, false>(0xFFFF);
+            while (true) {
+                writeDirection<IOExpanderAddress::Lower16Lines, false>(0xFFFF);
+            }
             writeDirection<IOExpanderAddress::Upper16Lines, false>(0xFFFF);
             writeDirection<IOExpanderAddress::DataLines, false>(0xFFFF);
             write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF);

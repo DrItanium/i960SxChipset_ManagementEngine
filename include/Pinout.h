@@ -62,7 +62,7 @@ enum class i960Pinout : int {
 };
 [[gnu::always_inline]]
 inline void digitalWrite(i960Pinout ip, decltype(HIGH) value) {
-    digitalWrite(static_cast<int>(ip), value);
+    ::digitalWrite(static_cast<int>(ip), value);
 }
 
 [[gnu::always_inline]]
