@@ -89,6 +89,7 @@ class ProcessorInterface {
         }
         SplitWord16 output(0);
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
+#if defined(ARDUINO_AVR_ATmega1284)
         SPDR = generateReadOpcode(addr);
         /*
          * The following NOP introduces a small delay that can prevent the wait
@@ -114,6 +115,12 @@ class ProcessorInterface {
         }
         while (!(SPSR & _BV(SPIF))) ; // wait
         output.bytes[1] = SPDR;
+#else
+        SPI.transfer(generateReadOpcode(addr));
+        SPI.transfer(static_cast<byte>(opcode));
+        output.bytes[0] = SPI.transfer(0);
+        output.bytes[1] = SPI.transfer(0);
+#endif
         digitalWrite<i960Pinout::GPIOSelect, HIGH>();
         if constexpr (standalone) {
             SPI.endTransaction();
@@ -126,6 +133,7 @@ class ProcessorInterface {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
+#if defined(ARDUINO_AVR_ATmega1284)
         SPDR = generateReadOpcode(addr);
         /*
          * The following NOP introduces a small delay that can prevent the wait
@@ -141,11 +149,20 @@ class ProcessorInterface {
         SPDR = 0;
         asm volatile("nop");
         while (!(SPSR & _BV(SPIF))) ; // wait
+#else
+        SPI.transfer(generateReadOpcode(addr));
+        SPI.transfer(static_cast<byte>(opcode));
+        auto outcome = SPI.transfer(0);
+#endif
         digitalWrite<i960Pinout::GPIOSelect, HIGH>();
         if constexpr (standalone) {
             SPI.endTransaction();
         }
+#if defined(ARDUINO_AVR_ATmega1284)
         return SPDR;
+#else
+      return outcome;
+#endif
     }
 
     template<IOExpanderAddress addr, MCP23x17Registers opcode, bool standalone = true>
@@ -155,6 +172,7 @@ class ProcessorInterface {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
+#if defined(ARDUINO_AVR_ATmega1284)
         SPDR = generateWriteOpcode(addr);
         /*
          * The following NOP introduces a small delay that can prevent the wait
@@ -173,6 +191,12 @@ class ProcessorInterface {
         SPDR = valueDiv.bytes[1];
         asm volatile("nop");
         while (!(SPSR & _BV(SPIF))) ; // wait
+#else
+    SPI.transfer(generateWriteOpcode(addr));
+    SPI.transfer(static_cast<byte>(opcode));
+    SPI.transfer(valueDiv.bytes[0]);
+    SPI.transfer(valueDiv.bytes[1]);
+#endif
         digitalWrite<i960Pinout::GPIOSelect, HIGH>();
         if constexpr (standalone) {
             SPI.endTransaction();
@@ -184,6 +208,7 @@ class ProcessorInterface {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
+#if defined(ARDUINO_AVR_ATmega1284)
         SPDR = generateWriteOpcode(addr);
         /*
          * The following NOP introduces a small delay that can prevent the wait
@@ -199,6 +224,11 @@ class ProcessorInterface {
         SPDR = value;
         asm volatile("nop");
         while (!(SPSR & _BV(SPIF))) ; // wait
+#else
+    SPI.transfer(generateWriteOpcode(addr));
+    SPI.transfer(static_cast<byte>(opcode));
+    SPI.transfer(value);
+#endif
         digitalWrite<i960Pinout::GPIOSelect, HIGH>();
         if constexpr (standalone) {
             SPI.endTransaction();
