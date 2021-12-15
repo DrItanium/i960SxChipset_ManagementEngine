@@ -301,8 +301,18 @@ public:
             }
             Serial.println(F("SD CARD UP!"));
             clusterCount_ = SplitWord32(SD.clusterCount());
-            volumeSectorCount_ = SplitWord32(SD.volumeSectorCount());
+#ifdef ARDUINO_AVR_ATmega1284
+            volumeSectorCount_ = SplitWord32{SD.volumeSectorCount()};
             bytesPerSector_ = SD.bytesPerSector();
+#else
+            // if we use SdFat class then we have to do some work ourselves
+            // we only know how many sectors per cluster and the number of clusters so we multiply them together
+            // to get the volume sector count
+            volumeSectorCount_ = SplitWord32{SD.sectorsPerCluster() * SD.clusterCount() };
+            // to get the bytes per sector, we get the number of bytes per cluster and divide it by the number of sectors in a cluster
+            // this will yield the number of bytes per sector.
+            bytesPerSector_ = SD.bytesPerCluster() / SD.sectorsPerCluster();
+#endif
             initialized_ = true;
         }
     }
