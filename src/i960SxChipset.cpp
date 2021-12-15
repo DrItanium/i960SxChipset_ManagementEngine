@@ -307,15 +307,21 @@ inline void handleExternalDeviceRequest() noexcept {
         delayMicroseconds(2);
     }
 }
+volatile bool newCycle = false;
+void dataCycleStart() noexcept {
+    newCycle = true;
+}
 
 template<bool inDebugMode, bool useInterrupts>
 inline void invocationBody() noexcept {
-    if constexpr (TargetBoard::onType3()) {
-        delay(10);
-    }
     // wait until AS goes from low to high
     // then wait until the DEN state is asserted
-    while (DigitalPin<i960Pinout::DEN_>::isDeasserted());
+    if constexpr (TargetBoard::onAtmega1284p()) {
+        while (DigitalPin<i960Pinout::DEN_>::isDeasserted());
+    } else {
+        while (!newCycle);
+        newCycle = false;
+    }
     // keep processing data requests until we
     // when we do the transition, record the information we need
     // there are only two parts to this code, either we map into ram or chipset functions
@@ -476,6 +482,8 @@ void setupChipsetVersionSpecificPins() noexcept {
 #ifdef CHIPSET_TYPE3
     DigitalPin<i960Pinout::INT_EN2>::configure();
     DigitalPin<i960Pinout::INT_EN3>::configure();
+    DigitalPin<i960Pinout::DEN_>::configure();
+    attachInterrupt(digitalPinToInterrupt(static_cast<byte>(i960Pinout::DEN_)), dataCycleStart, FALLING);
 #endif
 }
 void failWentLowAgain() noexcept {
