@@ -206,7 +206,9 @@ inline void handleMemoryInterface() noexcept {
             // Only pay for what we need even if it is slower
             ProcessorInterface::setDataBits(outcome);
             if (informCPU()) {
-                delayMicroseconds(2);
+                if constexpr (TargetBoard::onType3()) {
+                    delayMicroseconds(2);
+                }
                 break;
             }
             // so if I don't increment the address, I think we run too fast xD based on some experimentation
@@ -228,7 +230,9 @@ inline void handleMemoryInterface() noexcept {
             }
             theEntry.set(i, ProcessorInterface::getStyle(), bits);
             if (informCPU()) {
-                delayMicroseconds(2);
+                if constexpr (TargetBoard::onType3()) {
+                    delayMicroseconds(2);
+                }
                 break;
             }
             // the manual doesn't state that the burst transaction will always have BE0 and BE1 pulled low and this is very true, you must
@@ -237,7 +241,9 @@ inline void handleMemoryInterface() noexcept {
             ProcessorInterface::burstNext<LeaveAddressAlone>();
         }
     }
-    delayMicroseconds(2);
+    if constexpr (TargetBoard::onType3()) {
+        delayMicroseconds(2);
+    }
 }
 
 template<bool inDebugMode, typename T>
@@ -263,7 +269,9 @@ inline void handleExternalDeviceRequest() noexcept {
             }
             ProcessorInterface::setDataBits(result);
             if (informCPU()) {
-                delayMicroseconds(2);
+                if constexpr (TargetBoard::onType3()) {
+                    delayMicroseconds(2);
+                }
                 break;
             }
             ProcessorInterface::burstNext<IncrementAddress>();
@@ -285,7 +293,9 @@ inline void handleExternalDeviceRequest() noexcept {
                      ProcessorInterface::getStyle(),
                      dataBits);
             if (informCPU()) {
-                delayMicroseconds(2);
+                if constexpr (TargetBoard::onType3()) {
+                    delayMicroseconds(2);
+                }
                 break;
             }
             // be careful of querying i960 state at this point because the chipset runs at twice the frequency of the i960
@@ -293,11 +303,16 @@ inline void handleExternalDeviceRequest() noexcept {
             ProcessorInterface::burstNext<IncrementAddress>();
         }
     }
-    delayMicroseconds(2);
+    if constexpr (TargetBoard::onType3()) {
+        delayMicroseconds(2);
+    }
 }
 
 template<bool inDebugMode, bool useInterrupts>
 inline void invocationBody() noexcept {
+    if constexpr (TargetBoard::onType3()) {
+        delay(10);
+    }
     // wait until AS goes from low to high
     // then wait until the DEN state is asserted
     while (DigitalPin<i960Pinout::DEN_>::isDeasserted());
@@ -307,6 +322,9 @@ inline void invocationBody() noexcept {
     // we can just check if we are in ram, otherwise it is considered to be chipset. This means that everything not ram is chipset
     // and so we are actually continually mirroring the mapping for the sake of simplicity
     ProcessorInterface::newDataCycle<inDebugMode, decltype(theCache)::CacheEntryMask, useInterrupts>();
+    if constexpr (TargetBoard::onType3()) {
+        delay(10);
+    }
 }
 template<bool allowAddressDebuggingCodePath, bool useInterrupts>
 void doInvocationBody() noexcept {
@@ -609,7 +627,7 @@ signalHaltState(const __FlashStringHelper* haltMsg) noexcept {
     Serial.print(F("CHIPSET HALT: "));
     Serial.println(haltMsg);
     while(true) {
-        delay(1000);
+        delay(10);
     }
 }
 [[noreturn]]
@@ -618,7 +636,7 @@ signalHaltState(const char* haltMsg) noexcept {
     Serial.print("CHIPSET HALT: ");
     Serial.println(haltMsg);
     while(true) {
-        delay(1000);
+        delay(10);
     }
 }
 #ifdef __arm__
