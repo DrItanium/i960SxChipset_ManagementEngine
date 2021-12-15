@@ -647,10 +647,20 @@ public:
     template<bool advanceAddress = true>
     static void burstNext() noexcept {
         if constexpr (advanceAddress) {
-            // this is a subset of actions, we just need to read the byte enable bits continuously and advance the address by two to get to the
-            // next 16-bit word
-            // don't increment everything just the lowest byte since we will never actually span 16 byte segments in a single burst transaction
-            address_.bytes[0] += 2;
+            if constexpr (TargetBoard::onAtmega1284p()) {
+                // this is a subset of actions, we just need to read the byte enable bits continuously and advance the address by two to get to the
+                // next 16-bit word
+                // don't increment everything just the lowest byte since we will never actually span 16 byte segments in a single burst transaction
+                address_.bytes[0] += 2;
+            } else {
+                // If we are not a 1284p then just increment the whole value, this is just going to be faster on arm in general
+                address_.wholeValue_ += 2;
+            }
+        }
+        if constexpr (TargetBoard::onType3()) {
+            // force a delay of 2 in between transactions to make sure we don't go too fast
+            // a better mechanism will be necessary in the future
+            delayMicroseconds(2);
         }
     }
     /**
