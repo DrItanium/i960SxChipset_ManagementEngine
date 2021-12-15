@@ -158,16 +158,31 @@ struct DigitalPin {
 DefSPICSPin(i960Pinout::GPIOSelect);
 DefSPICSPin(i960Pinout::SD_EN);
 DefSPICSPin(i960Pinout::PSRAM_EN);
-#ifdef CHIPSET_TYPE2
+#ifndef CHIPSET_TYPE1
 DefSPICSPin(i960Pinout::PSRAM_EN1);
+#ifdef CHIPSET_TYPE3
+DefSPICSPin(i960Pinout::PSRAM_EN2);
+DefSPICSPin(i960Pinout::PSRAM_EN3);
+#endif
 #endif
 
 DefOutputPin(i960Pinout::Reset960, LOW, HIGH);
 DefOutputPin(i960Pinout::Ready, LOW, HIGH);
+#ifdef CHIPSET_TYPE3
+DefOutputPin(i960Pinout::Reset4809, LOW, HIGH);
+#endif
 DefInputPin(i960Pinout::FAIL, HIGH, LOW);
 DefInputPin(i960Pinout::DEN_, LOW, HIGH);
 DefInputPin(i960Pinout::BLAST_, LOW, HIGH);
 DefInputPin(i960Pinout::W_R_, LOW, HIGH);
+DefInputPin(i960Pinout::BE0_ , LOW, HIGH);
+DefInputPin(i960Pinout::BE1_ , LOW, HIGH);
+DefInputPin(i960Pinout::INT_EN0, LOW, HIGH);
+DefInputPin(i960Pinout::INT_EN1, LOW, HIGH);
+#ifndef CHIPSET_TYPE1
+DefInputPin(i960Pinout::INT_EN2, LOW, HIGH);
+DefInputPin(i960Pinout::INT_EN3, LOW, HIGH);
+#endif
 #undef DefSPICSPin
 #undef DefInputPin
 #undef DefOutputPin

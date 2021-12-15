@@ -257,7 +257,7 @@ public:
     static void begin() noexcept;
     [[nodiscard]] static constexpr Address getAddress() noexcept { return address_.getWholeValue(); }
     [[nodiscard]] static SplitWord16 getDataBits() noexcept {
-        if constexpr (TargetBoard::onType1() || TargetBoard::onType2()) {
+        if constexpr (TargetBoard::onType1() || TargetBoard::onType2() || TargetBoard::onType3()) {
             return readGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>();
         } else {
             // stub out
@@ -265,7 +265,7 @@ public:
         }
     }
     static void setDataBits(uint16_t value) noexcept {
-        if constexpr (TargetBoard::onType1() || TargetBoard::onType2()) {
+        if constexpr (TargetBoard::onType1() || TargetBoard::onType2() || TargetBoard::onType3()) {
             // the latch is preserved in between data line changes
             // okay we are still pointing as output values
             // check the latch and see if the output value is the same as what is latched
@@ -277,11 +277,19 @@ public:
             // do nothing
         }
     }
-    [[nodiscard]] static auto getStyle() noexcept { return static_cast<LoadStoreStyle>((PINA & 0b11'0000)); }
+    [[nodiscard]] static auto getStyle() noexcept {
+#ifdef ARDUINO_AVR_ATmega1284
+        return static_cast<LoadStoreStyle>((PINA & 0b11'0000));
+#else
+        auto lower = static_cast<byte>(DigitalPin<i960Pinout::BE0_>::read()) << 4;
+        auto upper = static_cast<byte>(DigitalPin<i960Pinout::BE1_>::read()) << 5;
+        return static_cast<LoadStoreStyle>(lower | upper);
+#endif
+    }
     [[nodiscard]] static bool isReadOperation() noexcept { return DigitalPin<i960Pinout::W_R_>::isAsserted(); }
     [[nodiscard]] static auto getCacheOffsetEntry() noexcept { return cacheOffsetEntry_; }
     inline static void setupDataLinesForWrite() noexcept {
-        if constexpr (TargetBoard::onType1() || TargetBoard::onType2()) {
+        if constexpr (TargetBoard::onType1() || TargetBoard::onType2() || TargetBoard::onType3()) {
             if (!dataLinesDirection_) {
                 dataLinesDirection_ = ~dataLinesDirection_;
                 writeDirection<ProcessorInterface::IOExpanderAddress::DataLines>(0xFFFF);
@@ -291,7 +299,7 @@ public:
         }
     }
     inline static void setupDataLinesForRead() noexcept {
-        if constexpr (TargetBoard::onType1() || TargetBoard::onType2()) {
+        if constexpr (TargetBoard::onType1() || TargetBoard::onType2() || TargetBoard::onType3()) {
             if (dataLinesDirection_) {
                 dataLinesDirection_ = ~dataLinesDirection_;
                 writeDirection<ProcessorInterface::IOExpanderAddress::DataLines>(0);
@@ -306,6 +314,7 @@ private:
         if constexpr (!useInterrupts) {
             return 0;
         } else {
+#if defined(ARDUINO_AVR_ATmega1284)
             if constexpr (TargetBoard::onType1()) {
                 switch (PIND & 0b1001'0000) {
                     case 0b0000'0000: return 0b0000;
@@ -321,6 +330,13 @@ private:
             } else {
                 return 0;
             }
+#else
+            auto a = static_cast<byte>(DigitalPin<i960Pinout::INT_EN0>::read());
+            auto b = static_cast<byte>(DigitalPin<i960Pinout::INT_EN1>::read()) << 1;
+            auto c = static_cast<byte>(DigitalPin<i960Pinout::INT_EN2>::read()) << 2;
+            auto d = static_cast<byte>(DigitalPin<i960Pinout::INT_EN3>::read()) << 3;
+            return a | b | c | d;
+#endif
         }
     }
     template<byte offsetMask>
@@ -330,6 +346,7 @@ private:
         constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIO);
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
+#if defined(ARDUINO_AVR_ATmega1284)
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
         SPDR = Lower16Opcode;
         /*
@@ -378,9 +395,23 @@ private:
             address_.bytes[2] = higher;
         }
         while (!(SPSR & _BV(SPIF))); // wait
-        auto highest = SPDR;
+        address_.bytes[3] = SPDR;
         digitalWrite<i960Pinout::GPIOSelect, HIGH>();
-        address_.bytes[3] = highest;
+#else
+        SPI.beginTransaction(SPISettings{TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0});
+        digitalWrite<i960Pinout::GPIOSelect, LOW>();
+        SPI.transfer(Lower16Opcode);
+        SPI.transfer(GPIOOpcode);
+        address_.bytes[0] = SPI.transfer(0);
+        address_.bytes[1] = SPI.transfer(0);
+        DigitalPin<i960Pinout::GPIOSelect>::pulse<HIGH>(); // pulse high
+        SPI.transfer(Upper16Opcode);
+        SPI.transfer(GPIOOpcode);
+        address_.bytes[2] = SPI.transfer(0);
+        address_.bytes[3] = SPI.transfer(0);
+        digitalWrite<i960Pinout::GPIOSelect, HIGH>();
+        SPI.endTransaction();
+#endif
     }
     template<byte offsetMask>
     static void lower16Update() noexcept {
