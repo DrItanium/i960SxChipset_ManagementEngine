@@ -165,7 +165,7 @@ constexpr MCUConfiguration BoardDescription<TargetMCU::ATmega1284p_Type2> = {
 template<>
 constexpr MCUConfiguration BoardDescription<TargetMCU::GrandCentralM4_Type3> = {
         256_KB,
-        1, // although 10_MHz is the max, the clock rate of 120MHz makes the clock rate actually 12MHz, I know 8mhz works
+        8_MHz, // although 10_MHz is the max, the clock rate of 120MHz makes the clock rate actually 12MHz, I know 8mhz works
         33_MHz // due to the current design, we have to run the psram at 5 Mhz
 };
 
