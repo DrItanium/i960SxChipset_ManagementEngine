@@ -18,4 +18,5 @@
    INT_EN3 = 31,
    GPIOSelect = 53,
    SD_EN = SDCARD_CS,
+   AS_ = 26,
     Int0_ = Count, // not connected

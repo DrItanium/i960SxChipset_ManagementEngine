@@ -37,3 +37,4 @@
     BLAST_ = PORT_A6,
     DEN_ = PORT_A7,
     Int0_ = Count, // Int0 disconnected right now
+    AS_ = Count,

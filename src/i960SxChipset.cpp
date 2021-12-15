@@ -207,7 +207,7 @@ inline void handleMemoryInterface() noexcept {
             ProcessorInterface::setDataBits(outcome);
             if (informCPU()) {
                 if constexpr (TargetBoard::onType3()) {
-                    delayMicroseconds(2);
+                    delayMicroseconds(4);
                 }
                 break;
             }
@@ -307,7 +307,11 @@ inline void handleExternalDeviceRequest() noexcept {
         delayMicroseconds(2);
     }
 }
+volatile bool addressStart = false;
 volatile bool newCycle = false;
+void addressCycleStart() noexcept {
+   addressStart = true;
+}
 void dataCycleStart() noexcept {
     newCycle = true;
 }
@@ -319,8 +323,9 @@ inline void invocationBody() noexcept {
     if constexpr (TargetBoard::onAtmega1284p()) {
         while (DigitalPin<i960Pinout::DEN_>::isDeasserted());
     } else {
-        while (!newCycle);
+        while (!addressStart && !newCycle);
         newCycle = false;
+        addressStart = false;
     }
     // keep processing data requests until we
     // when we do the transition, record the information we need
@@ -480,11 +485,11 @@ void setupChipsetVersionSpecificPins() noexcept {
     DigitalPin<i960Pinout::INT_EN2>::configure();
     DigitalPin<i960Pinout::INT_EN3>::configure();
     DigitalPin<i960Pinout::DEN_>::configure();
+    pinMode(i960Pinout::AS_, INPUT_PULLUP);
+    pinMode(i960Pinout::DEN_, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(static_cast<byte>(i960Pinout::DEN_)), dataCycleStart, FALLING);
+    attachInterrupt(digitalPinToInterrupt(static_cast<byte>(i960Pinout::AS_)), addressCycleStart, FALLING);
 #endif
-}
-void failWentLowAgain() noexcept {
-    signalHaltState("CHECKSUM FAILURE!");
 }
 void waitForBootSignal() noexcept {
     if constexpr (TargetBoard::onType1() || TargetBoard::onType2()) {
@@ -531,7 +536,6 @@ void setup() {
     // duration of the setup function
     // get SPI setup ahead of time
     SPI.begin();
-    setupChipsetVersionSpecificPins();
     setupPins(OUTPUT,
               i960Pinout::PSRAM_EN,
               i960Pinout::SD_EN,
@@ -542,7 +546,6 @@ void setup() {
     digitalWrite<i960Pinout::SD_EN, HIGH>();
     digitalWrite<i960Pinout::Ready, HIGH>();
     digitalWrite<i960Pinout::GPIOSelect, HIGH>();
-    // setup the pins that could be attached to an io expander separately
     setupPins(INPUT,
               i960Pinout::BE0,
               i960Pinout::BE1,
@@ -553,6 +556,8 @@ void setup() {
               i960Pinout::INT_EN0,
               i960Pinout::INT_EN1
     );
+    setupChipsetVersionSpecificPins();
+    // setup the pins that could be attached to an io expander separately
     //pinMode(i960Pinout::MISO, INPUT_PULLUP);
     theCache.begin();
     // purge the cache pages
