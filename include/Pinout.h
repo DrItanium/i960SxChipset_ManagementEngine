@@ -54,6 +54,8 @@ enum class i960Pinout : int {
 #include "Type2Pinout.def"
 #elif defined(CHIPSET_TYPE1_4)
 #include "Type1_4Pinout.def"
+#elif defined(CHIPSET_TYPE3)
+#include "Type3Pinout.def"
 #else
 #error "Target Chipset Hardware has no pinout defined"
 #endif
