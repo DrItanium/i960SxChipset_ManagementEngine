@@ -400,12 +400,6 @@ private:
 #else
         address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
         address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
-        Serial.print("FIRST NEW ADDRESS: 0x");
-        Serial.println(address_.getWholeValue(), HEX);
-        address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
-        address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
-        Serial.print("SECOND NEW ADDRESS: 0x");
-        Serial.println(address_.getWholeValue(), HEX);
 #endif
     }
     template<byte offsetMask>

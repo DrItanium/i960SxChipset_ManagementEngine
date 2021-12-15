@@ -504,7 +504,8 @@ void waitForBootSignal() noexcept {
     } else {
         while (DigitalPin<i960Pinout::FAIL>::read() == LOW);
         attachInterrupt(digitalPinToInterrupt(static_cast<byte>(i960Pinout::FAIL)),
-                        []() { signalHaltState("CHECKSUM FAILURE"); }, LOW);
+                        []() { signalHaltState("CHECKSUM FAILURE"); },
+                        LOW);
     }
 }
 // the setup routine runs once when you press reset:
