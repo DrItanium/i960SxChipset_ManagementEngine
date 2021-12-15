@@ -400,6 +400,7 @@ private:
 #else
         address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
         address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
+        cacheOffsetEntry_ = (address_.bytes[0] >> 1) & offsetMask; // we want to make this quick to increment
 #endif
     }
     template<byte offsetMask>
@@ -435,6 +436,7 @@ private:
         address_.bytes[1] = lower;
 #else
         address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
+        cacheOffsetEntry_ = (address_.bytes[0] >> 1) & offsetMask; // we want to make this quick to increment
 #endif
     }
     static void upper16Update() noexcept {
@@ -536,6 +538,7 @@ private:
         address_.bytes[0] = lowest;
 #else
         address_.bytes[0] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOA>();
+        cacheOffsetEntry_ = (address_.bytes[0] >> 1) & offsetMask; // we want to make this quick to increment
 #endif
     }
     static void updateLower8() noexcept {
