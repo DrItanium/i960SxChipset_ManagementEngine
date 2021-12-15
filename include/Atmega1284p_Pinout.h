@@ -165,5 +165,10 @@ inline void digitalWrite(decltype(HIGH) value) noexcept {
         thePort |= getPinMask<pin>();
     }
 }
+template<i960Pinout pin>
+[[gnu::always_inline]]
+inline auto digitalRead() noexcept {
+    return (getAssociatedInputPort<pin>() & getPinMask<pin>()) ? HIGH : LOW;
+}
 #endif
 #endif //SXCHIPSET_ATMEGA1284P_PINOUT_H
