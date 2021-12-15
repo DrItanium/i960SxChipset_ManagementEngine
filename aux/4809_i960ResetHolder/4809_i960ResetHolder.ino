@@ -8,8 +8,8 @@
 // the serial console is totally optional and could be easily removed if needed. 
 //
 // The objective of this program is to eliminate pins
-constexpr auto EnableExternalClockSource = false;
-constexpr auto EnableClockOutputPort = true;
+constexpr auto EnableExternalClockSource = true;
+constexpr auto EnableClockOutputPort = false;
 constexpr auto Reset960 = PIN_PF0;
 constexpr auto LOCK960 = PIN_PF1;
 constexpr auto HLDA960 = PIN_PF2;
