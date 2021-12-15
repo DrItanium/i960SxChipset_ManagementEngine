@@ -28,7 +28,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef SXCHIPSET_I960SXCHIPSET_H
 #define SXCHIPSET_I960SXCHIPSET_H
-
+#ifdef __arm__
+#include <string>
+#endif
 using BodyFunction = void (*)();
 BodyFunction getNonDebugBody(byte index) noexcept;
 BodyFunction getDebugBody(byte index) noexcept;
@@ -43,4 +45,9 @@ BodyFunction getBody(byte index) noexcept {
 }
 
 [[noreturn]] void signalHaltState(const __FlashStringHelper* msg);
+#ifdef __arm__
+[[noreturn]] void signalHaltState(const char* msg) noexcept;
+[[noreturn]] void signalHaltState(const std::string& msg) noexcept;
+#endif
+
 #endif //SXCHIPSET_I960SXCHIPSET_H

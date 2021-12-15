@@ -60,7 +60,6 @@ enum class i960Pinout : int {
 #error "Target Chipset Hardware has no pinout defined"
 #endif
 };
-
 [[gnu::always_inline]]
 inline void digitalWrite(i960Pinout ip, decltype(HIGH) value) {
     digitalWrite(static_cast<int>(ip), value);

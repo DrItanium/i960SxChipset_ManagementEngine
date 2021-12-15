@@ -466,11 +466,44 @@ void setupChipsetVersionSpecificPins() noexcept {
         // do nothing
     }
 }
+void failWentLowAgain() noexcept {
+    signalHaltState("CHECKSUM FAILURE!");
+}
+void waitForBootSignal() noexcept {
+    if constexpr (TargetBoard::onType1() || TargetBoard::onType2()) {
+        // at this point we have started execution of the i960
+        // wait until we enter self test state
+        while (DigitalPin<i960Pinout::FAIL>::isDeasserted()) {
+            if (DigitalPin<i960Pinout::DEN_>::isAsserted()) {
+                break;
+            }
+        }
+
+        // now wait until we leave self test state
+        while (DigitalPin<i960Pinout::FAIL>::isAsserted()) {
+            if (DigitalPin<i960Pinout::DEN_>::isAsserted()) {
+                break;
+            }
+        }
+    } else {
+        while (DigitalPin<i960Pinout::FAIL>::read() == LOW);
+        attachInterrupt(digitalPinToInterrupt(static_cast<byte>(i960Pinout::FAIL)),
+                        failWentLowAgain,
+                        LOW);
+    }
+}
 // the setup routine runs once when you press reset:
 void setup() {
+#ifdef CHIPSET_TYPE3
+    DigitalPin<i960Pinout::Reset4809>::configure();
+    DigitalPin<i960Pinout::Reset4809>::assertPin();
+#endif
     // always do this first to make sure that we put the i960 into reset regardless of target
     pinMode(i960Pinout::Reset960, OUTPUT) ;
     digitalWrite<i960Pinout::Reset960, LOW>();
+#ifdef CHIPSET_TYPE3
+    DigitalPin<i960Pinout::Reset4809>::deassertPin();
+#endif
     Serial.begin(115200);
     while (!Serial) {
         delay(10);
@@ -516,20 +549,7 @@ void setup() {
     delay(100);
     Serial.println(F("i960Sx chipset brought up fully!"));
     digitalWrite<i960Pinout::Reset960, HIGH>();
-    // at this point we have started execution of the i960
-    // wait until we enter self test state
-    while (DigitalPin<i960Pinout::FAIL>::isDeasserted()) {
-        if (DigitalPin<i960Pinout::DEN_>::isAsserted()) {
-            break;
-        }
-    }
-
-    // now wait until we leave self test state
-    while (DigitalPin<i960Pinout::FAIL>::isAsserted()) {
-        if (DigitalPin<i960Pinout::DEN_>::isAsserted()) {
-            break;
-        }
-    }
+    waitForBootSignal();
     // at this point we are in idle so we are safe to loaf around a bit
     // at this point, the i960 will request 32-bytes to perform a boot check sum on.
     // If the checksum is successful then execution will continue as normal
@@ -538,10 +558,12 @@ void setup() {
     // on bootup we need to ignore the interrupt lines for now
     doInvocationBody<CompileInAddressDebuggingSupport, false>();
     doInvocationBody<CompileInAddressDebuggingSupport, false>();
-    if (DigitalPin<i960Pinout::FAIL>::isAsserted()) {
-        signalHaltState(F("CHECKSUM FAILURE!"));
+    if constexpr (TargetBoard::onAtmega1284p()) {
+        if (DigitalPin<i960Pinout::FAIL>::isAsserted()) {
+            signalHaltState(F("CHECKSUM FAILURE!"));
+        }
+        Serial.println(F("SYSTEM BOOT SUCCESSFUL!"));
     }
-    Serial.println(F("SYSTEM BOOT SUCCESSFUL!"));
 }
 // ----------------------------------------------------------------
 // state machine
@@ -597,6 +619,22 @@ signalHaltState(const __FlashStringHelper* haltMsg) {
         delay(1000);
     }
 }
+#ifdef __arm__
+[[noreturn]]
+void
+signalHaltState(const char* haltMsg) {
+    Serial.print("CHIPSET HALT: ");
+    Serial.println(haltMsg);
+    while(true) {
+        delay(1000);
+    }
+}
+[[noreturn]]
+void
+signalHaltState(const std::string& haltMsg) {
+    signalHaltState(haltMsg.c_str());
+}
+#endif
 BodyFunction getNonDebugBody(byte index) noexcept {
     return lookupTable[index];
 }
