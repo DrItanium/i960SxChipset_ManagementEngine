@@ -281,8 +281,8 @@ public:
 #ifdef ARDUINO_AVR_ATmega1284
         return static_cast<LoadStoreStyle>((PINA & 0b11'0000));
 #else
-        auto lower = static_cast<byte>(DigitalPin<i960Pinout::BE0_>::read()) << 4;
-        auto upper = static_cast<byte>(DigitalPin<i960Pinout::BE1_>::read()) << 5;
+        auto lower = static_cast<byte>(DigitalPin<i960Pinout::BE0>::read()) << 4;
+        auto upper = static_cast<byte>(DigitalPin<i960Pinout::BE1>::read()) << 5;
         return static_cast<LoadStoreStyle>(lower | upper);
 #endif
     }

@@ -175,8 +175,8 @@ DefInputPin(i960Pinout::FAIL, HIGH, LOW);
 DefInputPin(i960Pinout::DEN_, LOW, HIGH);
 DefInputPin(i960Pinout::BLAST_, LOW, HIGH);
 DefInputPin(i960Pinout::W_R_, LOW, HIGH);
-DefInputPin(i960Pinout::BE0_ , LOW, HIGH);
-DefInputPin(i960Pinout::BE1_ , LOW, HIGH);
+DefInputPin(i960Pinout::BE0, LOW, HIGH);
+DefInputPin(i960Pinout::BE1, LOW, HIGH);
 DefInputPin(i960Pinout::INT_EN0, LOW, HIGH);
 DefInputPin(i960Pinout::INT_EN1, LOW, HIGH);
 #ifndef CHIPSET_TYPE1
