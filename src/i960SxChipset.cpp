@@ -62,7 +62,7 @@ constexpr auto MaximumNumberOfOpenFiles = 16;
 constexpr auto CompileInAddressDebuggingSupport = false;
 constexpr auto AddressDebuggingEnabledOnStartup = false;
 constexpr auto UsePSRAMForType2 = false;
-constexpr auto ValidateTransferDuringInstall = TargetBoard::onType2() && UsePSRAMForType2;
+constexpr auto ValidateTransferDuringInstall = TargetBoard::onType3() || (TargetBoard::onType2() && UsePSRAMForType2);
 constexpr auto UseSingleChannelConfigurationForType2 = true;
 /**
  * @brief When set to true, the interrupt lines the mcp23s17 provides are used to determine which bytes to read
@@ -106,10 +106,18 @@ constexpr auto computeCacheLineSize() noexcept {
    }
 }
 //using OnboardPSRAMBlock = ::
+constexpr auto computeCacheSize() noexcept {
+    if constexpr (TargetBoard::onGrandCentralM4()) {
+        if constexpr (TargetBoard::onType3()) {
+            return 16384;
+        }
+    }
+    return 8192;
+}
 constexpr auto NumAddressBitsForPSRAMCache = 26;
 constexpr auto NumAddressBits = NumAddressBitsForPSRAMCache;
 constexpr auto CacheLineSize = computeCacheLineSize();
-constexpr auto CacheSize = 8192;
+constexpr auto CacheSize = computeCacheSize();
 template<auto a, auto b, auto c, typename d>
 using CacheWayStyle = conditional_t<TargetBoard::onType2(),
         conditional_t<UsePSRAMForType2,
@@ -578,8 +586,8 @@ void setup() {
         if (DigitalPin<i960Pinout::FAIL>::isAsserted()) {
             signalHaltState(F("CHECKSUM FAILURE!"));
         }
-        Serial.println(F("SYSTEM BOOT SUCCESSFUL!"));
     }
+    Serial.println(F("SYSTEM BOOT SUCCESSFUL!"));
 }
 // ----------------------------------------------------------------
 // state machine
