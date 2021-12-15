@@ -341,12 +341,12 @@ private:
     }
     template<byte offsetMask>
     inline static void full32BitUpdate() noexcept {
-        constexpr auto Lower16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Lower16Lines);
-        constexpr auto Upper16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Upper16Lines);
-        constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIO);
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
 #if defined(ARDUINO_AVR_ATmega1284)
+        constexpr auto Lower16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Lower16Lines);
+        constexpr auto Upper16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Upper16Lines);
+        constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIO);
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
         SPDR = Lower16Opcode;
         /*
@@ -398,28 +398,18 @@ private:
         address_.bytes[3] = SPDR;
         digitalWrite<i960Pinout::GPIOSelect, HIGH>();
 #else
-        SPI.beginTransaction(SPISettings{TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0});
-        digitalWrite<i960Pinout::GPIOSelect, LOW>();
-        SPI.transfer(Lower16Opcode);
-        SPI.transfer(GPIOOpcode);
-        address_.bytes[0] = SPI.transfer(0);
-        address_.bytes[1] = SPI.transfer(0);
-        DigitalPin<i960Pinout::GPIOSelect>::pulse<HIGH>(); // pulse high
-        SPI.transfer(Upper16Opcode);
-        SPI.transfer(GPIOOpcode);
-        address_.bytes[2] = SPI.transfer(0);
-        address_.bytes[3] = SPI.transfer(0);
-        digitalWrite<i960Pinout::GPIOSelect, HIGH>();
-        SPI.endTransaction();
+        address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
+        address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
 #endif
     }
     template<byte offsetMask>
     static void lower16Update() noexcept {
-        constexpr auto Lower16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Lower16Lines);
-        constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIO);
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
+#if defined(ARDUINO_AVR_ATmega1284)
+        constexpr auto Lower16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Lower16Lines);
+        constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIO);
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
         SPDR = Lower16Opcode;
         asm volatile("nop");
@@ -443,11 +433,15 @@ private:
         auto lower = SPDR;
         digitalWrite<i960Pinout::GPIOSelect, HIGH>();
         address_.bytes[1] = lower;
+#else
+        address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
+#endif
     }
     static void upper16Update() noexcept {
+        // only read the upper 16-bits
+#if defined(ARDUINO_AVR_ATmega1284)
         constexpr auto Upper16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Upper16Lines);
         constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIO);
-        // only read the upper 16-bits
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
         SPDR = Upper16Opcode;
         asm volatile("nop");
@@ -468,11 +462,15 @@ private:
         auto highest = SPDR;
         digitalWrite<i960Pinout::GPIOSelect, HIGH>();
         address_.bytes[3] = highest;
+#else
+        address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
+#endif
     }
     static void updateHighest8() noexcept {
+        // only read the upper 8 bits
+#if defined(ARDUINO_AVR_ATmega1284)
         constexpr auto Upper16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Upper16Lines);
         constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIOB);
-        // only read the upper 8 bits
         digitalWrite<i960Pinout::GPIOSelect, HIGH>();
         SPDR = Upper16Opcode;
         asm volatile("nop");
@@ -486,11 +484,15 @@ private:
         auto highest = SPDR;
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
         address_.bytes[3] = highest;
+#else
+        address_.bytes[3] = read8<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPIOB>();
+#endif
     }
     static void updateHigher8() noexcept {
+        // only read the upper 8 bits
+#if defined(ARDUINO_AVR_ATmega1284)
         constexpr auto Upper16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Upper16Lines);
         constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIOA);
-        // only read the upper 8 bits
         digitalWrite<i960Pinout::GPIOSelect, HIGH>();
         SPDR = Upper16Opcode;
         asm volatile("nop");
@@ -504,14 +506,18 @@ private:
         auto highest = SPDR;
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
         address_.bytes[2] = highest;
+#else
+        address_.bytes[2] = read8<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPIOA>();
+#endif
     }
     template<byte offsetMask>
     static void updateLowest8() noexcept {
-        constexpr auto Lower16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Lower16Lines);
-        constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIOA);
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
+#if defined(ARDUINO_AVR_ATmega1284)
+        constexpr auto Lower16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Lower16Lines);
+        constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIOA);
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
         SPDR = Lower16Opcode;
         asm volatile("nop");
@@ -528,13 +534,17 @@ private:
         // put scope ticks to force the matter
         cacheOffsetEntry_ = (lowest >> 1) & offsetMask; // we want to make this quick to increment
         address_.bytes[0] = lowest;
+#else
+        address_.bytes[0] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOA>();
+#endif
     }
     static void updateLower8() noexcept {
-        constexpr auto Lower16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Lower16Lines);
-        constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIOB);
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
+#if defined(ARDUINO_AVR_ATmega1284)
+        static constexpr auto Lower16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Lower16Lines);
+        static constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIOB);
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
         SPDR = Lower16Opcode;
         asm volatile("nop");
@@ -548,6 +558,9 @@ private:
         auto lower = SPDR;
         digitalWrite<i960Pinout::GPIOSelect, HIGH>();
         address_.bytes[1] = lower;
+#else
+        address_.bytes[1] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOB>();
+#endif
     }
 private:
     template<bool inDebugMode>
