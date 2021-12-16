@@ -107,11 +107,6 @@ constexpr auto computeCacheLineSize() noexcept {
 }
 //using OnboardPSRAMBlock = ::
 constexpr auto computeCacheSize() noexcept {
-    if constexpr (TargetBoard::onGrandCentralM4()) {
-        if constexpr (TargetBoard::onType3()) {
-            return 16384;
-        }
-    }
     return 8192;
 }
 constexpr auto NumAddressBitsForPSRAMCache = 26;
