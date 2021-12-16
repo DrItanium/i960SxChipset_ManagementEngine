@@ -16,7 +16,6 @@ union TaggedAddress {
     using TagType = ClosestBitValue_t<NumTagBits>;
     using RestType = ClosestBitValue_t<NumRestBits>;
     using LowerType = ClosestBitValue_t<NumLowestBits>;
-    using AddressType = ClosestBitValue_t<MaximumAddressSize>;
     constexpr explicit TaggedAddress(Address value = 0) noexcept : base(value) { }
     constexpr explicit TaggedAddress(RestType key, TagType tag, LowerType offset = 0) noexcept : lowest(offset), tagIndex(tag), rest(key) { }
     void clear() noexcept { base = 0; }
@@ -38,7 +37,7 @@ union TaggedAddress {
     }
     [[nodiscard]] bool restEqual(TaggedAddress other) const noexcept { return getRest() == other.getRest(); }
 private:
-    AddressType base;
+    Address base;
     struct {
         LowerType lowest : NumLowestBits;
         TagType tagIndex : NumTagBits;
@@ -48,6 +47,6 @@ private:
         uint24_t psramIndex : 23;
         byte offset : 3;
     };
-    byte bytes_[sizeof(AddressType)];
+    byte bytes_[4];
 };
 #endif //SXCHIPSET_TAGGEDCACHEADDRESS_H

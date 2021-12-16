@@ -112,7 +112,7 @@ constexpr uint32_t computeCacheSize() noexcept {
     //}
     return 8192;
 }
-constexpr auto NumAddressBitsForPSRAMCache = TargetBoard::onAtmega1284p() ? 26 : 32;
+constexpr auto NumAddressBitsForPSRAMCache = 26;
 constexpr auto NumAddressBits = NumAddressBitsForPSRAMCache;
 constexpr auto CacheLineSize = computeCacheLineSize();
 constexpr auto CacheSize = computeCacheSize();
