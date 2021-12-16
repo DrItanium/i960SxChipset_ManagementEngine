@@ -180,7 +180,7 @@ inline void fallbackBody() noexcept {
 #ifdef ARDUINO_AVR_ATmega1284
             __builtin_avr_nops(4);
 #else
-            delay(1);
+            delayMicroseconds(2);
 #endif
             // need to introduce some delay
             if (informCPU()) {
@@ -216,7 +216,7 @@ inline void handleMemoryInterface() noexcept {
             ProcessorInterface::setDataBits(outcome);
             if (informCPU()) {
                 if constexpr (TargetBoard::onType3()) {
-                    delay(1);
+                    delayMicroseconds(2);
                 }
                 break;
             }
@@ -242,7 +242,7 @@ inline void handleMemoryInterface() noexcept {
             theEntry.set(i, ProcessorInterface::getStyle(), bits);
             if (informCPU()) {
                 if constexpr (TargetBoard::onType3()) {
-                    delay(1);
+                    delayMicroseconds(2);
                 }
                 break;
             }
@@ -253,7 +253,7 @@ inline void handleMemoryInterface() noexcept {
         }
     }
     if constexpr (TargetBoard::onType3()) {
-        delay(1);
+        delayMicroseconds(2);
     }
 }
 
@@ -281,7 +281,7 @@ inline void handleExternalDeviceRequest() noexcept {
             ProcessorInterface::setDataBits(result);
             if (informCPU()) {
                 if constexpr (TargetBoard::onType3()) {
-                    delay(1);
+                    delayMicroseconds(2);
                 }
                 break;
             }
@@ -305,7 +305,7 @@ inline void handleExternalDeviceRequest() noexcept {
                      dataBits);
             if (informCPU()) {
                 if constexpr (TargetBoard::onType3()) {
-                    delay(1);
+                    delayMicroseconds(2);
                 }
                 break;
             }
@@ -315,7 +315,7 @@ inline void handleExternalDeviceRequest() noexcept {
         }
     }
     if constexpr (TargetBoard::onType3()) {
-        delay(1);
+        delayMicroseconds(2);
     }
 }
 volatile bool addressStart = false;
