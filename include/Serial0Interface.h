@@ -28,7 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef SXCHIPSET_SERIAL0INTERFACE_H
 #define SXCHIPSET_SERIAL0INTERFACE_H
-
+#include <Arduino.h>
 template<Address baseAddress, bool addressDebuggingAllowed, bool defaultAddressDebuggingModeTo = false>
 class Serial0Interface {
 public:
@@ -105,7 +105,12 @@ private:
                 Serial.flush();
                 break;
             case Registers::ConsoleIO:
-                Serial.write(static_cast<char>(value.getWholeValue()));
+                if constexpr (TargetBoard::onType3()) {
+                    Serial.print(F("Serial Write of 0x"));
+                    Serial.print(value.getWholeValue(), HEX);
+                } else {
+                    Serial.write(static_cast<char>(value.getWholeValue()));
+                }
                 break;
             case Registers::AddressDebuggingFlag:
                 if constexpr (AddressDebuggingAllowed) {
