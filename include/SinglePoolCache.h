@@ -57,8 +57,14 @@ public:
     [[nodiscard]] CacheEntry& getLine(const TaggedAddress& theAddress) noexcept {
         // only align if we need to reset the chip
         if constexpr (TargetBoard::onType3()) {
-            Serial.print(F("Tag Index: 0x"));
-            Serial.println(theAddress.getTagIndex(), HEX);
+            Serial.print(F("Address Decomp: 0x"));
+            Serial.print(theAddress.getRest(), HEX);
+            Serial.print(F(", 0x"));
+            Serial.print(theAddress.getTagIndex(), HEX);
+            Serial.print(F(", 0x"));
+            Serial.print(theAddress.getLowest(), HEX);
+            Serial.print(F(" -> 0x"));
+            Serial.println(theAddress.getAddress(), HEX);
         }
         return entries_[theAddress.getTagIndex()].getLine(theAddress);
     }
