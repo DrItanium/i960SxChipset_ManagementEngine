@@ -105,12 +105,7 @@ private:
                 Serial.flush();
                 break;
             case Registers::ConsoleIO:
-                if constexpr (TargetBoard::onType3()) {
-                    Serial.print(F("Serial Write of 0x"));
-                    Serial.print(value.getWholeValue(), HEX);
-                } else {
-                    Serial.write(static_cast<char>(value.getWholeValue()));
-                }
+                Serial.write(static_cast<char>(value.getWholeValue()));
                 break;
             case Registers::AddressDebuggingFlag:
                 if constexpr (AddressDebuggingAllowed) {
