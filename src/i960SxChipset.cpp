@@ -107,6 +107,9 @@ constexpr auto computeCacheLineSize() noexcept {
 }
 //using OnboardPSRAMBlock = ::
 constexpr auto computeCacheSize() noexcept {
+    if constexpr (TargetBoard::onType3()) {
+        return 32768;
+    }
     return 8192;
 }
 constexpr auto NumAddressBitsForPSRAMCache = 26;
@@ -176,7 +179,7 @@ inline void fallbackBody() noexcept {
 #ifdef ARDUINO_AVR_ATmega1284
             __builtin_avr_nops(4);
 #else
-            delayMicroseconds(2);
+            delay(1);
 #endif
             // need to introduce some delay
             if (informCPU()) {
@@ -202,7 +205,7 @@ inline void handleMemoryInterface() noexcept {
             auto outcome = theEntry.get(i);
             if constexpr (inDebugMode) {
                 Serial.print(F("\tOffset: 0x")) ;
-                Serial.println(i, HEX);
+                Serial.println(i << 1, HEX);
                 Serial.print(F("\tRead the value: 0x"));
                 Serial.println(outcome, HEX);
             }
@@ -210,7 +213,7 @@ inline void handleMemoryInterface() noexcept {
             ProcessorInterface::setDataBits(outcome);
             if (informCPU()) {
                 if constexpr (TargetBoard::onType3()) {
-                    delayMicroseconds(4);
+                    delay(1);
                 }
                 break;
             }
@@ -227,14 +230,14 @@ inline void handleMemoryInterface() noexcept {
             auto bits = ProcessorInterface::getDataBits();
             if constexpr (inDebugMode) {
                 Serial.print(F("\tOffset: 0x")) ;
-                Serial.println(i, HEX);
+                Serial.println(i << 1, HEX);
                 Serial.print(F("\tWriting the value: 0x"));
                 Serial.println(bits.getWholeValue(), HEX);
             }
             theEntry.set(i, ProcessorInterface::getStyle(), bits);
             if (informCPU()) {
                 if constexpr (TargetBoard::onType3()) {
-                    delayMicroseconds(2);
+                    delay(1);
                 }
                 break;
             }
@@ -245,7 +248,7 @@ inline void handleMemoryInterface() noexcept {
         }
     }
     if constexpr (TargetBoard::onType3()) {
-        delayMicroseconds(2);
+        delay(1);
     }
 }
 
@@ -273,7 +276,7 @@ inline void handleExternalDeviceRequest() noexcept {
             ProcessorInterface::setDataBits(result);
             if (informCPU()) {
                 if constexpr (TargetBoard::onType3()) {
-                    delayMicroseconds(2);
+                    delay(1);
                 }
                 break;
             }
@@ -297,7 +300,7 @@ inline void handleExternalDeviceRequest() noexcept {
                      dataBits);
             if (informCPU()) {
                 if constexpr (TargetBoard::onType3()) {
-                    delayMicroseconds(2);
+                    delay(1);
                 }
                 break;
             }
@@ -307,12 +310,16 @@ inline void handleExternalDeviceRequest() noexcept {
         }
     }
     if constexpr (TargetBoard::onType3()) {
-        delayMicroseconds(2);
+        delay(1);
     }
 }
 volatile bool addressStart = false;
+volatile bool denStart = false;
 void addressCycleStart() noexcept {
    addressStart = true;
+}
+void dataCycleStart() noexcept {
+    denStart = true;
 }
 
 template<bool inDebugMode, bool useInterrupts>
@@ -322,8 +329,12 @@ inline void invocationBody() noexcept {
     if constexpr (TargetBoard::onType3()) {
         while (!addressStart);
         addressStart = false;
-    }
+        while (!denStart);
+        denStart = false;
+    } else {
         while (DigitalPin<i960Pinout::DEN_>::isDeasserted());
+    }
+
     // keep processing data requests until we
     // when we do the transition, record the information we need
     // there are only two parts to this code, either we map into ram or chipset functions
@@ -483,8 +494,8 @@ void setupChipsetVersionSpecificPins() noexcept {
     DigitalPin<i960Pinout::INT_EN3>::configure();
     DigitalPin<i960Pinout::DEN_>::configure();
     pinMode(i960Pinout::AS_, INPUT_PULLUP);
-    //pinMode(i960Pinout::DEN_, INPUT_PULLUP);
-    //attachInterrupt(digitalPinToInterrupt(static_cast<byte>(i960Pinout::DEN_)), dataCycleStart, FALLING);
+    pinMode(i960Pinout::DEN_, INPUT);
+    attachInterrupt(digitalPinToInterrupt(static_cast<byte>(i960Pinout::DEN_)), dataCycleStart, FALLING);
     attachInterrupt(digitalPinToInterrupt(static_cast<byte>(i960Pinout::AS_)), addressCycleStart, FALLING);
 #endif
 }

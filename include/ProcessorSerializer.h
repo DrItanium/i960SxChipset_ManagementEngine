@@ -663,7 +663,7 @@ public:
         if constexpr (TargetBoard::onType3()) {
             // force a delay of 2 in between transactions to make sure we don't go too fast
             // a better mechanism will be necessary in the future
-            delayMicroseconds(2);
+            delay(1);
         }
     }
     /**
