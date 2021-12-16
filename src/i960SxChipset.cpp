@@ -106,7 +106,7 @@ constexpr auto computeCacheLineSize() noexcept {
    }
 }
 //using OnboardPSRAMBlock = ::
-constexpr auto computeCacheSize() noexcept {
+constexpr uint32_t computeCacheSize() noexcept {
     if constexpr (TargetBoard::onType3()) {
         return 32768;
     }
@@ -205,8 +205,8 @@ inline void handleMemoryInterface() noexcept {
             auto outcome = theEntry.get(i);
             if constexpr (inDebugMode) {
                 Serial.print(F("\tOffset: 0x")) ;
-                Serial.println(i << 1, HEX);
-                Serial.print(F("\tRead the value: 0x"));
+                Serial.print(i << 1, HEX);
+                Serial.print(F(",  Read the value: 0x"));
                 Serial.println(outcome, HEX);
             }
             // Only pay for what we need even if it is slower
@@ -230,8 +230,8 @@ inline void handleMemoryInterface() noexcept {
             auto bits = ProcessorInterface::getDataBits();
             if constexpr (inDebugMode) {
                 Serial.print(F("\tOffset: 0x")) ;
-                Serial.println(i << 1, HEX);
-                Serial.print(F("\tWriting the value: 0x"));
+                Serial.print(i << 1, HEX);
+                Serial.print(F(",  Writing the value: 0x"));
                 Serial.println(bits.getWholeValue(), HEX);
             }
             theEntry.set(i, ProcessorInterface::getStyle(), bits);
