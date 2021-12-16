@@ -119,11 +119,7 @@
  * This option will allocate up to a 512 byte temporary buffer for send.
  * This may be faster for some boards.  Do not use this with AVR boards.
  */
-#ifdef CHIPSET_TYPE3
-#define USE_SPI_ARRAY_TRANSFER 1
-#else
 #define USE_SPI_ARRAY_TRANSFER 0
-#endif
 //------------------------------------------------------------------------------
 /**
  * SD_CHIP_SELECT_MODE defines how the functions
