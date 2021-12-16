@@ -13,9 +13,19 @@ union TaggedAddress {
     static constexpr auto MaximumAddressSize = totalBits;
     static_assert((NumLowestBits + NumTagBits + NumRestBits) == MaximumAddressSize, "Too many or too few bits for this given tagged address!");
     static_assert((MaximumAddressSize >= 26) && (MaximumAddressSize <= 32), "Addresses cannot be smaller than 26 bits!");
+#ifdef ARDUINO_AVR_ATmega1284
     using TagType = ClosestBitValue_t<NumTagBits>;
     using RestType = ClosestBitValue_t<NumRestBits>;
     using LowerType = ClosestBitValue_t<NumLowestBits>;
+    using PSRAMAddressType = uint24_t;
+    using PSRAMIndexType = byte;
+#else
+    using TagType = Address;
+    using RestType = Address;
+    using LowerType = Address;
+    using PSRAMAddressType = Address;
+    using PSRAMIndexType = Address;
+#endif
     constexpr explicit TaggedAddress(Address value = 0) noexcept : base(value) { }
     constexpr explicit TaggedAddress(RestType key, TagType tag, LowerType offset = 0) noexcept : lowest(offset), tagIndex(tag), rest(key) { }
     void clear() noexcept { base = 0; }
@@ -44,8 +54,8 @@ private:
         RestType rest : NumRestBits;
     };
     struct {
-        uint24_t psramIndex : 23;
-        byte offset : 3;
+        PSRAMAddressType psramIndex : 23;
+        PSRAMIndexType offset : 3;
     };
     byte bytes_[4];
 };
