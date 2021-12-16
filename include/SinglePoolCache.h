@@ -110,7 +110,7 @@ private:
  * @tparam numOffsetBits  The number of bits that make up the storage within the bytes itself
  * @tparam T A static class that the cache data is read from and written to
  */
-template<template<auto, auto, auto, typename> typename C,
+template<template<auto, auto, auto, typename, bool> typename C,
          uint16_t backingStoreSize,
          byte numAddressBits,
          byte numOffsetBits,
