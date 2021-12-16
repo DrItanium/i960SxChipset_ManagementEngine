@@ -6,8 +6,7 @@
 #define SXCHIPSET_TAGGEDCACHEADDRESS_H
 #include "MCUPlatform.h"
 template<byte tagBits, byte totalBits = 32, byte offsetBits = 4>
-struct [[gnu::packed]] TaggedAddress {
-    using Self = TaggedAddress<tagBits, totalBits, offsetBits>;
+union TaggedAddress {
     static constexpr auto NumLowestBits = offsetBits;
     static constexpr auto NumTagBits = tagBits;
     static constexpr auto NumRestBits = totalBits - (NumTagBits + NumLowestBits);
@@ -38,20 +37,16 @@ struct [[gnu::packed]] TaggedAddress {
     }
     [[nodiscard]] bool restEqual(TaggedAddress other) const noexcept { return getRest() == other.getRest(); }
 private:
-    union [[gnu::packed]] {
-        Address base;
-        struct
-        {
-            LowerType lowest: NumLowestBits;
-            TagType tagIndex: NumTagBits;
-            RestType rest: NumRestBits;
-        };
-        struct
-        {
-            uint24_t psramIndex: 23;
-            byte offset: 3;
-        };
-        byte bytes_[4];
+    Address base;
+    struct {
+        LowerType lowest : NumLowestBits;
+        TagType tagIndex : NumTagBits;
+        RestType rest : NumRestBits;
     };
+    struct {
+        uint24_t psramIndex : 23;
+        byte offset : 3;
+    };
+    byte bytes_[4];
 };
 #endif //SXCHIPSET_TAGGEDCACHEADDRESS_H
