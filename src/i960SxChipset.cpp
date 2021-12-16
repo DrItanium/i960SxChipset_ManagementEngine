@@ -61,6 +61,7 @@ constexpr auto SDBaseAddress = 0xFD00'0000;
 constexpr auto MaximumNumberOfOpenFiles = 16;
 constexpr auto CompileInAddressDebuggingSupport = TargetBoard::onType3();
 constexpr auto AddressDebuggingEnabledOnStartup = TargetBoard::onType3();
+constexpr auto CompileInCacheSystemDebuggingSupport = false;
 constexpr auto UsePSRAMForType2 = false;
 constexpr auto ValidateTransferDuringInstall = TargetBoard::onType3() || (TargetBoard::onType2() && UsePSRAMForType2);
 constexpr auto UseSingleChannelConfigurationForType2 = true;
@@ -116,17 +117,17 @@ constexpr auto NumAddressBitsForPSRAMCache = 26;
 constexpr auto NumAddressBits = NumAddressBitsForPSRAMCache;
 constexpr auto CacheLineSize = computeCacheLineSize();
 constexpr auto CacheSize = computeCacheSize();
-template<auto a, auto b, auto c, typename d>
+template<auto a, auto b, auto c, typename d, bool e>
 using CacheWayStyle = conditional_t<TargetBoard::onType2(),
         conditional_t<UsePSRAMForType2,
-                EightWayRandPLRUCacheSet<a,b,c,d>,
-                SixteenWayLRUCacheWay<a,b,c,d>>,
-        EightWayRandPLRUCacheSet<a,b,c,d>>;
+                EightWayRandPLRUCacheSet<a,b,c,d, e>,
+                SixteenWayLRUCacheWay<a,b,c,d, e>>,
+        EightWayRandPLRUCacheSet<a,b,c,d, e>>;
 
 //using L1Cache = CacheInstance_t<EightWayTreePLRUCacheSet, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
 //using L1Cache = CacheInstance_t<EightWayLRUCacheWay, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
 //using L1Cache = CacheInstance_t<EightWayRandPLRUCacheSet, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
-using L1Cache = CacheInstance_t<CacheWayStyle, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
+using L1Cache = CacheInstance_t<CacheWayStyle, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t, CompileInCacheSystemDebuggingSupport>;
 L1Cache theCache;
 
 //template<template<auto, auto, auto, typename> typename L,

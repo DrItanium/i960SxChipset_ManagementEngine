@@ -140,10 +140,10 @@ private:
     static inline UnderlyingCache_t theCache_;
 };
 
-template<template<auto, auto, auto, typename> typename C, uint16_t backingStoreSize, byte numAddressBits, byte numOffsetBits, typename T, bool debugMode = false>
+template<template<auto, auto, auto, typename, bool> typename C, uint16_t backingStoreSize, byte numAddressBits, byte numOffsetBits, typename T, bool debugMode = false>
 using Cache_t = Cache<C, backingStoreSize, numAddressBits, numOffsetBits, T, debugMode>;
 
-template<template<auto, auto, auto, typename> typename C, uint16_t backingStoreSize, byte numAddressBits, byte numOffsetBits, typename T, bool debugMode = false>
+template<template<auto, auto, auto, typename, bool> typename C, uint16_t backingStoreSize, byte numAddressBits, byte numOffsetBits, typename T, bool debugMode = false>
 using CacheInstance_t = typename Cache_t<C, backingStoreSize, numAddressBits, numOffsetBits, T, debugMode>::UnderlyingCache_t;
 
 #endif //SXCHIPSET_SINGLEPOOLCACHE_H
