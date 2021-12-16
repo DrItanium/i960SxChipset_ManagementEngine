@@ -34,13 +34,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "CacheEntry.h"
 #include "ProcessorSerializer.h"
 
-template<template<auto, auto, auto, typename> typename C, uint16_t numEntries, byte numAddressBits, byte numOffsetBits, typename T>
+template<template<auto, auto, auto, typename, bool> typename C, uint16_t numEntries, byte numAddressBits, byte numOffsetBits, typename T, bool debugMode = false>
 class SinglePoolCache {
 private:
-    using FakeCacheType = C<getNumberOfBitsForNumberOfEntries(numEntries), numAddressBits, numOffsetBits, T>;
+    using FakeCacheType = C<getNumberOfBitsForNumberOfEntries(numEntries), numAddressBits, numOffsetBits, T, debugMode>;
 public:
     static constexpr auto NumCacheWays = FakeCacheType::NumberOfWays;
-    using CacheWay = C<getNumberOfBitsForNumberOfEntries(numEntries/NumCacheWays), numAddressBits, numOffsetBits, T>;
+    using CacheWay = C<getNumberOfBitsForNumberOfEntries(numEntries/NumCacheWays), numAddressBits, numOffsetBits, T, debugMode>;
     static constexpr auto WayMask = CacheWay::WayMask;
     static constexpr auto MaximumNumberOfEntries = numEntries;
     static constexpr auto ActualNumberOfEntries = MaximumNumberOfEntries / CacheWay :: NumberOfWays;
@@ -56,7 +56,7 @@ public:
     }
     [[nodiscard]] CacheEntry& getLine(const TaggedAddress& theAddress) noexcept {
         // only align if we need to reset the chip
-        if constexpr (TargetBoard::onType3()) {
+        if constexpr (debugMode) {
             Serial.print(F("Address Decomp: 0x"));
             Serial.print(theAddress.getRest(), HEX);
             Serial.print(F(", 0x"));
@@ -114,13 +114,14 @@ template<template<auto, auto, auto, typename> typename C,
          uint16_t backingStoreSize,
          byte numAddressBits,
          byte numOffsetBits,
-         typename T>
+         typename T,
+         bool debugMode = false>
 struct Cache {
 public:
     static constexpr auto NumOffsetBits = numOffsetBits;
     static constexpr auto NumBackingStoreBytes = backingStoreSize;
     static constexpr auto TotalEntryCount = NumBackingStoreBytes/ pow2(NumOffsetBits);
-    using UnderlyingCache_t = SinglePoolCache<C, TotalEntryCount, numAddressBits, numOffsetBits, T>;
+    using UnderlyingCache_t = SinglePoolCache<C, TotalEntryCount, numAddressBits, numOffsetBits, T, debugMode>;
     using CacheLine = typename UnderlyingCache_t::CacheEntry;
     static constexpr auto CacheEntryMask = CacheLine::CacheEntryMask;
     static constexpr auto NumWordsCached = CacheLine::NumWordsCached;
@@ -139,10 +140,10 @@ private:
     static inline UnderlyingCache_t theCache_;
 };
 
-template<template<auto, auto, auto, typename> typename C, uint16_t backingStoreSize, byte numAddressBits, byte numOffsetBits, typename T>
-using Cache_t = Cache<C, backingStoreSize, numAddressBits, numOffsetBits, T>;
+template<template<auto, auto, auto, typename> typename C, uint16_t backingStoreSize, byte numAddressBits, byte numOffsetBits, typename T, bool debugMode = false>
+using Cache_t = Cache<C, backingStoreSize, numAddressBits, numOffsetBits, T, debugMode>;
 
-template<template<auto, auto, auto, typename> typename C, uint16_t backingStoreSize, byte numAddressBits, byte numOffsetBits, typename T>
-using CacheInstance_t = typename Cache_t<C, backingStoreSize, numAddressBits, numOffsetBits, T>::UnderlyingCache_t;
+template<template<auto, auto, auto, typename> typename C, uint16_t backingStoreSize, byte numAddressBits, byte numOffsetBits, typename T, bool debugMode = false>
+using CacheInstance_t = typename Cache_t<C, backingStoreSize, numAddressBits, numOffsetBits, T, debugMode>::UnderlyingCache_t;
 
 #endif //SXCHIPSET_SINGLEPOOLCACHE_H

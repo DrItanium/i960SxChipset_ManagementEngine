@@ -5,7 +5,8 @@
 #ifndef SXCHIPSET_TAGGEDCACHEADDRESS_H
 #define SXCHIPSET_TAGGEDCACHEADDRESS_H
 #include "MCUPlatform.h"
-template<byte tagBits, byte totalBits = 32, byte offsetBits = 4>
+#include "type_traits.h"
+template<byte tagBits, byte totalBits = 32, byte offsetBits = 4, bool debugMode = false>
 union TaggedAddress {
     static constexpr auto NumLowestBits = offsetBits;
     static constexpr auto NumTagBits = tagBits;
@@ -13,19 +14,11 @@ union TaggedAddress {
     static constexpr auto MaximumAddressSize = totalBits;
     static_assert((NumLowestBits + NumTagBits + NumRestBits) == MaximumAddressSize, "Too many or too few bits for this given tagged address!");
     static_assert((MaximumAddressSize >= 26) && (MaximumAddressSize <= 32), "Addresses cannot be smaller than 26 bits!");
-#ifdef ARDUINO_AVR_ATmega1284
-    using TagType = ClosestBitValue_t<NumTagBits>;
-    using RestType = ClosestBitValue_t<NumRestBits>;
-    using LowerType = ClosestBitValue_t<NumLowestBits>;
-    using PSRAMAddressType = uint24_t;
-    using PSRAMIndexType = byte;
-#else
-    using TagType = Address;
-    using RestType = Address;
-    using LowerType = Address;
-    using PSRAMAddressType = Address;
-    using PSRAMIndexType = Address;
-#endif
+    using TagType = conditional_t<TargetBoard::onAtmega1284p(), ClosestBitValue_t<NumTagBits>, Address>;
+    using RestType = conditional_t<TargetBoard::onAtmega1284p(), ClosestBitValue_t<NumRestBits>, Address>;
+    using LowerType = conditional_t<TargetBoard::onAtmega1284p(), ClosestBitValue_t<NumLowestBits>, Address>;
+    using PSRAMAddressType = conditional_t<TargetBoard::onAtmega1284p(), uint24_t, Address>;
+    using PSRAMIndexType = conditional_t<TargetBoard::onAtmega1284p(), byte, Address>;
     constexpr explicit TaggedAddress(Address value = 0) noexcept : base(value) { }
     constexpr explicit TaggedAddress(RestType key, TagType tag, LowerType offset = 0) noexcept : lowest(offset), tagIndex(tag), rest(key) { }
     void clear() noexcept { base = 0; }
