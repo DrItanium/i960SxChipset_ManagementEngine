@@ -74,7 +74,7 @@ static constexpr byte BitMaskTable_Byte[8] {
         0b1000'0000,
 };
 
-constexpr byte pow2(byte value) noexcept {
+constexpr uint64_t pow2(uint64_t value) noexcept {
     if (value == 0) {
         return 1;
     } else {
@@ -82,23 +82,73 @@ constexpr byte pow2(byte value) noexcept {
     }
 }
 
-static constexpr byte numberOfBitsForCount(uint16_t count) noexcept {
+static constexpr byte numberOfBitsForCount(uint64_t count) noexcept {
     switch (count) {
-        case 2: return 1;
-        case 4: return 2;
-        case 8: return 3;
-        case 16: return 4;
-        case 32: return 5;
-        case 64: return 6;
-        case 128: return 7;
-        case 256: return 8;
-        case 512: return 9;
-        case 1024: return 10;
-        case 2048: return 11;
-        case 4096: return 12;
-        case 8192: return 13;
-        case 16384: return 14;
-        case 32768: return 15;
+#define X(offset) case pow2(offset): return offset
+        X(1);
+        X(2);
+        X(3);
+        X(4);
+        X(5);
+        X(6);
+        X(7);
+        X(8);
+        X(9);
+        X(10);
+        X(11);
+        X(12);
+        X(13);
+        X(14);
+        X(15);
+        X(16);
+        X(17);
+        X(18);
+        X(19);
+        X(20);
+        X(21);
+        X(22);
+        X(23);
+        X(24);
+        X(25);
+        X(26);
+        X(27);
+        X(28);
+        X(29);
+        X(30);
+        X(31);
+        X(32);
+        X(33);
+        X(34);
+        X(35);
+        X(36);
+        X(37);
+        X(38);
+        X(39);
+        X(40);
+        X(41);
+        X(42);
+        X(43);
+        X(44);
+        X(45);
+        X(46);
+        X(47);
+        X(48);
+        X(49);
+        X(50);
+        X(51);
+        X(52);
+        X(53);
+        X(54);
+        X(55);
+        X(56);
+        X(57);
+        X(58);
+        X(59);
+        X(60);
+        X(61);
+        X(62);
+        X(63);
+#undef X
         default: return 0;
     }
 }

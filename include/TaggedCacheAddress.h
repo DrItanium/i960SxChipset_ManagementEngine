@@ -38,7 +38,7 @@ union TaggedAddress {
     }
     [[nodiscard]] bool restEqual(TaggedAddress other) const noexcept { return getRest() == other.getRest(); }
 private:
-    Address base;
+    AddressType base;
     struct {
         LowerType lowest : NumLowestBits;
         TagType tagIndex : NumTagBits;
@@ -48,6 +48,6 @@ private:
         uint24_t psramIndex : 23;
         byte offset : 3;
     };
-    byte bytes_[4];
+    byte bytes_[sizeof(AddressType)];
 };
 #endif //SXCHIPSET_TAGGEDCACHEADDRESS_H
