@@ -16,6 +16,7 @@ constexpr auto HLDA960 = PIN_PF2;
 constexpr auto HOLD960 = PIN_PF3;
 constexpr auto WAITBOOT960 = PIN_PF4;
 constexpr auto FAIL960 = PIN_PF5;
+constexpr auto DEN = PIN_PD6;
 constexpr auto SYSTEMBOOT = PIN_PD7;
 // this pin is responsible for allowing the 
 constexpr auto INT0_960 = PIN_PE0;
@@ -46,29 +47,38 @@ void setup() {
     digitalWrite(Reset960, LOW);
     pinMode(WAITBOOT960, INPUT_PULLUP);
     delay(2000);
+    pinMode(HLDA960, INPUT);
+    pinMode(DEN, INPUT);
+    pinMode(FAIL960, INPUT);
     // wait two seconds to give the other device time to set stuff up
     pinMode(LOCK960, OUTPUT);
-    digitalWrite(LOCK960, HIGH);
-    pinMode(HLDA960, INPUT);
     pinMode(HOLD960, OUTPUT);
-    digitalWrite(HOLD960, LOW);
     pinMode(INT0_960, OUTPUT);
-    digitalWrite(INT0_960, HIGH);
     pinMode(INT1_960, OUTPUT);
-    digitalWrite(INT1_960, LOW);
     pinMode(INT2_960, OUTPUT);
-    digitalWrite(INT2_960, LOW);
     pinMode(INT3_960, OUTPUT);
-    digitalWrite(INT3_960, HIGH);
-    pinMode(FAIL960, INPUT);
     pinMode(SYSTEMBOOT, OUTPUT);
+    digitalWrite(LOCK960, HIGH);
+    digitalWrite(HOLD960, LOW);
+    digitalWrite(INT0_960, HIGH);
+    digitalWrite(INT1_960, LOW);
+    digitalWrite(INT2_960, LOW);
+    digitalWrite(INT3_960, HIGH);
     digitalWrite(SYSTEMBOOT, LOW);
     // just poll until we are let through (aka this value is high)
     while (digitalRead(WAITBOOT960) == LOW);
     digitalWrite(Reset960, HIGH);
 
-    while (digitalRead(FAIL960) == LOW);
-    while (digitalRead(FAIL960) == HIGH);
+    while (digitalRead(FAIL960) == LOW) {
+        if (digitalRead(DEN) == LOW) {
+            break;
+        }
+    }
+    while (digitalRead(FAIL960) == HIGH) {
+        if (digitalRead(DEN) == LOW) {
+            break;
+        }
+    }
     digitalWrite(SYSTEMBOOT, HIGH);
 }
 
