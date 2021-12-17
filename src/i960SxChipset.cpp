@@ -526,7 +526,6 @@ void setup() {
     // Make sure we also divide the 120 Mhz signal by 6 to do this
     pinMode(i960Pinout::CLK2, OUTPUT);
     digitalWrite(i960Pinout::CLK2, LOW);
-#if 0
 
     GCLK->GENCTRL[3].reg = GCLK_GENCTRL_DIV(6) |
                            GCLK_GENCTRL_IDC |
@@ -537,7 +536,6 @@ void setup() {
     // now we need to connect this clock source to PA17/36
     PORT->Group[g_APinDescription[static_cast<int>(i960Pinout::CLK2)].ulPort].PINCFG[g_APinDescription[static_cast<int>(i960Pinout::CLK2)].ulPin].bit.PMUXEN = 1;
     PORT->Group[g_APinDescription[static_cast<int>(i960Pinout::CLK2)].ulPort].PMUX[g_APinDescription[static_cast<int>(i960Pinout::CLK2)].ulPin >> 1].reg |= PORT_PMUX_PMUXO(MUX_PA17M_GCLK_IO3);
-#endif
     // and we are done :D
     // make sure that the 4809 has enough time and also make sure that the i960 has enough time to undegrade itself!
     delay(1);
