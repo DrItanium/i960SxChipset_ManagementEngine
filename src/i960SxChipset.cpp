@@ -510,7 +510,7 @@ void waitForBootSignal() noexcept {
     }
 }
 void setupCLK2() noexcept {
-#if 0
+#if CHIPSET_TYPE3
     // setup PA17/36 to be a 20mhz clock source based off of pll0 which is the same source as the main cpu core
     // testing with an oscilloscope shows that they are synchronized despite being on independent clock channels
     // hopefully, GCLK3 is a free channel, only time will tell
@@ -529,7 +529,6 @@ void setupCLK2() noexcept {
     PORT->Group[g_APinDescription[static_cast<int>(i960Pinout::CLK2)].ulPort].PINCFG[g_APinDescription[static_cast<int>(i960Pinout::CLK2)].ulPin].bit.PMUXEN = 1;
     PORT->Group[g_APinDescription[static_cast<int>(i960Pinout::CLK2)].ulPort].PMUX[g_APinDescription[static_cast<int>(i960Pinout::CLK2)].ulPin >> 1].reg |= PORT_PMUX_PMUXO(MUX_PA17M_GCLK_IO3);
     // and we are done :D
-    /// @todo convert this from an output to an input source for timer purposes
 #endif
 }
 // the setup routine runs once when you press reset:
@@ -542,7 +541,7 @@ void setup() {
     pinMode(i960Pinout::Reset960, OUTPUT) ;
     digitalWrite<i960Pinout::Reset960, LOW>();
 #ifdef CHIPSET_TYPE3
-    // setupCLK2();
+    setupCLK2();
     // make sure that the 4809 has enough time and also make sure that the i960 has enough time to undegrade itself!
     delay(1);
     DigitalPin<i960Pinout::Reset4809>::deassertPin();
