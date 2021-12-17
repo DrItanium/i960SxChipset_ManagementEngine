@@ -639,6 +639,16 @@ public:
             default:
                 full32BitUpdate<offsetMask>();
                 updateTargetFunctions<inDebugMode>();
+                if constexpr (inDebugMode) {
+                    Serial.print(F("ADDRESS0: 0x"));
+                    Serial.println(address_.getWholeValue(), HEX);
+                    // put in a delay so we can test the results
+                    delayMicroseconds(2);
+                    full32BitUpdate<offsetMask>();
+                    updateTargetFunctions<inDebugMode>();
+                    Serial.print(F("ADDRESS1: 0x"));
+                    Serial.println(address_.getWholeValue(), HEX);
+                }
                 break;
         }
         if constexpr (inDebugMode) {

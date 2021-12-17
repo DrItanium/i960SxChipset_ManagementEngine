@@ -336,6 +336,7 @@ inline void invocationBody() noexcept {
         addressStart = false;
         while (!denStart);
         denStart = false;
+        delayMicroseconds(1);
     } else {
         while (DigitalPin<i960Pinout::DEN_>::isDeasserted());
     }
