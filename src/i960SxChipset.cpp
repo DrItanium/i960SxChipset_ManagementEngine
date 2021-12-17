@@ -96,11 +96,9 @@ constexpr auto NumAddressBits = NumAddressBitsForPSRAMCache;
 constexpr auto CacheLineSize = TargetBoard::getCacheLineSizeInBits();
 constexpr auto CacheSize = TargetBoard::getCacheSize();
 template<auto a, auto b, auto c, typename d, bool e>
-using CacheWayStyle = conditional_t<TargetBoard::onType2(),
-        conditional_t<UsePSRAMForType2,
-                EightWayRandPLRUCacheSet<a,b,c,d, e>,
-                SixteenWayLRUCacheWay<a,b,c,d, e>>,
-        EightWayRandPLRUCacheSet<a,b,c,d, e>>;
+using CacheWayStyle = conditional_t<TargetBoard::onType1(), EightWayRandPLRUCacheSet<a,b,c,d,e>,
+        conditional_t<TargetBoard::onType2(), conditional_t<UsePSRAMForType2, EightWayRandPLRUCacheSet<a,b,c,d, e>, SixteenWayLRUCacheWay<a,b,c,d, e>>,
+                conditional_t<TargetBoard::onType3(), SixteenWayLRUCacheWay<a, b, c, d, e>, EightWayRandPLRUCacheSet<a,b,c,d, e>>>>;
 
 //using L1Cache = CacheInstance_t<EightWayTreePLRUCacheSet, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
 //using L1Cache = CacheInstance_t<EightWayLRUCacheWay, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
@@ -314,7 +312,7 @@ inline void invocationBody() noexcept {
         addressStart = false;
         while (!denStart);
         denStart = false;
-        delayMicroseconds(1);
+        delayMicroseconds(2);
     } else {
         while (DigitalPin<i960Pinout::DEN_>::isDeasserted());
     }
