@@ -62,6 +62,7 @@ constexpr auto MaximumNumberOfOpenFiles = 16;
 constexpr auto CompileInAddressDebuggingSupport = true;
 constexpr auto AddressDebuggingEnabledOnStartup = true;
 constexpr auto CompileInCacheSystemDebuggingSupport = true;
+constexpr auto CompileInExtendedDebugInformation = false;
 constexpr auto UsePSRAMForType2 = false;
 constexpr auto ValidateTransferDuringInstall = TargetBoard::onType3() || (TargetBoard::onType2() && UsePSRAMForType2);
 constexpr auto UseSingleChannelConfigurationForType2 = true;
@@ -180,7 +181,7 @@ inline void handleMemoryInterface() noexcept {
         // forward until we either hit the end of the cache line or blast is asserted first (both are valid states)
         for (byte i = ProcessorInterface::getCacheOffsetEntry(); i < MaximumNumberOfWordsTransferrableInASingleTransaction; ++i) {
             auto outcome = theEntry.get(i);
-            if constexpr (inDebugMode) {
+            if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
                 Serial.print(F("\tOffset: 0x")) ;
                 Serial.print(i << 1, HEX);
                 Serial.print(F(" (")) ;
@@ -207,7 +208,7 @@ inline void handleMemoryInterface() noexcept {
         // Also the manual states that the processor cannot burst across 16-byte boundaries so :D.
         for (byte i = ProcessorInterface::getCacheOffsetEntry(); i < MaximumNumberOfWordsTransferrableInASingleTransaction; ++i) {
             auto bits = ProcessorInterface::getDataBits();
-            if constexpr (inDebugMode) {
+            if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
                 Serial.print(F("\tOffset: 0x")) ;
                 Serial.print(i << 1, HEX);
                 Serial.print(F(" (")) ;
@@ -246,7 +247,7 @@ inline void handleExternalDeviceRequest() noexcept {
             auto result = T::read(ProcessorInterface::getPageIndex(),
                                   ProcessorInterface::getPageOffset(),
                                   ProcessorInterface::getStyle());
-            if constexpr (inDebugMode) {
+            if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
                 Serial.print(F("\tPage Index: 0x")) ;
                 Serial.println(ProcessorInterface::getPageIndex(), HEX);
                 Serial.print(F("\tPage Offset: 0x")) ;
@@ -267,7 +268,7 @@ inline void handleExternalDeviceRequest() noexcept {
         ProcessorInterface::setupDataLinesForWrite();
         for (;;) {
             auto dataBits = ProcessorInterface::getDataBits();
-            if constexpr (inDebugMode) {
+            if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
                 Serial.print(F("\tPage Index: 0x")) ;
                 Serial.println(ProcessorInterface::getPageIndex(), HEX);
                 Serial.print(F("\tPage Offset: 0x")) ;

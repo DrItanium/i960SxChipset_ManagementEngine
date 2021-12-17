@@ -575,7 +575,7 @@ private:
         }
     }
 public:
-    template<bool inDebugMode, byte offsetMask, bool useInterrupts = true>
+    template<bool inDebugMode, byte offsetMask, bool useInterrupts = true, int debugLevel = 0>
     static void newDataCycle() noexcept {
         switch (getUpdateKind<useInterrupts>()) {
             case 0b0001:
@@ -639,7 +639,7 @@ public:
             default:
                 full32BitUpdate<offsetMask>();
                 updateTargetFunctions<inDebugMode>();
-                if constexpr (inDebugMode) {
+                if constexpr (inDebugMode && (debugLevel > 0)) {
                     Serial.print(F("ADDRESS0: 0x"));
                     Serial.println(address_.getWholeValue(), HEX);
                     // put in a delay so we can test the results
