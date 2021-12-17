@@ -510,7 +510,7 @@ void waitForBootSignal() noexcept {
     }
 }
 void setupCLK2() noexcept {
-#ifdef CHIPSET_TYPE3
+#if 0
     // setup PA17/36 to be a 20mhz clock source based off of pll0 which is the same source as the main cpu core
     // testing with an oscilloscope shows that they are synchronized despite being on independent clock channels
     // hopefully, GCLK3 is a free channel, only time will tell
