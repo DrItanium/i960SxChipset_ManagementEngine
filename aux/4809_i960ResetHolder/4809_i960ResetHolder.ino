@@ -27,6 +27,46 @@ constexpr auto INT0_960 = PIN_PE0;
 constexpr auto INT1_960 = PIN_PE1;
 constexpr auto INT2_960 = PIN_PE2;
 constexpr auto INT3_960 = PIN_PE3;
+volatile bool denTriggered = false;
+volatile bool asTriggered = false;
+volatile bool blastTriggered = false;
+volatile bool readyTriggered = false;
+void
+handleASTrigger() noexcept {
+    asTriggered = true;
+}
+void
+handleDENTrigger() noexcept {
+    denTriggered = true;
+}
+
+void
+handleBLASTTrigger() noexcept {
+    blastTriggered = true;
+}
+void
+handleReadyTrigger() noexcept {
+    readyTriggered = true;
+}
+[[noreturn]] void
+handleChecksumFail() noexcept {
+    // keep an eye on the FAIL960 pin, if we run into an issue then tell the chipset this
+    digitalWrite(SYSTEMBOOT, LOW);
+    while (true) {
+        delay(1000);
+    }
+}
+template<decltype(READY960) pin, decltype(LOW) to = LOW, decltype(HIGH) from = HIGH>
+inline void
+pulse() noexcept {
+   digitalWrite(pin, to);
+   digitalWrite(pin, from);
+}
+void
+informCPU() noexcept {
+    // pulse it since it will automatically be synchronized and detected
+    pulse<READY960, LOW, HIGH>();
+}
 void setup() {
     byte clkBits = 0;
     if constexpr (EnableExternalClockSource) {
@@ -57,6 +97,7 @@ void setup() {
     pinMode(AS, INPUT);
     pinMode(BLAST, INPUT);
     pinMode(MCU_READY, INPUT);
+
     pinMode(READY960, OUTPUT);
     pinMode(LOCK960, OUTPUT);
     pinMode(HOLD960, OUTPUT);
@@ -74,31 +115,39 @@ void setup() {
     digitalWrite(INT3_960, HIGH);
     digitalWrite(SYSTEMBOOT, LOW);
     digitalWrite(READY960, HIGH);
-    // just poll until we are let through (aka this value is high)
+    // these interrupts are used by the boot process and such
+    attachInterrupt(digitalPinToInterrupt(DEN), handleDENTrigger, FALLING);
+    attachInterrupt(digitalPinToInterrupt(AS), handleASTrigger, FALLING);
+    attachInterrupt(digitalPinToInterrupt(BLAST), handleBLASTTrigger, FALLING);
+    attachInterrupt(digitalPinToInterrupt(MCU_READY), handleREADYTrigger, FALLING);
     while (digitalRead(WAITBOOT960) == LOW);
     digitalWrite(Reset960, HIGH);
 
     while (digitalRead(FAIL960) == LOW) {
-        if (digitalRead(DEN) == LOW) {
+        if (asTriggered && denTriggered) {
             break;
         }
     }
     while (digitalRead(FAIL960) == HIGH) {
-        if (digitalRead(DEN) == LOW) {
+        if (asTriggered && denTriggered) {
             break;
         }
     }
     digitalWrite(SYSTEMBOOT, HIGH);
+    // after this point, if FAIL960 ever goes from LOW to HIGH again, then we have checksum failed!
+    attachInterrupt(digitalPinToInterrupt(FAIL960), handleChecksumFail, RISING)
 }
 
 
 void loop() {
-    // keep an eye on the FAIL960 pin, if we run into an issue then tell the chipset this
+    // okay so we need to wait for AS and DEN to go low
+    while (!asTriggered);
+    asTriggered = false;
+    while (!denTriggered);
+    denTriggered = false;
+    // this would tell the chipset we have a new transaction, do a pulse for this
+    // okay now we need to emulate the wait loop
+    do {
 
-    if (digitalRead(FAIL960) == HIGH) {
-        digitalWrite(SYSTEMBOOT, LOW);
-        while (true) {
-            delay(1);
-        }
-    }
+    } while (true);
 }
