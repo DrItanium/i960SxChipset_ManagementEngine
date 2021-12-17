@@ -179,44 +179,61 @@ class MCUConfiguration final {
 public:
     constexpr MCUConfiguration(uint32_t sramSize,
                                uint32_t ioExpanderSpeedCap,
-                               uint32_t psramSpeedCap
+                               uint32_t psramSpeedCap,
+                               uint32_t numBitsPerCacheLine,
+                               uint32_t cacheSizeInBytes
     ) noexcept : sramAmount_(sramSize),
                  ioExpanderPeripheralSpeed_(ioExpanderSpeedCap > 10_MHz ? 10_MHz : ioExpanderSpeedCap),
-                 psramSpeedCap_(psramSpeedCap > 33_MHz ? 33_MHz : psramSpeedCap) { }
+                 psramSpeedCap_(psramSpeedCap > 33_MHz ? 33_MHz : psramSpeedCap),
+                 numBitsPerCacheLine_(numBitsPerCacheLine),
+                 cacheSizeInBytes_(cacheSizeInBytes)
+                 {}
 
     [[nodiscard]] constexpr uint32_t getSramAmount() const noexcept { return sramAmount_; }
     [[nodiscard]] constexpr auto runIOExpanderSPIInterfaceAt() const noexcept  { return ioExpanderPeripheralSpeed_; }
     [[nodiscard]] constexpr auto runPSRAMAt() const noexcept { return psramSpeedCap_; }
+    [[nodiscard]] constexpr auto getNumBitsPerCacheLine() const noexcept { return numBitsPerCacheLine_; }
+    [[nodiscard]] constexpr auto getCacheSizeInBytes() const noexcept { return cacheSizeInBytes_; }
 private:
     uint32_t sramAmount_;
     uint32_t ioExpanderPeripheralSpeed_;
     uint32_t psramSpeedCap_;
+    uint32_t numBitsPerCacheLine_;
+    uint32_t cacheSizeInBytes_;
 };
 template<TargetMCU mcu>
 constexpr MCUConfiguration BoardDescription = {
         0,
         10_MHz,
-        8_MHz
+        8_MHz,
+        6, // 64 bytes
+        8192,
 };
 template<>
 constexpr MCUConfiguration BoardDescription<TargetMCU::ATmega1284p_Type1> = {
         16_KB,
         10_MHz,
-        5_MHz // due to the current design, we have to run the psram at 5 Mhz
+        5_MHz, // due to the current design, we have to run the psram at 5 Mhz
+        6, // 64-bytes
+        8192,
 };
 
 template<>
 constexpr MCUConfiguration BoardDescription<TargetMCU::ATmega1284p_Type2> = {
         16_KB,
         10_MHz,
-        10_MHz // due to the current design, we have to run the psram at 5 Mhz
+        10_MHz, // due to the current design, we have to run the psram at 5 Mhz
+        6,
+        8192,
 };
 
 template<>
 constexpr MCUConfiguration BoardDescription<TargetMCU::GrandCentralM4_Type3> = {
         256_KB,
         8_MHz, // although 10_MHz is the max, the clock rate of 120MHz makes the clock rate actually 12MHz, I know 8mhz works
-        33_MHz // due to the current design, we have to run the psram at 5 Mhz
+        33_MHz, // due to the current design, we have to run the psram at 5 Mhz
+        6,
+        16384,
 };
 
 class TargetBoard {
@@ -253,6 +270,8 @@ public:
     [[nodiscard]] static constexpr auto getSRAMAmountInBytes() noexcept { return BoardDescription<getMCUTarget()>.getSramAmount(); }
     [[nodiscard]] static constexpr auto runIOExpanderSPIInterfaceAt() noexcept { return BoardDescription<getMCUTarget()>.runIOExpanderSPIInterfaceAt(); }
     [[nodiscard]] static constexpr auto runPSRAMAt() noexcept { return BoardDescription<getMCUTarget()>.runPSRAMAt(); }
+    [[nodiscard]] static constexpr auto getCacheSize() noexcept { return BoardDescription<getMCUTarget()>.getCacheSizeInBytes(); }
+    [[nodiscard]] static constexpr auto getCacheLineSizeInBits() noexcept { return BoardDescription<getMCUTarget()>.getNumBitsPerCacheLine(); }
 public:
     TargetBoard() = delete;
     ~TargetBoard() = delete;
