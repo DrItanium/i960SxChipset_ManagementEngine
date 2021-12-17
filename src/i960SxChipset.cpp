@@ -541,7 +541,7 @@ void setup() {
     pinMode(i960Pinout::Reset960, OUTPUT) ;
     digitalWrite<i960Pinout::Reset960, LOW>();
 #ifdef CHIPSET_TYPE3
-    setupCLK2();
+    //setupCLK2();
     // make sure that the 4809 has enough time and also make sure that the i960 has enough time to undegrade itself!
     delay(1);
     DigitalPin<i960Pinout::Reset4809>::deassertPin();
