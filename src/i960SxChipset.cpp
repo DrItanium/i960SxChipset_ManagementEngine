@@ -116,10 +116,22 @@ L1Cache theCache;
 
 
 
+volatile bool addressStart = false;
+volatile bool denStart = false;
+void addressCycleStart() noexcept {
+    addressStart = true;
+}
+void dataCycleStart() noexcept {
+    denStart = true;
+}
 
 
 [[nodiscard]] bool informCPU() noexcept {
     // you must scan the BLAST_ pin before pulsing ready, the cpu will change blast for the next transaction
+    if constexpr (TargetBoard::onType3()) {
+        denStart = false;
+        addressStart = false;
+    }
     auto isBurstLast = DigitalPin<i960Pinout::BLAST_>::isAsserted();
     pulse<i960Pinout::Ready>();
     return isBurstLast;
@@ -294,14 +306,6 @@ inline void handleExternalDeviceRequest() noexcept {
     if constexpr (TargetBoard::onType3()) {
         delayMicroseconds(2);
     }
-}
-volatile bool addressStart = false;
-volatile bool denStart = false;
-void addressCycleStart() noexcept {
-   addressStart = true;
-}
-void dataCycleStart() noexcept {
-    denStart = true;
 }
 
 template<bool inDebugMode, bool useInterrupts>
