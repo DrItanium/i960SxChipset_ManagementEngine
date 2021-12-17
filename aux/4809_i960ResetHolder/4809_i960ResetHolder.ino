@@ -16,6 +16,10 @@ constexpr auto HLDA960 = PIN_PF2;
 constexpr auto HOLD960 = PIN_PF3;
 constexpr auto WAITBOOT960 = PIN_PF4;
 constexpr auto FAIL960 = PIN_PF5;
+constexpr auto MCU_READY = PIN_PD2;
+constexpr auto READY960 = PIN_PD3;
+constexpr auto BLAST = PIN_PD4;
+constexpr auto AS = PIN_PD5;
 constexpr auto DEN = PIN_PD6;
 constexpr auto SYSTEMBOOT = PIN_PD7;
 // this pin is responsible for allowing the 
@@ -50,7 +54,10 @@ void setup() {
     pinMode(HLDA960, INPUT);
     pinMode(DEN, INPUT);
     pinMode(FAIL960, INPUT);
-    // wait two seconds to give the other device time to set stuff up
+    pinMode(AS, INPUT);
+    pinMode(BLAST, INPUT);
+    pinMode(MCU_READY, INPUT);
+    pinMode(READY960, OUTPUT);
     pinMode(LOCK960, OUTPUT);
     pinMode(HOLD960, OUTPUT);
     pinMode(INT0_960, OUTPUT);
@@ -58,6 +65,7 @@ void setup() {
     pinMode(INT2_960, OUTPUT);
     pinMode(INT3_960, OUTPUT);
     pinMode(SYSTEMBOOT, OUTPUT);
+
     digitalWrite(LOCK960, HIGH);
     digitalWrite(HOLD960, LOW);
     digitalWrite(INT0_960, HIGH);
@@ -65,6 +73,7 @@ void setup() {
     digitalWrite(INT2_960, LOW);
     digitalWrite(INT3_960, HIGH);
     digitalWrite(SYSTEMBOOT, LOW);
+    digitalWrite(READY960, HIGH);
     // just poll until we are let through (aka this value is high)
     while (digitalRead(WAITBOOT960) == LOW);
     digitalWrite(Reset960, HIGH);
