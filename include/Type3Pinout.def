@@ -3,7 +3,7 @@
    BLAST_ = 28,
    DEN_ = 23,
    W_R_ = 37,
-   BE0 = 36,
+   BE0 = 30,
    BE1 = 35,
    Reset960 = 17,
    Ready = 16,
@@ -20,3 +20,4 @@
    SD_EN = SDCARD_CS,
    AS_ = 26,
     Int0_ = Count, // not connected
+    CLK2 = 36, // placeholder to make sure that we know it exists

@@ -519,7 +519,27 @@ void setup() {
     pinMode(i960Pinout::Reset960, OUTPUT) ;
     digitalWrite<i960Pinout::Reset960, LOW>();
 #ifdef CHIPSET_TYPE3
-    // make sure that the 4809 has enough time
+    // setup PA17/36 to be a 20mhz clock source based off of pll0 which is the same source as the main cpu core
+    // testing with an oscilloscope shows that they are synchronized despite being on independent clock channels
+    // hopefully, GCLK3 is a free channel, only time will tell
+    //
+    // Make sure we also divide the 120 Mhz signal by 6 to do this
+    pinMode(i960Pinout::CLK2, OUTPUT);
+    digitalWrite(i960Pinout::CLK2, LOW);
+#if 0
+
+    GCLK->GENCTRL[3].reg = GCLK_GENCTRL_DIV(6) |
+                           GCLK_GENCTRL_IDC |
+                           GCLK_GENCTRL_GENEN |
+                           GCLK_GENCTRL_OE |
+                           GCLK_GENCTRL_SRC_DPLL0;
+    while(GCLK->SYNCBUSY.bit.GENCTRL3);
+    // now we need to connect this clock source to PA17/36
+    PORT->Group[g_APinDescription[static_cast<int>(i960Pinout::CLK2)].ulPort].PINCFG[g_APinDescription[static_cast<int>(i960Pinout::CLK2)].ulPin].bit.PMUXEN = 1;
+    PORT->Group[g_APinDescription[static_cast<int>(i960Pinout::CLK2)].ulPort].PMUX[g_APinDescription[static_cast<int>(i960Pinout::CLK2)].ulPin >> 1].reg |= PORT_PMUX_PMUXO(MUX_PA17M_GCLK_IO3);
+#endif
+    // and we are done :D
+    // make sure that the 4809 has enough time and also make sure that the i960 has enough time to undegrade itself!
     delay(1);
     DigitalPin<i960Pinout::Reset4809>::deassertPin();
 #endif
