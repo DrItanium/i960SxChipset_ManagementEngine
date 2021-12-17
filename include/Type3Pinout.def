@@ -20,4 +20,3 @@
    SD_EN = SDCARD_CS,
    AS_ = 26,
     Int0_ = Count, // not connected
-    CLK2 = 18, // placeholder to make sure that we know it exists
