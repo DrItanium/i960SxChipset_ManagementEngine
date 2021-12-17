@@ -523,7 +523,7 @@ void setupCLK2() noexcept {
                            GCLK_GENCTRL_IDC |
                            GCLK_GENCTRL_GENEN |
                            GCLK_GENCTRL_OE |
-                           GCLK_GENCTRL_SRC_DPLL0;
+                           GCLK_GENCTRL_SRC_GCLKIN;
     while(GCLK->SYNCBUSY.bit.GENCTRL6);
     // now we need to connect this clock source to PA17/36
     PORT->Group[g_APinDescription[static_cast<int>(i960Pinout::CLK2)].ulPort].PINCFG[g_APinDescription[static_cast<int>(i960Pinout::CLK2)].ulPin].bit.PMUXEN = 1;
