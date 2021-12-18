@@ -93,7 +93,9 @@ struct DigitalPin {
         [[gnu::always_inline]] inline static auto read() noexcept { return digitalReadFast(pin); } \
         [[gnu::always_inline]] inline static bool isAsserted() noexcept { return read() == getAssertionState(); } \
         [[gnu::always_inline]] inline static bool isDeasserted() noexcept { return read() == getDeassertionState(); } \
-        [[gnu::always_inline]] static void configure() noexcept { pinMode(pin, INPUT); } \
+        [[gnu::always_inline]] static void configure() noexcept { pinMode(pin, INPUT); }     \
+        [[gnu::always_inline]] inline static auto isLow() noexcept { return read() == LOW; } \
+        [[gnu::always_inline]] inline static auto isHigh() noexcept { return read() == HIGH; } \
     }
 
 #define DefInputPullupPin(pin, asserted, deasserted) \
@@ -117,6 +119,8 @@ struct DigitalPin {
         [[gnu::always_inline]] inline static bool isAsserted() noexcept { return read() == getAssertionState(); } \
         [[gnu::always_inline]] inline static bool isDeasserted() noexcept { return read() == getDeassertionState(); } \
         [[gnu::always_inline]] static void configure() noexcept { pinMode(pin, INPUT_PULLUP); } \
+        [[gnu::always_inline]] inline static auto isLow() noexcept { return read() == LOW; } \
+        [[gnu::always_inline]] inline static auto isHigh() noexcept { return read() == HIGH; } \
     }
 
 DefInputPin(DEN, LOW, HIGH);
@@ -146,6 +150,12 @@ DefInputPullupPin(WAITBOOT960, LOW, HIGH);
 #undef DefOutputPin
 #undef DefInputPullupPin
 
+template<decltype(WAITBOOT960) pin>
+struct PinAsserter final {
+    static_assert(DigitalPin<pin>::isOutputPin(), "Pin asserting only works with output pins!");
+    PinAsserter() noexcept { DigitalPin<pin>::assertPin(); }
+    ~PinAsserter() noexcept { DigitalPin<pin>::deassertPin(); }
+};
 volatile bool denTriggered = false;
 volatile bool asTriggered = false;
 volatile bool readyTriggered = false;
@@ -193,18 +203,10 @@ triggerInt3() noexcept {
 bool
 informCPU() noexcept {
     // sample blast at this point, I can guarantee it accurate for this cycle
-    auto isBurstLast = DigitalPin<BLAST>::isAsserted();
+    bool isBurstLast = DigitalPin<BLAST>::isAsserted();
     // pulse ready since it will automatically be synchronized by the external hardware
     DigitalPin<READY960>::pulse();
     return isBurstLast;
-}
-template<decltype(WAITBOOT960) targetPin>
-inline bool isLow() noexcept {
-    return digitalReadFast(targetPin) == LOW;
-}
-template<decltype(WAITBOOT960) targetPin>
-inline bool isHigh() noexcept {
-    return digitalReadFast(targetPin) == HIGH;
 }
 void configureClockSource() noexcept {
     byte clkBits = 0;
@@ -226,62 +228,71 @@ void configureClockSource() noexcept {
             CCP = 0xD8;
     }
 }
+template<int ... pins>
+void configurePins() noexcept {
+    (DigitalPin<pins>::configure() , ...);
+}
+template<int ... pins>
+void deassertPins() noexcept {
+    (DigitalPin<pins>::deassertPin(), ...);
+}
 void setup() {
     configureClockSource();
     // always pull this low to start
     DigitalPin<Reset960>::configure();
-    DigitalPin<Reset960>::assertPin();
-    DigitalPin<WAITBOOT960> ::configure();
-    delay(2000);
-    Serial1.swap(1);
-    Serial1.begin(9600);
-    Serial1.println("Bringing everything up!");
-    DigitalPin<DEN>::configure();
-    DigitalPin<HLDA960>::configure();
-    DigitalPin<FAIL960>::configure();
-    DigitalPin<AS>::configure();
-    DigitalPin<BLAST>::configure();
-    DigitalPin<MCU_READY>::configure();
-    DigitalPin<READY960>::configure();
-    DigitalPin<LOCK960>::configure();
-    DigitalPin<HOLD960>::configure();
-    DigitalPin<INT0_960>::configure();
-    DigitalPin<INT1_960>::configure();
-    DigitalPin<INT2_960>::configure();
-    DigitalPin<INT3_960>::configure();
-    DigitalPin<SYSTEMBOOT>::configure();
-    DigitalPin<TRANSACTION_START>::configure();
-    DigitalPin<TRANSACTION_END>::configure();
-    DigitalPin<DO_CYCLE>::configure();
-    DigitalPin<BURST_NEXT>::configure();
+    {
+        PinAsserter<Reset960> holdI960InReset;
+        DigitalPin<WAITBOOT960>::configure();
+        delay(2000);
+        Serial1.swap(1);
+        Serial1.begin(9600);
+        Serial1.println("Bringing everything up!");
+        configurePins<DEN,
+                HLDA960,
+                FAIL960,
+                AS,
+                BLAST,
+                MCU_READY,
+                READY960,
+                LOCK960,
+                HOLD960,
+                INT0_960,
+                INT1_960,
+                INT2_960,
+                INT3_960,
+                SYSTEMBOOT,
+                TRANSACTION_START,
+                TRANSACTION_END,
+                DO_CYCLE,
+                BURST_NEXT>();
 
-    DigitalPin<BURST_NEXT>::deassertPin();
-    DigitalPin<DO_CYCLE>::deassertPin();
-    DigitalPin<TRANSACTION_START>::deassertPin();
-    DigitalPin<TRANSACTION_END>::deassertPin();
-    DigitalPin<LOCK960>::deassertPin();
-    DigitalPin<HOLD960>::deassertPin();
-    DigitalPin<INT0_960>::deassertPin();
-    DigitalPin<INT1_960>::deassertPin();
-    DigitalPin<INT2_960>::deassertPin();
-    DigitalPin<INT3_960>::deassertPin();
-    DigitalPin<SYSTEMBOOT>::deassertPin();
-    DigitalPin<READY960>::deassertPin();
-    // these interrupts are used by the boot process and such
-    Serial1.println("Setting up Interrupts");
-    attachInterrupt(digitalPinToInterrupt(DEN), handleDENTrigger, FALLING);
-    attachInterrupt(digitalPinToInterrupt(AS), handleASTrigger, FALLING);
-    attachInterrupt(digitalPinToInterrupt(MCU_READY), handleREADYTrigger, FALLING);
-    Serial1.println("Waiting for the chipset to be ready");
-    while (DigitalPin<WAITBOOT960>::isAsserted());
-    DigitalPin<Reset960>::deassertPin();
+        deassertPins<BURST_NEXT,
+                     DO_CYCLE,
+                     TRANSACTION_START,
+                     TRANSACTION_END,
+                     LOCK960,
+                     HOLD960,
+                     INT0_960,
+                     INT1_960,
+                     INT2_960,
+                     INT3_960,
+                     SYSTEMBOOT,
+                     READY960>();
+        // these interrupts are used by the boot process and such
+        Serial1.println("Setting up Interrupts");
+        attachInterrupt(digitalPinToInterrupt(DEN), handleDENTrigger, FALLING);
+        attachInterrupt(digitalPinToInterrupt(AS), handleASTrigger, FALLING);
+        attachInterrupt(digitalPinToInterrupt(MCU_READY), handleREADYTrigger, FALLING);
+        Serial1.println("Waiting for the chipset to be ready");
+        while (DigitalPin<WAITBOOT960>::isAsserted());
+    }
 
-    while (isLow<FAIL960>()) {
+    while (DigitalPin<FAIL960>::isLow()) {
         if (asTriggered && denTriggered) {
             break;
         }
     }
-    while (isHigh<FAIL960>()) {
+    while (DigitalPin<FAIL960>::isHigh()) {
         if (asTriggered && denTriggered) {
             break;
         }
