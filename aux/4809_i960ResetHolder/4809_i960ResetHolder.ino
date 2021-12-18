@@ -57,7 +57,7 @@ handleREADYTrigger() noexcept {
 [[noreturn]] void
 handleChecksumFail() noexcept {
     // keep an eye on the FAIL960 pin, if we run into an issue then tell the chipset this
-    digitalWrite(SYSTEMBOOT, LOW);
+    digitalWriteFast(SYSTEMBOOT, LOW);
     while (true) {
         delay(1000);
     }
@@ -65,8 +65,8 @@ handleChecksumFail() noexcept {
 template<decltype(READY960) pin, decltype(LOW) to = LOW, decltype(HIGH) from = HIGH>
 inline void
 pulse() noexcept {
-   digitalWrite(pin, to);
-   digitalWrite(pin, from);
+   digitalWriteFast(pin, to);
+   digitalWriteFast(pin, from);
 }
 void
 informCPU() noexcept {
@@ -94,9 +94,12 @@ void setup() {
     }
     // always pull this low to start
     pinMode(Reset960, OUTPUT);
-    digitalWrite(Reset960, LOW);
+    digitalWriteFast(Reset960, LOW);
     pinMode(WAITBOOT960, INPUT_PULLUP);
     delay(2000);
+    Serial1.swap(1);
+    Serial1.begin(9600);
+    Serial1.println("Bringing everything up!");
     pinMode(HLDA960, INPUT);
     pinMode(DEN, INPUT);
     pinMode(FAIL960, INPUT);
@@ -117,37 +120,38 @@ void setup() {
     pinMode(BURST_NEXT, OUTPUT);
     pinMode(TRANSACTION_END, OUTPUT);
 
-    digitalWrite(BURST_NEXT, HIGH);
-    digitalWrite(DO_CYCLE, HIGH);
-    digitalWrite(TRANSACTION_START, HIGH);
-    digitalWrite(TRANSACTION_END, HIGH);
-    digitalWrite(LOCK960, HIGH);
-    digitalWrite(HOLD960, LOW);
-    digitalWrite(INT0_960, HIGH);
-    digitalWrite(INT1_960, LOW);
-    digitalWrite(INT2_960, LOW);
-    digitalWrite(INT3_960, HIGH);
-    digitalWrite(SYSTEMBOOT, LOW);
-    digitalWrite(READY960, HIGH);
+    digitalWriteFast(BURST_NEXT, HIGH);
+    digitalWriteFast(DO_CYCLE, HIGH);
+    digitalWriteFast(TRANSACTION_START, HIGH);
+    digitalWriteFast(TRANSACTION_END, HIGH);
+    digitalWriteFast(LOCK960, HIGH);
+    digitalWriteFast(HOLD960, LOW);
+    digitalWriteFast(INT0_960, HIGH);
+    digitalWriteFast(INT1_960, LOW);
+    digitalWriteFast(INT2_960, LOW);
+    digitalWriteFast(INT3_960, HIGH);
+    digitalWriteFast(SYSTEMBOOT, LOW);
+    digitalWriteFast(READY960, HIGH);
     // these interrupts are used by the boot process and such
     attachInterrupt(digitalPinToInterrupt(DEN), handleDENTrigger, FALLING);
     attachInterrupt(digitalPinToInterrupt(AS), handleASTrigger, FALLING);
     attachInterrupt(digitalPinToInterrupt(BLAST), handleBLASTTrigger, FALLING);
     attachInterrupt(digitalPinToInterrupt(MCU_READY), handleREADYTrigger, FALLING);
-    while (digitalRead(WAITBOOT960) == LOW);
-    digitalWrite(Reset960, HIGH);
+    Serial1.println("WAITING FOR CHIPSET TO BE READY!");
+    while (digitalReadFast(WAITBOOT960) == LOW);
+    digitalWriteFast(Reset960, HIGH);
 
-    while (digitalRead(FAIL960) == LOW) {
+    while (digitalReadFast(FAIL960) == LOW) {
         if (asTriggered && denTriggered) {
             break;
         }
     }
-    while (digitalRead(FAIL960) == HIGH) {
+    while (digitalReadFast(FAIL960) == HIGH) {
         if (asTriggered && denTriggered) {
             break;
         }
     }
-    digitalWrite(SYSTEMBOOT, HIGH);
+    digitalWriteFast(SYSTEMBOOT, HIGH);
     // after this point, if FAIL960 ever goes from LOW to HIGH again, then we have checksum failed!
     attachInterrupt(digitalPinToInterrupt(FAIL960), handleChecksumFail, RISING);
 }
