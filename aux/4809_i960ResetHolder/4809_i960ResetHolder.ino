@@ -68,6 +68,24 @@ pulse() noexcept {
    digitalWriteFast(pin, to);
    digitalWriteFast(pin, from);
 }
+inline void
+triggerInt0() noexcept {
+    pulse<INT0_960, LOW, HIGH>();
+}
+inline void
+triggerInt1() noexcept {
+    pulse<INT1_960, HIGH, LOW>();
+}
+inline void
+triggerInt2() noexcept {
+    pulse<INT2_960, HIGH, LOW>();
+}
+
+inline void
+triggerInt3() noexcept {
+    pulse<INT3_960, LOW, HIGH>();
+}
+
 void
 informCPU() noexcept {
     // pulse it since it will automatically be synchronized and detected
@@ -133,11 +151,12 @@ void setup() {
     digitalWriteFast(SYSTEMBOOT, LOW);
     digitalWriteFast(READY960, HIGH);
     // these interrupts are used by the boot process and such
+    Serial1.println("Setting up Interrupts");
     attachInterrupt(digitalPinToInterrupt(DEN), handleDENTrigger, FALLING);
     attachInterrupt(digitalPinToInterrupt(AS), handleASTrigger, FALLING);
     attachInterrupt(digitalPinToInterrupt(BLAST), handleBLASTTrigger, FALLING);
     attachInterrupt(digitalPinToInterrupt(MCU_READY), handleREADYTrigger, FALLING);
-    Serial1.println("WAITING FOR CHIPSET TO BE READY!");
+    Serial1.println("Waiting for the chipset to be ready");
     while (digitalReadFast(WAITBOOT960) == LOW);
     digitalWriteFast(Reset960, HIGH);
 
