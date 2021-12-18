@@ -148,6 +148,21 @@ void loop() {
     // this would tell the chipset we have a new transaction, do a pulse for this
     // okay now we need to emulate the wait loop
     do {
-
+        while (!readyTriggered);
+        readyTriggered = false;
+        // sample blast at this point, by this point it should have been changed for this cycle
+        auto isBurstLast = blastTriggered;
+        blastTriggered = false; // then immediately clear it to make it ready for the next action,
+                                // we have to do this before informing the CPU to make sure we don't get the cycles confused
+        informCPU();
+        if (isBurstLast) {
+            // let the chipset know this is the end of the transaction
+            break;
+        } else {
+            // if we got here then it is a burst transaction and as such
+            // let the chipset know this is the next word of the burst transaction
+            // this will act as a gate action
+        }
     } while (true);
+    // now we just loop back around and wait for the next
 }
