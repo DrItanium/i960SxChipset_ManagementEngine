@@ -16,6 +16,12 @@ constexpr auto HLDA960 = PIN_PF2;
 constexpr auto HOLD960 = PIN_PF3;
 constexpr auto WAITBOOT960 = PIN_PF4;
 constexpr auto FAIL960 = PIN_PF5;
+
+constexpr auto DO_CYCLE = PIN_PC0;
+constexpr auto TRANSACTION_START = PIN_PC1;
+constexpr auto BURST_NEXT = PIN_PC2;
+constexpr auto TRANSACTION_END = PIN_PC3;
+
 constexpr auto MCU_READY = PIN_PD2;
 constexpr auto READY960 = PIN_PD3;
 constexpr auto BLAST = PIN_PD4;
@@ -106,7 +112,15 @@ void setup() {
     pinMode(INT2_960, OUTPUT);
     pinMode(INT3_960, OUTPUT);
     pinMode(SYSTEMBOOT, OUTPUT);
+    pinMode(TRANSACTION_START, OUTPUT);
+    pinMode(DO_CYCLE, OUTPUT);
+    pinMode(BURST_NEXT, OUTPUT);
+    pinMode(TRANSACTION_END, OUTPUT);
 
+    digitalWrite(BURST_NEXT, HIGH);
+    digitalWrite(DO_CYCLE, HIGH);
+    digitalWrite(TRANSACTION_START, HIGH);
+    digitalWrite(TRANSACTION_END, HIGH);
     digitalWrite(LOCK960, HIGH);
     digitalWrite(HOLD960, LOW);
     digitalWrite(INT0_960, HIGH);
@@ -135,7 +149,7 @@ void setup() {
     }
     digitalWrite(SYSTEMBOOT, HIGH);
     // after this point, if FAIL960 ever goes from LOW to HIGH again, then we have checksum failed!
-    attachInterrupt(digitalPinToInterrupt(FAIL960), handleChecksumFail, RISING)
+    attachInterrupt(digitalPinToInterrupt(FAIL960), handleChecksumFail, RISING);
 }
 
 
