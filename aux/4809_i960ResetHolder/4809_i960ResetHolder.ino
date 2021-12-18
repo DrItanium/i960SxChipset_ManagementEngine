@@ -180,6 +180,7 @@ void loop() {
     asTriggered = false;
     while (!denTriggered);
     denTriggered = false;
+    /// @todo look into triggering transaction start before checking to see if den was triggered, does it improve responsiveness?
     pulse<TRANSACTION_START, LOW, HIGH>(); // tell the chipset that it can safely pull down the base address of the transaction
     // okay now we need to emulate the wait loop
     do {
