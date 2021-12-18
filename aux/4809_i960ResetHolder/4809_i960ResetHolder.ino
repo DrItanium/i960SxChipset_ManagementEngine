@@ -152,6 +152,7 @@ void setup() {
         }
     }
     digitalWriteFast(SYSTEMBOOT, HIGH);
+    Serial1.println("SYSTEM BOOTED!");
     // after this point, if FAIL960 ever goes from LOW to HIGH again, then we have checksum failed!
     attachInterrupt(digitalPinToInterrupt(FAIL960), handleChecksumFail, RISING);
 }
