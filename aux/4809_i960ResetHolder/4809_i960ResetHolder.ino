@@ -33,9 +33,123 @@ constexpr auto INT0_960 = PIN_PE0;
 constexpr auto INT1_960 = PIN_PE1;
 constexpr auto INT2_960 = PIN_PE2;
 constexpr auto INT3_960 = PIN_PE3;
+
+template<decltype(WAITBOOT960) pin>
+struct DigitalPin {
+    DigitalPin() = delete;
+    ~DigitalPin() = delete;
+    DigitalPin(const DigitalPin&) = delete;
+    DigitalPin(DigitalPin&&) = delete;
+    DigitalPin& operator=(const DigitalPin&) = delete;
+    DigitalPin& operator=(DigitalPin&&) = delete;
+    static constexpr bool isInputPin() noexcept { return false; }
+    static constexpr bool isOutputPin() noexcept { return false; }
+    static constexpr auto isInputPullupPin() noexcept { return false; }
+    static constexpr bool getDirection() noexcept { return false; }
+    static constexpr auto getPin() noexcept { return pin; }
+};
+
+#define DefOutputPin(pin, asserted, deasserted) \
+    template<> \
+    struct DigitalPin< pin > { \
+    static_assert(asserted != deasserted, "Asserted and deasserted must not be equal!"); \
+        DigitalPin() = delete; \
+        ~DigitalPin() = delete; \
+        DigitalPin(const DigitalPin&) = delete; \
+        DigitalPin(DigitalPin&&) = delete; \
+        DigitalPin& operator=(const DigitalPin&) = delete; \
+        DigitalPin& operator=(DigitalPin&&) = delete; \
+        static constexpr auto isInputPin() noexcept { return false; } \
+        static constexpr auto isOutputPin() noexcept { return true; } \
+        static constexpr auto isInputPullupPin() noexcept { return false; } \
+        static constexpr auto getPin() noexcept { return pin; } \
+        static constexpr auto getDirection() noexcept { return OUTPUT; } \
+        static constexpr auto getAssertionState() noexcept { return asserted; } \
+        static constexpr auto getDeassertionState() noexcept { return deasserted; }      \
+        [[gnu::always_inline]] inline static void assertPin() noexcept { digitalWriteFast(pin, getAssertionState()); } \
+        [[gnu::always_inline]] inline static void deassertPin() noexcept { digitalWriteFast(pin,getDeassertionState()); } \
+        [[gnu::always_inline]] inline static void write(decltype(LOW) value) noexcept { digitalWriteFast(pin,value); } \
+        [[gnu::always_inline]] inline static void pulse() noexcept {  assertPin(); deassertPin(); } \
+        [[gnu::always_inline]] static void configure() noexcept { pinMode(pin, OUTPUT); } \
+    }
+
+#define DefInputPin(pin, asserted, deasserted) \
+    template<> \
+    struct DigitalPin< pin > { \
+        static_assert(asserted != deasserted, "Asserted and deasserted must not be equal!"); \
+        DigitalPin() = delete; \
+        ~DigitalPin() = delete; \
+        DigitalPin(const DigitalPin&) = delete; \
+        DigitalPin(DigitalPin&&) = delete; \
+        DigitalPin& operator=(const DigitalPin&) = delete; \
+        DigitalPin& operator=(DigitalPin&&) = delete; \
+        static constexpr auto isInputPin() noexcept { return true; } \
+        static constexpr auto isOutputPin() noexcept { return false; } \
+        static constexpr auto isInputPullupPin() noexcept { return false; } \
+        static constexpr auto getPin() noexcept { return pin; } \
+        static constexpr auto getDirection() noexcept { return INPUT; } \
+        static constexpr auto getAssertionState() noexcept { return asserted; } \
+        static constexpr auto getDeassertionState() noexcept { return deasserted; } \
+        [[gnu::always_inline]] inline static auto read() noexcept { return digitalReadFast(pin); } \
+        [[gnu::always_inline]] inline static bool isAsserted() noexcept { return read() == getAssertionState(); } \
+        [[gnu::always_inline]] inline static bool isDeasserted() noexcept { return read() == getDeassertionState(); } \
+        [[gnu::always_inline]] static void configure() noexcept { pinMode(pin, INPUT); } \
+    }
+
+#define DefInputPullupPin(pin, asserted, deasserted) \
+    template<> \
+    struct DigitalPin< pin > { \
+        static_assert(asserted != deasserted, "Asserted and deasserted must not be equal!"); \
+        DigitalPin() = delete; \
+        ~DigitalPin() = delete; \
+        DigitalPin(const DigitalPin&) = delete; \
+        DigitalPin(DigitalPin&&) = delete; \
+        DigitalPin& operator=(const DigitalPin&) = delete; \
+        DigitalPin& operator=(DigitalPin&&) = delete; \
+        static constexpr auto isInputPin() noexcept { return true; } \
+        static constexpr auto isOutputPin() noexcept { return false; }  \
+        static constexpr auto isInputPullupPin() noexcept { return true; } \
+        static constexpr auto getPin() noexcept { return pin; } \
+        static constexpr auto getDirection() noexcept { return INPUT_PULLUP; } \
+        static constexpr auto getAssertionState() noexcept { return asserted; } \
+        static constexpr auto getDeassertionState() noexcept { return deasserted; } \
+        [[gnu::always_inline]] inline static auto read() noexcept { return digitalReadFast(pin); } \
+        [[gnu::always_inline]] inline static bool isAsserted() noexcept { return read() == getAssertionState(); } \
+        [[gnu::always_inline]] inline static bool isDeasserted() noexcept { return read() == getDeassertionState(); } \
+        [[gnu::always_inline]] static void configure() noexcept { pinMode(pin, INPUT_PULLUP); } \
+    }
+
+DefInputPin(DEN, LOW, HIGH);
+DefInputPin(AS, LOW, HIGH);
+DefInputPin(BLAST, LOW, HIGH);
+DefInputPin(MCU_READY, LOW, HIGH);
+DefInputPin(FAIL960, HIGH, LOW);
+DefInputPin(HLDA960, HIGH, LOW);
+
+DefOutputPin(Reset960, LOW, HIGH);
+DefOutputPin(READY960, LOW, HIGH);
+DefOutputPin(LOCK960, LOW, HIGH);
+DefOutputPin(HOLD960, HIGH, LOW);
+
+DefOutputPin(INT0_960, LOW, HIGH);
+DefOutputPin(INT1_960, HIGH, LOW);
+DefOutputPin(INT2_960, HIGH, LOW);
+DefOutputPin(INT3_960, LOW, HIGH);
+DefOutputPin(SYSTEMBOOT, HIGH, LOW);
+DefOutputPin(TRANSACTION_START, LOW, HIGH);
+DefOutputPin(TRANSACTION_END, LOW, HIGH);
+DefOutputPin(DO_CYCLE, LOW, HIGH);
+DefOutputPin(BURST_NEXT, LOW, HIGH);
+
+DefInputPullupPin(WAITBOOT960, LOW, HIGH);
+#undef DefInputPin
+#undef DefOutputPin
+#undef DefInputPullupPin
+
 volatile bool denTriggered = false;
 volatile bool asTriggered = false;
 volatile bool readyTriggered = false;
+
 void
 handleASTrigger() noexcept {
     asTriggered = true;
@@ -52,44 +166,47 @@ handleREADYTrigger() noexcept {
 [[noreturn]] void
 handleChecksumFail() noexcept {
     // keep an eye on the FAIL960 pin, if we run into an issue then tell the chipset this
-    digitalWriteFast(SYSTEMBOOT, LOW);
+    DigitalPin<SYSTEMBOOT>::deassertPin();
     while (true) {
         delay(1000);
     }
 }
-template<decltype(READY960) pin, decltype(LOW) to = LOW, decltype(HIGH) from = HIGH>
-inline void
-pulse() noexcept {
-   digitalWriteFast(pin, to);
-   digitalWriteFast(pin, from);
-}
+
 inline void
 triggerInt0() noexcept {
-    pulse<INT0_960, LOW, HIGH>();
+    DigitalPin<INT0_960>::pulse();
 }
 inline void
 triggerInt1() noexcept {
-    pulse<INT1_960, HIGH, LOW>();
+    DigitalPin<INT1_960>::pulse();
 }
 inline void
 triggerInt2() noexcept {
-    pulse<INT2_960, HIGH, LOW>();
+    DigitalPin<INT2_960>::pulse();
 }
 
 inline void
 triggerInt3() noexcept {
-    pulse<INT3_960, LOW, HIGH>();
+    DigitalPin<INT3_960>::pulse();
 }
 
 bool
 informCPU() noexcept {
     // sample blast at this point, I can guarantee it accurate for this cycle
-    auto isBurstLast = digitalReadFast(BLAST) == LOW;
+    auto isBurstLast = DigitalPin<BLAST>::isAsserted();
     // pulse ready since it will automatically be synchronized by the external hardware
-    pulse<READY960, LOW, HIGH>();
+    DigitalPin<READY960>::pulse();
     return isBurstLast;
 }
-void setup() {
+template<decltype(WAITBOOT960) targetPin>
+inline bool isLow() noexcept {
+    return digitalReadFast(targetPin) == LOW;
+}
+template<decltype(WAITBOOT960) targetPin>
+inline bool isHigh() noexcept {
+    return digitalReadFast(targetPin) == HIGH;
+}
+void configureClockSource() noexcept {
     byte clkBits = 0;
     if constexpr (EnableExternalClockSource) {
         clkBits |= 0b0000'0011;
@@ -104,70 +221,72 @@ void setup() {
         CCP = 0xD8;
     }
     if constexpr (EnableClockOutputPort) {
-       CCP = 0xD8;
-       CLKCTRL.OSC20MCTRLA |= 0b0000'0010;
-       CCP = 0xD8;
+            CCP = 0xD8;
+            CLKCTRL.OSC20MCTRLA |= 0b0000'0010;
+            CCP = 0xD8;
     }
+}
+void setup() {
+    configureClockSource();
     // always pull this low to start
-    pinMode(Reset960, OUTPUT);
-    digitalWriteFast(Reset960, LOW);
-    pinMode(WAITBOOT960, INPUT_PULLUP);
+    DigitalPin<Reset960>::configure();
+    DigitalPin<Reset960>::assertPin();
+    DigitalPin<WAITBOOT960> ::configure();
     delay(2000);
     Serial1.swap(1);
     Serial1.begin(9600);
     Serial1.println("Bringing everything up!");
-    pinMode(HLDA960, INPUT);
-    pinMode(DEN, INPUT);
-    pinMode(FAIL960, INPUT);
-    pinMode(AS, INPUT);
-    pinMode(BLAST, INPUT);
-    pinMode(MCU_READY, INPUT);
+    DigitalPin<DEN>::configure();
+    DigitalPin<HLDA960>::configure();
+    DigitalPin<FAIL960>::configure();
+    DigitalPin<AS>::configure();
+    DigitalPin<BLAST>::configure();
+    DigitalPin<MCU_READY>::configure();
+    DigitalPin<READY960>::configure();
+    DigitalPin<LOCK960>::configure();
+    DigitalPin<HOLD960>::configure();
+    DigitalPin<INT0_960>::configure();
+    DigitalPin<INT1_960>::configure();
+    DigitalPin<INT2_960>::configure();
+    DigitalPin<INT3_960>::configure();
+    DigitalPin<SYSTEMBOOT>::configure();
+    DigitalPin<TRANSACTION_START>::configure();
+    DigitalPin<TRANSACTION_END>::configure();
+    DigitalPin<DO_CYCLE>::configure();
+    DigitalPin<BURST_NEXT>::configure();
 
-    pinMode(READY960, OUTPUT);
-    pinMode(LOCK960, OUTPUT);
-    pinMode(HOLD960, OUTPUT);
-    pinMode(INT0_960, OUTPUT);
-    pinMode(INT1_960, OUTPUT);
-    pinMode(INT2_960, OUTPUT);
-    pinMode(INT3_960, OUTPUT);
-    pinMode(SYSTEMBOOT, OUTPUT);
-    pinMode(TRANSACTION_START, OUTPUT);
-    pinMode(DO_CYCLE, OUTPUT);
-    pinMode(BURST_NEXT, OUTPUT);
-    pinMode(TRANSACTION_END, OUTPUT);
-
-    digitalWriteFast(BURST_NEXT, HIGH);
-    digitalWriteFast(DO_CYCLE, HIGH);
-    digitalWriteFast(TRANSACTION_START, HIGH);
-    digitalWriteFast(TRANSACTION_END, HIGH);
-    digitalWriteFast(LOCK960, HIGH);
-    digitalWriteFast(HOLD960, LOW);
-    digitalWriteFast(INT0_960, HIGH);
-    digitalWriteFast(INT1_960, LOW);
-    digitalWriteFast(INT2_960, LOW);
-    digitalWriteFast(INT3_960, HIGH);
-    digitalWriteFast(SYSTEMBOOT, LOW);
-    digitalWriteFast(READY960, HIGH);
+    DigitalPin<BURST_NEXT>::deassertPin();
+    DigitalPin<DO_CYCLE>::deassertPin();
+    DigitalPin<TRANSACTION_START>::deassertPin();
+    DigitalPin<TRANSACTION_END>::deassertPin();
+    DigitalPin<LOCK960>::deassertPin();
+    DigitalPin<HOLD960>::deassertPin();
+    DigitalPin<INT0_960>::deassertPin();
+    DigitalPin<INT1_960>::deassertPin();
+    DigitalPin<INT2_960>::deassertPin();
+    DigitalPin<INT3_960>::deassertPin();
+    DigitalPin<SYSTEMBOOT>::deassertPin();
+    DigitalPin<READY960>::deassertPin();
     // these interrupts are used by the boot process and such
     Serial1.println("Setting up Interrupts");
     attachInterrupt(digitalPinToInterrupt(DEN), handleDENTrigger, FALLING);
     attachInterrupt(digitalPinToInterrupt(AS), handleASTrigger, FALLING);
     attachInterrupt(digitalPinToInterrupt(MCU_READY), handleREADYTrigger, FALLING);
     Serial1.println("Waiting for the chipset to be ready");
-    while (digitalReadFast(WAITBOOT960) == LOW);
-    digitalWriteFast(Reset960, HIGH);
+    while (DigitalPin<WAITBOOT960>::isAsserted());
+    DigitalPin<Reset960>::deassertPin();
 
-    while (digitalReadFast(FAIL960) == LOW) {
+    while (isLow<FAIL960>()) {
         if (asTriggered && denTriggered) {
             break;
         }
     }
-    while (digitalReadFast(FAIL960) == HIGH) {
+    while (isHigh<FAIL960>()) {
         if (asTriggered && denTriggered) {
             break;
         }
     }
-    digitalWriteFast(SYSTEMBOOT, HIGH);
+    DigitalPin<SYSTEMBOOT>::assertPin();
     Serial1.println("SYSTEM BOOTED!");
     // after this point, if FAIL960 ever goes from LOW to HIGH again, then we have checksum failed!
     attachInterrupt(digitalPinToInterrupt(FAIL960), handleChecksumFail, RISING);
@@ -181,21 +300,21 @@ void loop() {
     while (!denTriggered);
     denTriggered = false;
     /// @todo look into triggering transaction start before checking to see if den was triggered, does it improve responsiveness?
-    pulse<TRANSACTION_START, LOW, HIGH>(); // tell the chipset that it can safely pull down the base address of the transaction
+    DigitalPin<TRANSACTION_START>::pulse(); // tell the chipset that it can safely pull down the base address of the transaction
     // okay now we need to emulate the wait loop
     do {
-        pulse<DO_CYCLE, LOW, HIGH>(); // tell the chipset that it is safe to process this data cycle (regardless of where we are)
+        DigitalPin<DO_CYCLE>::pulse(); // tell the chipset that it is safe to process this data cycle (regardless of where we are)
         // now wait for the chipset to tell us it has satisified the current part of the transaction
         while (!readyTriggered);
         readyTriggered = false;
         if (informCPU()) {
-            pulse<TRANSACTION_END, LOW, HIGH>(); // let the chipset know this is the end of the transaction
+            DigitalPin<TRANSACTION_END>::pulse(); // let the chipset know this is the end of the transaction
             break; // leave the loop!
         } else {
             // if we got here then it is a burst transaction and as such
             // let the chipset know this is the next word of the burst transaction
             // this will act as a gate action
-            pulse<BURST_NEXT, LOW, HIGH>(); // tell the chipset that we are continuing this burst transaction
+            DigitalPin<BURST_NEXT>::pulse();
         }
         // then we start this again until we hit burst last
     } while (true);
