@@ -35,7 +35,6 @@ constexpr auto INT2_960 = PIN_PE2;
 constexpr auto INT3_960 = PIN_PE3;
 volatile bool denTriggered = false;
 volatile bool asTriggered = false;
-volatile bool blastTriggered = false;
 volatile bool readyTriggered = false;
 void
 handleASTrigger() noexcept {
@@ -46,10 +45,6 @@ handleDENTrigger() noexcept {
     denTriggered = true;
 }
 
-void
-handleBLASTTrigger() noexcept {
-    blastTriggered = true;
-}
 void
 handleREADYTrigger() noexcept {
     readyTriggered = true;
@@ -86,10 +81,13 @@ triggerInt3() noexcept {
     pulse<INT3_960, LOW, HIGH>();
 }
 
-void
+bool
 informCPU() noexcept {
-    // pulse it since it will automatically be synchronized and detected
+    // sample blast at this point, I can guarantee it accurate for this cycle
+    auto isBurstLast = digitalReadFast(BLAST) == LOW;
+    // pulse ready since it will automatically be synchronized by the external hardware
     pulse<READY960, LOW, HIGH>();
+    return isBurstLast;
 }
 void setup() {
     byte clkBits = 0;
@@ -154,7 +152,6 @@ void setup() {
     Serial1.println("Setting up Interrupts");
     attachInterrupt(digitalPinToInterrupt(DEN), handleDENTrigger, FALLING);
     attachInterrupt(digitalPinToInterrupt(AS), handleASTrigger, FALLING);
-    attachInterrupt(digitalPinToInterrupt(BLAST), handleBLASTTrigger, FALLING);
     attachInterrupt(digitalPinToInterrupt(MCU_READY), handleREADYTrigger, FALLING);
     Serial1.println("Waiting for the chipset to be ready");
     while (digitalReadFast(WAITBOOT960) == LOW);
@@ -190,12 +187,7 @@ void loop() {
         // now wait for the chipset to tell us it has satisified the current part of the transaction
         while (!readyTriggered);
         readyTriggered = false;
-        // sample blast at this point, by this point it should have been changed for this cycle
-        auto isBurstLast = blastTriggered;
-        blastTriggered = false; // then immediately clear it to make it ready for the next action,
-                                // we have to do this before informing the CPU to make sure we don't get the cycles confused
-        informCPU();
-        if (isBurstLast) {
+        if (informCPU()) {
             pulse<TRANSACTION_END, LOW, HIGH>(); // let the chipset know this is the end of the transaction
             break; // leave the loop!
         } else {
