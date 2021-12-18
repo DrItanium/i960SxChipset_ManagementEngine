@@ -51,7 +51,7 @@ handleBLASTTrigger() noexcept {
     blastTriggered = true;
 }
 void
-handleReadyTrigger() noexcept {
+handleREADYTrigger() noexcept {
     readyTriggered = true;
 }
 [[noreturn]] void
