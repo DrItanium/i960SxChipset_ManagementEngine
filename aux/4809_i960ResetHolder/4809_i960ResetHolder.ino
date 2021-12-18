@@ -159,9 +159,11 @@ void loop() {
     asTriggered = false;
     while (!denTriggered);
     denTriggered = false;
-    // this would tell the chipset we have a new transaction, do a pulse for this
+    pulse<TRANSACTION_START, LOW, HIGH>(); // tell the chipset that it can safely pull down the base address of the transaction
     // okay now we need to emulate the wait loop
     do {
+        pulse<DO_CYCLE, LOW, HIGH>(); // tell the chipset that it is safe to process this data cycle (regardless of where we are)
+        // now wait for the chipset to tell us it has satisified the current part of the transaction
         while (!readyTriggered);
         readyTriggered = false;
         // sample blast at this point, by this point it should have been changed for this cycle
@@ -170,13 +172,15 @@ void loop() {
                                 // we have to do this before informing the CPU to make sure we don't get the cycles confused
         informCPU();
         if (isBurstLast) {
-            // let the chipset know this is the end of the transaction
-            break;
+            pulse<TRANSACTION_END, LOW, HIGH>(); // let the chipset know this is the end of the transaction
+            break; // leave the loop!
         } else {
             // if we got here then it is a burst transaction and as such
             // let the chipset know this is the next word of the burst transaction
             // this will act as a gate action
+            pulse<BURST_NEXT, LOW, HIGH>(); // tell the chipset that we are continuing this burst transaction
         }
+        // then we start this again until we hit burst last
     } while (true);
     // now we just loop back around and wait for the next
 }
