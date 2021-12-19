@@ -1,22 +1,26 @@
     #include "GrandCentralM4Pinout.def"
-   FAIL = 27,
-   BLAST_ = 28,
-   DEN_ = 23,
-   W_R_ = 37,
-   BE0 = 36,
-   BE1 = 35,
-   Reset960 = 17,
-   Ready = 16,
-   PSRAM_EN = Analog0,
-   PSRAM_EN1 = Analog1,
-   PSRAM_EN2 = Analog2,
-   PSRAM_EN3 = Analog3,
+   SuccessfulBoot = 26,
+   W_R_ = 27,
+   BE0 = 28,
+   BE1 = 23,
+   DoCycle = 37,
+   StartTransaction = 36,
+   BurstNext = 35,
+   EndTransaction = 34,
+   INT_EN0 = 33,
+   INT_EN1 = 32,
+   INT_EN2 = 31,
+   INT_EN3 = 30,
+
    Reset4809 = 5,
-   INT_EN0 = 34,
-   INT_EN1 = 33,
-   INT_EN2 = 32,
-   INT_EN3 = 31,
+   Ready = 16,
+   Reset960 = 17, // really waitboot960
    GPIOSelect = 53,
    SD_EN = SDCARD_CS,
-   AS_ = 26,
-    Int0_ = Count, // not connected
+   // these are all handled by the management engine in type 3
+   Int0_ = Count, // not connected
+   DEN_ = Count, // not connected
+   AS_ = Count, // not connected
+   FAIL = Count,
+   BLAST_ = Count,
+   DEN_ = Count,
