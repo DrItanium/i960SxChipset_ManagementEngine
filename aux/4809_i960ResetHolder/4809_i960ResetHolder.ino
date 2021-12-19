@@ -34,8 +34,6 @@ constexpr auto INT1_960 = PIN_PE1;
 constexpr auto INT2_960 = PIN_PE2;
 constexpr auto INT3_960 = PIN_PE3;
 
-constexpr auto WAITINGFORAS = PIN_PA1;
-constexpr auto WAITINGFORDEN = PIN_PA2;
 
 template<decltype(WAITBOOT960) pin>
 struct DigitalPin {
@@ -72,7 +70,7 @@ struct DigitalPin {
         [[gnu::always_inline]] inline static void assertPin() noexcept { digitalWriteFast(pin, getAssertionState()); } \
         [[gnu::always_inline]] inline static void deassertPin() noexcept { digitalWriteFast(pin,getDeassertionState()); } \
         [[gnu::always_inline]] inline static void write(decltype(LOW) value) noexcept { digitalWriteFast(pin,value); } \
-        [[gnu::always_inline]] inline static void pulse() noexcept {  assertPin(); __builtin_avr_nops(2); deassertPin(); __builtin_avr_nops(2); } \
+        [[gnu::always_inline]] inline static void pulse() noexcept { assertPin(); deassertPin(); } \
         [[gnu::always_inline]] static void configure() noexcept { pinMode(pin, OUTPUT); } \
     }
 
@@ -147,8 +145,6 @@ DefOutputPin(TRANSACTION_START, LOW, HIGH);
 DefOutputPin(TRANSACTION_END, LOW, HIGH);
 DefOutputPin(DO_CYCLE, LOW, HIGH);
 DefOutputPin(BURST_NEXT, LOW, HIGH);
-DefOutputPin(WAITINGFORAS, LOW, HIGH);
-DefOutputPin(WAITINGFORDEN, LOW, HIGH);
 
 DefInputPullupPin(WAITBOOT960, LOW, HIGH);
 #undef DefInputPin
@@ -261,9 +257,7 @@ void setup() {
                 TRANSACTION_START,
                 TRANSACTION_END,
                 DO_CYCLE,
-                BURST_NEXT,
-                WAITINGFORDEN,
-                WAITINGFORAS>();
+                BURST_NEXT>();
 
         deassertPins<BURST_NEXT,
                      DO_CYCLE,
@@ -276,9 +270,7 @@ void setup() {
                      INT2_960,
                      INT3_960,
                      SYSTEMBOOT,
-                     READY960,
-                     WAITINGFORAS,
-                     WAITINGFORDEN>();
+                     READY960>();
         // these interrupts are used by the boot process and such
         Serial1.println("Setting up Interrupts");
         attachInterrupt(digitalPinToInterrupt(DEN), handleDENTrigger, FALLING);
@@ -315,13 +307,9 @@ informCPU() noexcept {
 
 void loop() {
     // okay so we need to wait for AS and DEN to go low
-    DigitalPin<WAITINGFORAS>::assertPin();
     while (!asTriggered);
-    DigitalPin<WAITINGFORAS>::deassertPin();
     asTriggered = false;
-    DigitalPin<WAITINGFORDEN>::assertPin();
     while (!denTriggered);
-    DigitalPin<WAITINGFORDEN>::deassertPin();
     denTriggered = false;
     /// @todo look into triggering transaction start before checking to see if den was triggered, does it improve responsiveness?
     DigitalPin<TRANSACTION_START>::pulse(); // tell the chipset that it can safely pull down the base address of the transaction
