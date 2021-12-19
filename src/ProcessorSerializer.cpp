@@ -41,64 +41,22 @@ ProcessorInterface::begin() noexcept {
         write8<ProcessorInterface::IOExpanderAddress::DataLines, MCP23x17Registers::IOCON, false>(0b0000'1000);
         write8<ProcessorInterface::IOExpanderAddress::Upper16Lines, MCP23x17Registers::IOCON, false>(0b0000'1000);
         write8<ProcessorInterface::IOExpanderAddress::Lower16Lines, MCP23x17Registers::IOCON, false>(0b0000'1000);
-        if constexpr (TargetBoard::onType1()) {
-            // now all devices tied to this ~CS pin have separate addresses
-            // make each of these inputs
-            writeDirection<IOExpanderAddress::Lower16Lines, false>(0xFFFF);
-            writeDirection<IOExpanderAddress::Upper16Lines, false>(0xFFFF);
-            // enable HAEN and also set the mirror INTA/INTB bits
-            write8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::IOCON, false>(0b0100'1000) ;
-            write8<IOExpanderAddress::Upper16Lines, MCP23x17Registers::IOCON, false>(0b0100'1000) ;
-            write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF) ;
-            write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF) ;
-            write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::INTCON, false>(0x0000) ;
-            write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::INTCON, false>(0x0000) ;
-            writeDirection<IOExpanderAddress::DataLines, false>(0xFFFF);
-            writeDirection<IOExpanderAddress::MemoryCommitExtras, false>(0x005F);
-            // we can just set the pins up in a single write operation to the olat, since only the pins configured as outputs will be affected
-            write8<IOExpanderAddress::MemoryCommitExtras, MCP23x17Registers::OLATA, false>(0b1000'0000);
-            // write the default value out to the latch to start with
-            write16<IOExpanderAddress::DataLines, MCP23x17Registers::OLAT, false>(latchedDataOutput.getWholeValue());
-            updateTargetFunctions<true>();
-            updateTargetFunctions<false>();
-        } else if constexpr (TargetBoard::onType2()) {
-            writeDirection<IOExpanderAddress::Lower16Lines, false>(0xFFFF);
-            writeDirection<IOExpanderAddress::Upper16Lines, false>(0xFFFF);
-            writeDirection<IOExpanderAddress::DataLines, false>(0xFFFF);
-            write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF);
-            write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF);
-            write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::INTCON, false>(0x0000);
-            write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::INTCON, false>(0x0000);
-            write16<IOExpanderAddress::DataLines, MCP23x17Registers::OLAT, false>(latchedDataOutput.getWholeValue());
-            // use 16-bit versions to be on the safe side
-            write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::IOCON, false>(0b0001'1000'0001'1000);
-            // for some reason, independent interrupts for the upper 16-bits is a no go... unsure why so enable mirroring and reclaim one of the pins
-            write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::IOCON, false>(0b0101'1000'0101'1000);
-            // If I ever figure out why the upper 16 lines do not want to work with independent pins then we will activate this version
-            //write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::IOCON, false>(0b0001'1000'0001'1000) ;
-            updateTargetFunctions<true>();
-            updateTargetFunctions<false>();
-            // make sure we clear out any interrupt flags
-        } else if constexpr (TargetBoard::onType3()) {
-            writeDirection<IOExpanderAddress::Lower16Lines, false>(0xFFFF);
-            writeDirection<IOExpanderAddress::Upper16Lines, false>(0xFFFF);
-            writeDirection<IOExpanderAddress::DataLines, false>(0xFFFF);
-            write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF);
-            write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF);
-            write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::INTCON, false>(0x0000);
-            write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::INTCON, false>(0x0000);
-            write16<IOExpanderAddress::DataLines, MCP23x17Registers::OLAT, false>(latchedDataOutput.getWholeValue());
-            // use 16-bit versions to be on the safe side
-            write8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::IOCON, false>(0b0001'1000);
-            // for some reason, independent interrupts for the upper 16-bits is a no go... unsure why so enable mirroring and reclaim one of the pins
-            write8<IOExpanderAddress::Upper16Lines, MCP23x17Registers::IOCON, false>(0b0101'1000);
-            // If I ever figure out why the upper 16 lines do not want to work with independent pins then we will activate this version
-            //write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::IOCON, false>(0b0001'1000'0001'1000) ;
-            updateTargetFunctions<true>();
-            updateTargetFunctions<false>();
-        } else {
-            /// @todo implement this
-        }
+        writeDirection<IOExpanderAddress::Lower16Lines, false>(0xFFFF);
+        writeDirection<IOExpanderAddress::Upper16Lines, false>(0xFFFF);
+        writeDirection<IOExpanderAddress::DataLines, false>(0xFFFF);
+        write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF);
+        write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF);
+        write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::INTCON, false>(0x0000);
+        write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::INTCON, false>(0x0000);
+        write16<IOExpanderAddress::DataLines, MCP23x17Registers::OLAT, false>(latchedDataOutput.getWholeValue());
+        // use 16-bit versions to be on the safe side
+        write8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::IOCON, false>(0b0001'1000);
+        // for some reason, independent interrupts for the upper 16-bits is a no go... unsure why so enable mirroring and reclaim one of the pins
+        write8<IOExpanderAddress::Upper16Lines, MCP23x17Registers::IOCON, false>(0b0101'1000);
+        // If I ever figure out why the upper 16 lines do not want to work with independent pins then we will activate this version
+        //write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::IOCON, false>(0b0001'1000'0001'1000) ;
+        updateTargetFunctions<true>();
+        updateTargetFunctions<false>();
         SPI.endTransaction();
     }
 }

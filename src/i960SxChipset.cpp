@@ -67,7 +67,7 @@ constexpr auto ValidateTransferDuringInstall = true;
 /**
  * @brief When set to true, the interrupt lines the mcp23s17 provides are used to determine which bytes to read
  */
-constexpr auto UseIOExpanderAddressLineInterrupts = TargetBoard::onType2();
+constexpr auto UseIOExpanderAddressLineInterrupts = TargetBoard::onType3();
 using TheDisplayInterface = DisplayInterface<DisplayBaseAddress>;
 using TheSDInterface = SDCardInterface<MaximumNumberOfOpenFiles, SDBaseAddress>;
 using TheConsoleInterface = Serial0Interface<Serial0BaseAddress, CompileInAddressDebuggingSupport, AddressDebuggingEnabledOnStartup>;
