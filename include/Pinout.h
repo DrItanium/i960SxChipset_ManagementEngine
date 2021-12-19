@@ -33,28 +33,14 @@ using Address = uint32_t;
  */
 enum class LoadStoreStyle : uint8_t {
     // based off of BE0,BE1 pins
-#if 0
-    Full16 = 0b00,
-    Upper8 = 0b01,
-    Lower8 = 0b10,
-    None = 0b11,
-#else
-// no need to shift
+    // no need to shift
     Full16 = 0b0000'0000,
     Upper8 = 0b0001'0000,
     Lower8 = 0b0010'0000,
     None = 0b0011'0000,
-#endif
 };
-/// @todo fix this pinout for different targets
 enum class i960Pinout : int {
-#ifdef CHIPSET_TYPE1
-#include "Type1Pinout.def"
-#elif defined(CHIPSET_TYPE2)
-#include "Type2Pinout.def"
-#elif defined(CHIPSET_TYPE1_4)
-#include "Type1_4Pinout.def"
-#elif defined(CHIPSET_TYPE3)
+#ifdef CHIPSET_TYPE3
 #include "Type3Pinout.def"
 #else
 #error "Target Chipset Hardware has no pinout defined"
@@ -204,5 +190,11 @@ public:
     PinAsserter() { DigitalPin<pinId>::assertPin(); }
     ~PinAsserter() { DigitalPin<pinId>::deassertPin(); }
 };
+
+template<i960Pinout ... pins>
+[[gnu::always_inline]]
+inline void configurePins() noexcept {
+    (DigitalPin<pins>::configure(), ...);
+}
 
 #endif //ARDUINO_PINOUT_H
