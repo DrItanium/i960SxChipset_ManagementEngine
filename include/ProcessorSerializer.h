@@ -89,38 +89,10 @@ class ProcessorInterface {
         }
         SplitWord16 output(0);
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
-#if defined(ARDUINO_AVR_ATmega1284)
-        SPDR = generateReadOpcode(addr);
-        /*
-         * The following NOP introduces a small delay that can prevent the wait
-         * loop form iterating when running at the maximum speed. This gives
-         * about 10% more speed, even if it seems counter-intuitive. At lower
-         * speeds it is unnoticed.
-         */
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))) ; // wait
-
-        SPDR = static_cast<byte>(opcode) ;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))) ; // wait
-
-        SPDR = 0;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))) ; // wait
-        auto lower = SPDR;
-        SPDR = 0;
-        asm volatile("nop");
-        {
-            output.bytes[0] = lower;
-        }
-        while (!(SPSR & _BV(SPIF))) ; // wait
-        output.bytes[1] = SPDR;
-#else
         SPI.transfer(generateReadOpcode(addr));
         SPI.transfer(static_cast<byte>(opcode));
         output.bytes[0] = SPI.transfer(0);
         output.bytes[1] = SPI.transfer(0);
-#endif
         digitalWrite<i960Pinout::GPIOSelect, HIGH>();
         if constexpr (standalone) {
             SPI.endTransaction();
@@ -133,36 +105,14 @@ class ProcessorInterface {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
-#if defined(ARDUINO_AVR_ATmega1284)
-        SPDR = generateReadOpcode(addr);
-        /*
-         * The following NOP introduces a small delay that can prevent the wait
-         * loop form iterating when running at the maximum speed. This gives
-         * about 10% more speed, even if it seems counter-intuitive. At lower
-         * speeds it is unnoticed.
-         */
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))) ; // wait
-        SPDR = static_cast<byte>(opcode);
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))) ; // wait
-        SPDR = 0;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))) ; // wait
-#else
         SPI.transfer(generateReadOpcode(addr));
         SPI.transfer(static_cast<byte>(opcode));
         auto outcome = SPI.transfer(0);
-#endif
         digitalWrite<i960Pinout::GPIOSelect, HIGH>();
         if constexpr (standalone) {
             SPI.endTransaction();
         }
-#if defined(ARDUINO_AVR_ATmega1284)
-        return SPDR;
-#else
       return outcome;
-#endif
     }
 
     template<IOExpanderAddress addr, MCP23x17Registers opcode, bool standalone = true>
@@ -172,31 +122,10 @@ class ProcessorInterface {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
-#if defined(ARDUINO_AVR_ATmega1284)
-        SPDR = generateWriteOpcode(addr);
-        /*
-         * The following NOP introduces a small delay that can prevent the wait
-         * loop form iterating when running at the maximum speed. This gives
-         * about 10% more speed, even if it seems counter-intuitive. At lower
-         * speeds it is unnoticed.
-         */
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))) ; // wait
-        SPDR = static_cast<byte>(opcode);
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))) ; // wait
-        SPDR = valueDiv.bytes[0];
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))) ; // wait
-        SPDR = valueDiv.bytes[1];
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))) ; // wait
-#else
     SPI.transfer(generateWriteOpcode(addr));
     SPI.transfer(static_cast<byte>(opcode));
     SPI.transfer(valueDiv.bytes[0]);
     SPI.transfer(valueDiv.bytes[1]);
-#endif
         digitalWrite<i960Pinout::GPIOSelect, HIGH>();
         if constexpr (standalone) {
             SPI.endTransaction();
@@ -208,27 +137,9 @@ class ProcessorInterface {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
         digitalWrite<i960Pinout::GPIOSelect, LOW>();
-#if defined(ARDUINO_AVR_ATmega1284)
-        SPDR = generateWriteOpcode(addr);
-        /*
-         * The following NOP introduces a small delay that can prevent the wait
-         * loop form iterating when running at the maximum speed. This gives
-         * about 10% more speed, even if it seems counter-intuitive. At lower
-         * speeds it is unnoticed.
-         */
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))) ; // wait
-        SPDR = static_cast<byte>(opcode);
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))) ; // wait
-        SPDR = value;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))) ; // wait
-#else
     SPI.transfer(generateWriteOpcode(addr));
     SPI.transfer(static_cast<byte>(opcode));
     SPI.transfer(value);
-#endif
         digitalWrite<i960Pinout::GPIOSelect, HIGH>();
         if constexpr (standalone) {
             SPI.endTransaction();
@@ -278,35 +189,23 @@ public:
         }
     }
     [[nodiscard]] static auto getStyle() noexcept {
-#ifdef ARDUINO_AVR_ATmega1284
-        return static_cast<LoadStoreStyle>((PINA & 0b11'0000));
-#else
         auto lower = static_cast<byte>(DigitalPin<i960Pinout::BE0>::read()) << 4;
         auto upper = static_cast<byte>(DigitalPin<i960Pinout::BE1>::read()) << 5;
         return static_cast<LoadStoreStyle>(lower | upper);
-#endif
     }
     [[nodiscard]] static bool isReadOperation() noexcept { return DigitalPin<i960Pinout::W_R_>::isAsserted(); }
     [[nodiscard]] static auto getCacheOffsetEntry() noexcept { return cacheOffsetEntry_; }
     inline static void setupDataLinesForWrite() noexcept {
-        if constexpr (TargetBoard::onType1() || TargetBoard::onType2() || TargetBoard::onType3()) {
-            if (!dataLinesDirection_) {
-                dataLinesDirection_ = ~dataLinesDirection_;
-                writeDirection<ProcessorInterface::IOExpanderAddress::DataLines>(0xFFFF);
-            }
-        } else {
-            // do nothing
+        if (!dataLinesDirection_) {
+            dataLinesDirection_ = ~dataLinesDirection_;
+            writeDirection<ProcessorInterface::IOExpanderAddress::DataLines>(0xFFFF);
         }
     }
     inline static void setupDataLinesForRead() noexcept {
-        if constexpr (TargetBoard::onType1() || TargetBoard::onType2() || TargetBoard::onType3()) {
             if (dataLinesDirection_) {
                 dataLinesDirection_ = ~dataLinesDirection_;
                 writeDirection<ProcessorInterface::IOExpanderAddress::DataLines>(0);
             }
-        } else {
-            // do nothing
-        }
     }
 private:
     template<bool useInterrupts = true>
@@ -314,256 +213,54 @@ private:
         if constexpr (!useInterrupts) {
             return 0;
         } else {
-#if defined(ARDUINO_AVR_ATmega1284)
-            if constexpr (TargetBoard::onType1()) {
-                switch (PIND & 0b1001'0000) {
-                    case 0b0000'0000: return 0b0000;
-                    case 0b0001'0000: return 0b0011;
-                    case 0b1000'0000: return 0b1100;
-                    case 0b1001'0000: return 0b1111;
-                    default: return 0b0000;
-                }
-            } else if constexpr (TargetBoard::onType2()) {
-                // even though three of the four pins are actually in use, I want to eventually diagnose the problem itself
-                // so this code is ready for that day
-                return PINA & 0b0000'1111;
-            } else {
-                return 0;
-            }
-#else
             auto a = static_cast<byte>(DigitalPin<i960Pinout::INT_EN0>::read());
             auto b = static_cast<byte>(DigitalPin<i960Pinout::INT_EN1>::read()) << 1;
             auto c = static_cast<byte>(DigitalPin<i960Pinout::INT_EN2>::read()) << 2;
             auto d = static_cast<byte>(DigitalPin<i960Pinout::INT_EN3>::read()) << 3;
             return a | b | c | d;
-#endif
         }
     }
     template<byte offsetMask>
     inline static void full32BitUpdate() noexcept {
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
-#if defined(ARDUINO_AVR_ATmega1284)
-        constexpr auto Lower16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Lower16Lines);
-        constexpr auto Upper16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Upper16Lines);
-        constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIO);
-        digitalWrite<i960Pinout::GPIOSelect, LOW>();
-        SPDR = Lower16Opcode;
-        /*
-         * The following NOP introduces a small delay that can prevent the wait
-         * loop form iterating when running at the maximum speed. This gives
-         * about 10% more speed, even if it seems counter-intuitive. At lower
-         * speeds it is unnoticed.
-         */
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        SPDR = GPIOOpcode;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        SPDR = 0;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        auto lowest = SPDR;
-        SPDR = 0;
-        asm volatile("nop");
-        {
-            // inside of here we have access to 12 cycles to play with, so let's actually do some operations while we wait
-            // put scope ticks to force the matter
-            cacheOffsetEntry_ = (lowest >> 1) & offsetMask; // we want to make this quick to increment
-            address_.bytes[0] = lowest;
-        }
-        while (!(SPSR & _BV(SPIF))); // wait
-        auto lower = SPDR;
-        DigitalPin<i960Pinout::GPIOSelect>::pulse<HIGH>(); // pulse high
-        SPDR = Upper16Opcode;
-        asm volatile("nop");
-        {
-            address_.bytes[1] = lower;
-            // interleave this operation in, can't get more complex than this
-        }
-        while (!(SPSR & _BV(SPIF))); // wait
-        SPDR = GPIOOpcode;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        SPDR = 0;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        auto higher = SPDR;
-        SPDR = 0;
-        asm volatile("nop");
-        {
-            address_.bytes[2] = higher;
-        }
-        while (!(SPSR & _BV(SPIF))); // wait
-        address_.bytes[3] = SPDR;
-        digitalWrite<i960Pinout::GPIOSelect, HIGH>();
-#else
         address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
         address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
         cacheOffsetEntry_ = (address_.bytes[0] >> 1) & offsetMask; // we want to make this quick to increment
-#endif
     }
     template<byte offsetMask>
     static void lower16Update() noexcept {
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
-#if defined(ARDUINO_AVR_ATmega1284)
-        constexpr auto Lower16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Lower16Lines);
-        constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIO);
-        digitalWrite<i960Pinout::GPIOSelect, LOW>();
-        SPDR = Lower16Opcode;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        SPDR = GPIOOpcode;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        SPDR = 0;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        auto lowest = SPDR;
-        SPDR = 0;
-        asm volatile("nop");
-        {
-            // inside of here we have access to 12 cycles to play with, so let's actually do some operations while we wait
-            // put scope ticks to force the matter
-            cacheOffsetEntry_ = (lowest >> 1) & offsetMask; // we want to make this quick to increment
-            address_.bytes[0] = lowest;
-        }
-        while (!(SPSR & _BV(SPIF))); // wait
-        auto lower = SPDR;
-        digitalWrite<i960Pinout::GPIOSelect, HIGH>();
-        address_.bytes[1] = lower;
-#else
         address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
         cacheOffsetEntry_ = (address_.bytes[0] >> 1) & offsetMask; // we want to make this quick to increment
-#endif
     }
     static void upper16Update() noexcept {
         // only read the upper 16-bits
-#if defined(ARDUINO_AVR_ATmega1284)
-        constexpr auto Upper16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Upper16Lines);
-        constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIO);
-        digitalWrite<i960Pinout::GPIOSelect, LOW>();
-        SPDR = Upper16Opcode;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        SPDR = GPIOOpcode;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        SPDR = 0;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        auto higher = SPDR;
-        SPDR = 0;
-        asm volatile("nop");
-        {
-            address_.bytes[2] = higher;
-        }
-        while (!(SPSR & _BV(SPIF))); // wait
-        auto highest = SPDR;
-        digitalWrite<i960Pinout::GPIOSelect, HIGH>();
-        address_.bytes[3] = highest;
-#else
         address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
-#endif
     }
     static void updateHighest8() noexcept {
         // only read the upper 8 bits
-#if defined(ARDUINO_AVR_ATmega1284)
-        constexpr auto Upper16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Upper16Lines);
-        constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIOB);
-        digitalWrite<i960Pinout::GPIOSelect, HIGH>();
-        SPDR = Upper16Opcode;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        SPDR = GPIOOpcode;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        SPDR = 0;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        auto highest = SPDR;
-        digitalWrite<i960Pinout::GPIOSelect, LOW>();
-        address_.bytes[3] = highest;
-#else
         address_.bytes[3] = read8<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPIOB>();
-#endif
     }
     static void updateHigher8() noexcept {
         // only read the upper 8 bits
-#if defined(ARDUINO_AVR_ATmega1284)
-        constexpr auto Upper16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Upper16Lines);
-        constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIOA);
-        digitalWrite<i960Pinout::GPIOSelect, HIGH>();
-        SPDR = Upper16Opcode;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        SPDR = GPIOOpcode;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        SPDR = 0;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        auto highest = SPDR;
-        digitalWrite<i960Pinout::GPIOSelect, LOW>();
-        address_.bytes[2] = highest;
-#else
         address_.bytes[2] = read8<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPIOA>();
-#endif
     }
     template<byte offsetMask>
     static void updateLowest8() noexcept {
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
-#if defined(ARDUINO_AVR_ATmega1284)
-        constexpr auto Lower16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Lower16Lines);
-        constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIOA);
-        digitalWrite<i960Pinout::GPIOSelect, LOW>();
-        SPDR = Lower16Opcode;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        SPDR = GPIOOpcode;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        SPDR = 0;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        auto lowest = SPDR;
-        digitalWrite<i960Pinout::GPIOSelect, HIGH>();
-        // inside of here we have access to 12 cycles to play with, so let's actually do some operations while we wait
-        // put scope ticks to force the matter
-        cacheOffsetEntry_ = (lowest >> 1) & offsetMask; // we want to make this quick to increment
-        address_.bytes[0] = lowest;
-#else
         address_.bytes[0] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOA>();
         cacheOffsetEntry_ = (address_.bytes[0] >> 1) & offsetMask; // we want to make this quick to increment
-#endif
     }
     static void updateLower8() noexcept {
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
-#if defined(ARDUINO_AVR_ATmega1284)
-        static constexpr auto Lower16Opcode = generateReadOpcode(ProcessorInterface::IOExpanderAddress::Lower16Lines);
-        static constexpr auto GPIOOpcode = static_cast<byte>(MCP23x17Registers::GPIOB);
-        digitalWrite<i960Pinout::GPIOSelect, LOW>();
-        SPDR = Lower16Opcode;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        SPDR = GPIOOpcode;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        SPDR = 0;
-        asm volatile("nop");
-        while (!(SPSR & _BV(SPIF))); // wait
-        auto lower = SPDR;
-        digitalWrite<i960Pinout::GPIOSelect, HIGH>();
-        address_.bytes[1] = lower;
-#else
         address_.bytes[1] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOB>();
-#endif
     }
 private:
     template<bool inDebugMode>
@@ -660,15 +357,7 @@ public:
     template<bool advanceAddress = true>
     static void burstNext() noexcept {
         if constexpr (advanceAddress) {
-            if constexpr (TargetBoard::onAtmega1284p()) {
-                // this is a subset of actions, we just need to read the byte enable bits continuously and advance the address by two to get to the
-                // next 16-bit word
-                // don't increment everything just the lowest byte since we will never actually span 16 byte segments in a single burst transaction
-                address_.bytes[0] += 2;
-            } else {
-                // If we are not a 1284p then just increment the whole value, this is just going to be faster on arm in general
-                address_.wholeValue_ += 2;
-            }
+            address_.wholeValue_ += 2;
         }
         if constexpr (TargetBoard::onType3()) {
             // force a delay of 2 in between transactions to make sure we don't go too fast
