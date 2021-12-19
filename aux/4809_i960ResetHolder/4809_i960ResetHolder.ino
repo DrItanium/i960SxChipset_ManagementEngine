@@ -283,7 +283,7 @@ void setup() {
     attachInterrupt(digitalPinToInterrupt(FAIL960), handleChecksumFail, RISING);
 }
 
-bool
+inline bool
 informCPU() noexcept {
     // sample blast at this point, I can guarantee it accurate for this cycle
     bool isBurstLast = DigitalPin<BLAST>::isAsserted();
@@ -291,8 +291,9 @@ informCPU() noexcept {
     DigitalPin<READY960>::pulse();
     return isBurstLast;
 }
-
-void loop() {
+[[gnu::always_inline]]
+inline void
+transactionBody() noexcept {
     // okay so we need to wait for AS and DEN to go low
     while (DigitalPin<DEN>::isDeasserted());
     /// @todo look into triggering transaction start before checking to see if den was triggered, does it improve responsiveness?
@@ -314,4 +315,29 @@ void loop() {
         }
     } while (true);
     // now we just loop back around and wait for the next
+}
+
+
+void loop() {
+    while (true) {
+        transactionBody();
+        transactionBody();
+        transactionBody();
+        transactionBody();
+
+        transactionBody();
+        transactionBody();
+        transactionBody();
+        transactionBody();
+
+        transactionBody();
+        transactionBody();
+        transactionBody();
+        transactionBody();
+
+        transactionBody();
+        transactionBody();
+        transactionBody();
+        transactionBody();
+    }
 }
