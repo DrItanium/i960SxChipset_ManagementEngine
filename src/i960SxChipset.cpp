@@ -89,8 +89,8 @@ constexpr auto CacheSize = TargetBoard::getCacheSize();
 
 //using L1Cache = CacheInstance_t<EightWayTreePLRUCacheSet, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
 //using L1Cache = CacheInstance_t<EightWayLRUCacheWay, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
-using L1Cache = CacheInstance_t<EightWayRandPLRUCacheSet, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
-//using L1Cache = CacheInstance_t<SixteenWayLRUCacheWay, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t, CompileInCacheSystemDebuggingSupport>;
+//using L1Cache = CacheInstance_t<EightWayRandPLRUCacheSet, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
+using L1Cache = CacheInstance_t<SixteenWayLRUCacheWay, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t, CompileInCacheSystemDebuggingSupport>;
 L1Cache theCache;
 
 //template<template<auto, auto, auto, typename> typename L,
