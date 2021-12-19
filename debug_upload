@@ -1,2 +1,0 @@
-#!/bin/bash
-platformio run --target debug -e 1284p -t upload
