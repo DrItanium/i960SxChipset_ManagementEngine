@@ -437,8 +437,8 @@ void setupDispatchTable() noexcept {
 }
 
 void waitForBootSignal() noexcept {
-    while (DigitalPin<i960Pinout::FAIL>::read() == LOW);
-    attachInterrupt(i960Pinout::FAIL,
+    while (DigitalPin<i960Pinout::SuccessfulBoot>::read() == LOW);
+    attachInterrupt(i960Pinout::SuccessfulBoot,
                     []() { signalHaltState("CHECKSUM FAILURE"); },
                     LOW);
 }
@@ -464,20 +464,21 @@ void setup() {
     // get SPI setup ahead of time
     SPI.begin();
     configurePins<
-            //i960Pinout::PSRAM_EN,
             i960Pinout::SD_EN,
             i960Pinout::Ready,
             i960Pinout::GPIOSelect,
             i960Pinout::BE0,
             i960Pinout::BE1,
-            i960Pinout::BLAST_,
             i960Pinout::W_R_,
-            i960Pinout::DEN_,
-            i960Pinout::FAIL,
+            i960Pinout::SuccessfulBoot,
             i960Pinout::INT_EN0,
             i960Pinout::INT_EN1,
             i960Pinout::INT_EN2,
-            i960Pinout::INT_EN3>();
+            i960Pinout::INT_EN3,
+            i960Pinout::StartTransaction,
+            i960Pinout::EndTransaction,
+            i960Pinout::DoCycle,
+            i960Pinout::BurstNext>();
     // all of these pins need to be pulled high
     //digitalWrite<i960Pinout::PSRAM_EN, HIGH>();
     DigitalPin<i960Pinout::SD_EN>::deassertPin();
