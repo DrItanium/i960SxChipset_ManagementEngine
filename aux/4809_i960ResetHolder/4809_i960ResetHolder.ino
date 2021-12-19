@@ -70,7 +70,7 @@ struct DigitalPin {
         [[gnu::always_inline]] inline static void assertPin() noexcept { digitalWriteFast(pin, getAssertionState()); } \
         [[gnu::always_inline]] inline static void deassertPin() noexcept { digitalWriteFast(pin,getDeassertionState()); } \
         [[gnu::always_inline]] inline static void write(decltype(LOW) value) noexcept { digitalWriteFast(pin,value); } \
-        [[gnu::always_inline]] inline static void pulse() noexcept {  assertPin(); deassertPin(); } \
+        [[gnu::always_inline]] inline static void pulse() noexcept {  assertPin(); __builtin_avr_nops(1); deassertPin(); } \
         [[gnu::always_inline]] static void configure() noexcept { pinMode(pin, OUTPUT); } \
     }
 
