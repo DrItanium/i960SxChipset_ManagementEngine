@@ -59,13 +59,11 @@ constexpr auto Serial0BaseAddress = 0xFB00'0000;
 constexpr auto DisplayBaseAddress = 0xFC00'0000;
 constexpr auto SDBaseAddress = 0xFD00'0000;
 constexpr auto MaximumNumberOfOpenFiles = 16;
-constexpr auto CompileInAddressDebuggingSupport = true;
-constexpr auto AddressDebuggingEnabledOnStartup = true;
-constexpr auto CompileInCacheSystemDebuggingSupport = true;
-constexpr auto CompileInExtendedDebugInformation = true;
-constexpr auto UsePSRAMForType2 = false;
-constexpr auto ValidateTransferDuringInstall = TargetBoard::onType3() || (TargetBoard::onType2() && UsePSRAMForType2);
-constexpr auto UseSingleChannelConfigurationForType2 = true;
+constexpr auto CompileInAddressDebuggingSupport = false;
+constexpr auto AddressDebuggingEnabledOnStartup = false;
+constexpr auto CompileInCacheSystemDebuggingSupport = false;
+constexpr auto CompileInExtendedDebugInformation = false;
+constexpr auto ValidateTransferDuringInstall = false;
 /**
  * @brief When set to true, the interrupt lines the mcp23s17 provides are used to determine which bytes to read
  */
@@ -82,14 +80,6 @@ using ConfigurationSpace = CoreChipsetFeatures<TheConsoleInterface,
 // at this point in time, if no specialization is performed, use SDCard as ram backend
 using FallbackMemory = SDCardAsRam<TheSDInterface >;
 template<TargetMCU mcu> struct BackingMemoryStorage final { using Type = FallbackMemory; };
-template<> struct BackingMemoryStorage<TargetMCU::ATmega1284p_Type1> final { using Type = OnboardPSRAMBlock; };
-template<> struct BackingMemoryStorage<TargetMCU::ATmega1284p_Type2> final {
-#ifdef CHIPSET_TYPE2
-    using Type = conditional_t<UsePSRAMForType2 , Type2MemoryBlock<UseSingleChannelConfigurationForType2>, FallbackMemory>;
-#else
-    using Type = conditional_t<UsePSRAMForType2 , OnboardPSRAMBlock , FallbackMemory>;
-#endif
-};
 
 using BackingMemoryStorage_t = BackingMemoryStorage<TargetBoard::getMCUTarget()>::Type;
 constexpr auto NumAddressBitsForPSRAMCache = 26;
@@ -97,9 +87,7 @@ constexpr auto NumAddressBits = NumAddressBitsForPSRAMCache;
 constexpr auto CacheLineSize = TargetBoard::getCacheLineSizeInBits();
 constexpr auto CacheSize = TargetBoard::getCacheSize();
 template<auto a, auto b, auto c, typename d, bool e>
-using CacheWayStyle = conditional_t<TargetBoard::onType1(), EightWayRandPLRUCacheSet<a,b,c,d,e>,
-        conditional_t<TargetBoard::onType2(), conditional_t<UsePSRAMForType2, EightWayRandPLRUCacheSet<a,b,c,d, e>, SixteenWayLRUCacheWay<a,b,c,d, e>>,
-                conditional_t<TargetBoard::onType3(), SixteenWayLRUCacheWay<a, b, c, d, e>, EightWayRandPLRUCacheSet<a,b,c,d, e>>>>;
+using CacheWayStyle = conditional_t<TargetBoard::onType3(), SixteenWayLRUCacheWay<a, b, c, d, e>, EightWayRandPLRUCacheSet<a,b,c,d, e>>;
 
 //using L1Cache = CacheInstance_t<EightWayTreePLRUCacheSet, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
 //using L1Cache = CacheInstance_t<EightWayLRUCacheWay, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
@@ -135,21 +123,18 @@ waitForCycleUnlock() noexcept {
     // you must scan the BLAST_ pin before pulsing ready, the cpu will change blast for the next transaction
     pulse<i960Pinout::Ready>();
     // make sure that we just wait for the gating signal before continuing
-    Serial.println("Informed Management Engine... Waiting");
     while (true) {
         // this is mutually exclusive, the management engine will only ever trigger one of these
         if (endTransactionTriggered) {
             // clear flags
             endTransactionTriggered = false;
             burstNextTriggered = false;
-            Serial.println("\tEND TRANSACTION!");
             return true;
         }
         if (burstNextTriggered) {
             // clear flags
             endTransactionTriggered = false;
             burstNextTriggered = false;
-            Serial.println("\tBURST NEXT!");
             return false;
         }
     }
