@@ -23,3 +23,7 @@
    AS_ = Count, // not connected
    FAIL = Count,
    BLAST_ = Count,
+   PSRAM_EN = Count,
+   PSRAM_EN1 = Count,
+   PSRAM_EN2 = Count,
+   PSRAM_EN3 = Count,
