@@ -157,18 +157,7 @@ struct PinAsserter final {
     PinAsserter() noexcept { DigitalPin<pin>::assertPin(); }
     ~PinAsserter() noexcept { DigitalPin<pin>::deassertPin(); }
 };
-volatile bool denTriggered = false;
-volatile bool asTriggered = false;
 volatile bool readyTriggered = false;
-
-void
-handleASTrigger() noexcept {
-    asTriggered = true;
-}
-void
-handleDENTrigger() noexcept {
-    denTriggered = true;
-}
 
 void
 handleREADYTrigger() noexcept {
@@ -237,9 +226,9 @@ void setup() {
         PinAsserter<Reset960> holdI960InReset;
         DigitalPin<WAITBOOT960>::configure();
         delay(2000);
-        Serial1.swap(1);
-        Serial1.begin(9600);
-        Serial1.println("Bringing everything up!");
+        //Serial1.swap(1);
+        //Serial1.begin(9600);
+        //Serial1.println("Bringing everything up!");
         configurePins<DEN,
                 HLDA960,
                 FAIL960,
@@ -272,26 +261,24 @@ void setup() {
                      SYSTEMBOOT,
                      READY960>();
         // these interrupts are used by the boot process and such
-        Serial1.println("Setting up Interrupts");
-        attachInterrupt(digitalPinToInterrupt(DEN), handleDENTrigger, FALLING);
-        attachInterrupt(digitalPinToInterrupt(AS), handleASTrigger, FALLING);
+        //Serial1.println("Setting up Interrupts");
         attachInterrupt(digitalPinToInterrupt(MCU_READY), handleREADYTrigger, FALLING);
-        Serial1.println("Waiting for the chipset to be ready");
+        //Serial1.println("Waiting for the chipset to be ready");
         while (DigitalPin<WAITBOOT960>::isAsserted());
     }
 
     while (DigitalPin<FAIL960>::isLow()) {
-        if (asTriggered && denTriggered) {
+        if (DigitalPin<DEN>::isAsserted()) {
             break;
         }
     }
     while (DigitalPin<FAIL960>::isHigh()) {
-        if (asTriggered && denTriggered) {
+        if (DigitalPin<DEN>::isAsserted()) {
             break;
         }
     }
     DigitalPin<SYSTEMBOOT>::assertPin();
-    Serial1.println("SYSTEM BOOTED!");
+    //Serial1.println("SYSTEM BOOTED!");
     // after this point, if FAIL960 ever goes from LOW to HIGH again, then we have checksum failed!
     attachInterrupt(digitalPinToInterrupt(FAIL960), handleChecksumFail, RISING);
 }
@@ -307,10 +294,7 @@ informCPU() noexcept {
 
 void loop() {
     // okay so we need to wait for AS and DEN to go low
-    while (!asTriggered);
-    asTriggered = false;
-    while (!denTriggered);
-    denTriggered = false;
+    while (DigitalPin<DEN>::isDeasserted());
     /// @todo look into triggering transaction start before checking to see if den was triggered, does it improve responsiveness?
     DigitalPin<TRANSACTION_START>::pulse(); // tell the chipset that it can safely pull down the base address of the transaction
     // okay now we need to emulate the wait loop
