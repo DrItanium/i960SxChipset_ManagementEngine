@@ -339,8 +339,6 @@ public:
                 if constexpr (inDebugMode && (debugLevel > 0)) {
                     Serial.print(F("ADDRESS0: 0x"));
                     Serial.println(address_.getWholeValue(), HEX);
-                    // put in a delay so we can test the results
-                    delayMicroseconds(2);
                     full32BitUpdate<offsetMask>();
                     updateTargetFunctions<inDebugMode>();
                     Serial.print(F("ADDRESS1: 0x"));
@@ -358,11 +356,6 @@ public:
     static void burstNext() noexcept {
         if constexpr (advanceAddress) {
             address_.wholeValue_ += 2;
-        }
-        if constexpr (TargetBoard::onType3()) {
-            // force a delay of 2 in between transactions to make sure we don't go too fast
-            // a better mechanism will be necessary in the future
-            delayMicroseconds(2);
         }
     }
     /**
