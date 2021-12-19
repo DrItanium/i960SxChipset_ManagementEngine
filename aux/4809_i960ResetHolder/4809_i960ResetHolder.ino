@@ -321,23 +321,5 @@ transactionBody() noexcept {
 void loop() {
     while (true) {
         transactionBody();
-        transactionBody();
-        transactionBody();
-        transactionBody();
-
-        transactionBody();
-        transactionBody();
-        transactionBody();
-        transactionBody();
-
-        transactionBody();
-        transactionBody();
-        transactionBody();
-        transactionBody();
-
-        transactionBody();
-        transactionBody();
-        transactionBody();
-        transactionBody();
     }
 }
