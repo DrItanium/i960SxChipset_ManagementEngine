@@ -479,6 +479,10 @@ void setup() {
             i960Pinout::EndTransaction,
             i960Pinout::DoCycle,
             i960Pinout::BurstNext>();
+    interruptOnFallingEdge(i960Pinout::StartTransaction, onStartTransaction);
+    interruptOnFallingEdge(i960Pinout::EndTransaction, onEndTransaction);
+    interruptOnFallingEdge(i960Pinout::DoCycle, onDoCycle);
+    interruptOnFallingEdge(i960Pinout::BurstNext, onBurstNext);
     // all of these pins need to be pulled high
     //digitalWrite<i960Pinout::PSRAM_EN, HIGH>();
     DigitalPin<i960Pinout::SD_EN>::deassertPin();
@@ -564,7 +568,7 @@ signalHaltState(const char* haltMsg) noexcept {
 #ifdef __arm__
 [[noreturn]]
 void
-signalHaltState(const std::string& haltMsg) {
+signalHaltState(const std::string& haltMsg) noexcept {
     signalHaltState(haltMsg.c_str());
 }
 #endif
