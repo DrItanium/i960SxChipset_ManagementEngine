@@ -157,6 +157,10 @@ DefInputPin(i960Pinout::INT_EN0, LOW, HIGH);
 DefInputPin(i960Pinout::INT_EN1, LOW, HIGH);
 DefInputPin(i960Pinout::INT_EN2, LOW, HIGH);
 DefInputPin(i960Pinout::INT_EN3, LOW, HIGH);
+DefInputPin(i960Pinout::DoCycle, LOW, HIGH);
+DefInputPin(i960Pinout::BurstNext, LOW, HIGH);
+DefInputPin(i960Pinout::StartTransaction, LOW, HIGH);
+DefInputPin(i960Pinout::EndTransaction, LOW, HIGH);
 #undef DefSPICSPin
 #undef DefInputPin
 #undef DefOutputPin
