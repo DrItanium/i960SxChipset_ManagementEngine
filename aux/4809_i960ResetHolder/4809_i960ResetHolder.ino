@@ -70,7 +70,7 @@ struct DigitalPin {
         [[gnu::always_inline]] inline static void assertPin() noexcept { digitalWriteFast(pin, getAssertionState()); } \
         [[gnu::always_inline]] inline static void deassertPin() noexcept { digitalWriteFast(pin,getDeassertionState()); } \
         [[gnu::always_inline]] inline static void write(decltype(LOW) value) noexcept { digitalWriteFast(pin,value); } \
-        [[gnu::always_inline]] inline static void pulse() noexcept {  assertPin(); __builtin_avr_nops(1); deassertPin(); } \
+        [[gnu::always_inline]] inline static void pulse() noexcept {  assertPin(); __builtin_avr_nops(2); deassertPin(); } \
         [[gnu::always_inline]] static void configure() noexcept { pinMode(pin, OUTPUT); } \
     }
 
@@ -291,6 +291,13 @@ informCPU() noexcept {
     DigitalPin<READY960>::pulse();
     return isBurstLast;
 }
+[[gnu::always_inline]]
+inline void
+tellI960() noexcept {
+    while (!readyTriggered) ;
+    readyTriggered = false;
+    DigitalPin<READY960>::pulse();
+}
 
 void loop() {
     // okay so we need to wait for AS and DEN to go low
@@ -300,23 +307,19 @@ void loop() {
     // okay now we need to emulate the wait loop
     do {
         DigitalPin<DO_CYCLE>::pulse(); // tell the chipset that it is safe to process this data cycle (regardless of where we are)
-        auto isBurstLast = DigitalPin<BLAST>::isAsserted();
-        if (isBurstLast) {
+        if (DigitalPin<BLAST>::isAsserted()) {
             DigitalPin<TRANSACTION_END>::pulse(); // let the chipset know this is the end of the transaction
+            tellI960();
+            break; // leave the loop!
         } else {
             // if we got here then it is a burst transaction and as such
             // let the chipset know this is the next word of the burst transaction
             // this will act as a gate action
             DigitalPin<BURST_NEXT>::pulse();
+            tellI960();
         }
         // now figure out what kind of
         // now wait for the chipset to tell us it has satisified the current part of the transaction
-        while (!readyTriggered);
-        readyTriggered = false;
-        DigitalPin<READY960>::pulse();
-        if (isBurstLast) {
-            break; // leave the loop!
-        }
     } while (true);
     // now we just loop back around and wait for the next
 }
