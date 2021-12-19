@@ -135,18 +135,21 @@ waitForCycleUnlock() noexcept {
     // you must scan the BLAST_ pin before pulsing ready, the cpu will change blast for the next transaction
     pulse<i960Pinout::Ready>();
     // make sure that we just wait for the gating signal before continuing
+    Serial.println("Informed Management Engine... Waiting");
     while (true) {
         // this is mutually exclusive, the management engine will only ever trigger one of these
         if (endTransactionTriggered) {
             // clear flags
             endTransactionTriggered = false;
             burstNextTriggered = false;
+            Serial.println("\tEND TRANSACTION!");
             return true;
         }
         if (burstNextTriggered) {
             // clear flags
             endTransactionTriggered = false;
             burstNextTriggered = false;
+            Serial.println("\tBURST NEXT!");
             return false;
         }
     }
