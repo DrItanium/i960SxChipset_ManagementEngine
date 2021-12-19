@@ -197,4 +197,24 @@ inline void configurePins() noexcept {
     (DigitalPin<pins>::configure(), ...);
 }
 
+[[gnu::always_inline]]
+inline void attachInterrupt(i960Pinout pin, voidFuncPtr callback, uint32_t mode) noexcept {
+    attachInterrupt(digitalPinToInterrupt(static_cast<uint32_t>(pin)),
+                    callback,
+                    mode);
+}
+
+[[gnu::always_inline]]
+inline void interruptOnFallingEdge(i960Pinout pin, voidFuncPtr callback) noexcept {
+    attachInterrupt(pin, callback, FALLING);
+}
+
+[[gnu::always_inline]]
+inline void interruptOnRisingEdge(i960Pinout pin, voidFuncPtr callback) noexcept {
+    attachInterrupt(pin, callback, RISING);
+}
+
+
+
+
 #endif //ARDUINO_PINOUT_H

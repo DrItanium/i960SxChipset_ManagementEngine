@@ -114,27 +114,42 @@ L1Cache theCache;
 //using L1Cache = MultiCache<L, NumberOfCaches, IndividualCacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
 //L1Cache<DirectMappedCacheWay, 11, 1024, 6> theCache;
 
+volatile bool startTransactionTriggered = false;
+volatile bool endTransactionTriggered = false;
+volatile bool doCycleTriggered = false;
+volatile bool burstNextTriggered = false;
+void onStartTransaction() noexcept { startTransactionTriggered = true; }
+void onEndTransaction() noexcept { endTransactionTriggered = true; }
+void onDoCycle() noexcept { doCycleTriggered = true; }
+void onBurstNext() noexcept { burstNextTriggered = true; }
 
-
-volatile bool addressStart = false;
-volatile bool denStart = false;
-void addressCycleStart() noexcept {
-    addressStart = true;
+/**
+ * @brief
+ */
+void
+waitForCycleUnlock() noexcept {
+    while (!doCycleTriggered);
+    doCycleTriggered = false;
 }
-void dataCycleStart() noexcept {
-    denStart = true;
-}
-
-
 [[nodiscard]] bool informCPU() noexcept {
     // you must scan the BLAST_ pin before pulsing ready, the cpu will change blast for the next transaction
-    if constexpr (TargetBoard::onType3()) {
-        denStart = false;
-        addressStart = false;
-    }
-    auto isBurstLast = DigitalPin<i960Pinout::BLAST_>::isAsserted();
     pulse<i960Pinout::Ready>();
-    return isBurstLast;
+    // make sure that we just wait for the gating signal before continuing
+    while (true) {
+        // this is mutually exclusive, the management engine will only ever trigger one of these
+        if (endTransactionTriggered) {
+            // clear flags
+            endTransactionTriggered = false;
+            burstNextTriggered = false;
+            return true;
+        }
+        if (burstNextTriggered) {
+            // clear flags
+            endTransactionTriggered = false;
+            burstNextTriggered = false;
+            return false;
+        }
+    }
 }
 constexpr auto IncrementAddress = true;
 constexpr auto LeaveAddressAlone = false;
@@ -154,29 +169,27 @@ inline void fallbackBody() noexcept {
     // fallback, be consistent to make sure we don't run faster than the i960
     if (ProcessorInterface::isReadOperation()) {
         ProcessorInterface::setupDataLinesForRead();
-        for (;;) {
-            // need to introduce some delay
+        do {
+            // wait for
+            waitForCycleUnlock();
             ProcessorInterface::setDataBits(0);
             if (informCPU()) {
                 break;
             }
             ProcessorInterface::burstNext<LeaveAddressAlone>();
-        }
+        } while (true);
     } else {
         ProcessorInterface::setupDataLinesForWrite();
-        for (;;) {
-            // put four cycles worth of delay into this to make damn sure we are ready with the i960
-#ifdef ARDUINO_AVR_ATmega1284
-            __builtin_avr_nops(4);
-#else
-            delayMicroseconds(2);
-#endif
-            // need to introduce some delay
+        do {
+            // wait for
+            waitForCycleUnlock();
+            // get the data bits but do nothing with it just to delay things
+            (void)ProcessorInterface::getDataBits();
             if (informCPU()) {
                 break;
             }
             ProcessorInterface::burstNext<LeaveAddressAlone>();
-        }
+        } while (true);
     }
 }
 
@@ -192,6 +205,7 @@ inline void handleMemoryInterface() noexcept {
         // when dealing with read operations, we can actually easily unroll the do while by starting at the cache offset entry and walking
         // forward until we either hit the end of the cache line or blast is asserted first (both are valid states)
         for (byte i = ProcessorInterface::getCacheOffsetEntry(); i < MaximumNumberOfWordsTransferrableInASingleTransaction; ++i) {
+            waitForCycleUnlock();
             auto outcome = theEntry.get(i);
             if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
                 Serial.print(F("\tOffset: 0x")) ;
@@ -204,9 +218,6 @@ inline void handleMemoryInterface() noexcept {
             // Only pay for what we need even if it is slower
             ProcessorInterface::setDataBits(outcome);
             if (informCPU()) {
-                if constexpr (TargetBoard::onType3()) {
-                    delayMicroseconds(2);
-                }
                 break;
             }
             // so if I don't increment the address, I think we run too fast xD based on some experimentation
@@ -219,6 +230,7 @@ inline void handleMemoryInterface() noexcept {
 
         // Also the manual states that the processor cannot burst across 16-byte boundaries so :D.
         for (byte i = ProcessorInterface::getCacheOffsetEntry(); i < MaximumNumberOfWordsTransferrableInASingleTransaction; ++i) {
+            waitForCycleUnlock();
             auto bits = ProcessorInterface::getDataBits();
             if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
                 Serial.print(F("\tOffset: 0x")) ;
@@ -230,9 +242,6 @@ inline void handleMemoryInterface() noexcept {
             }
             theEntry.set(i, ProcessorInterface::getStyle(), bits);
             if (informCPU()) {
-                if constexpr (TargetBoard::onType3()) {
-                    delayMicroseconds(2);
-                }
                 break;
             }
             // the manual doesn't state that the burst transaction will always have BE0 and BE1 pulled low and this is very true, you must
@@ -240,9 +249,6 @@ inline void handleMemoryInterface() noexcept {
             // so if I don't increment the address, I think we run too fast xD based on some experimentation
             ProcessorInterface::burstNext<LeaveAddressAlone>();
         }
-    }
-    if constexpr (TargetBoard::onType3()) {
-        delayMicroseconds(2);
     }
 }
 
@@ -256,6 +262,7 @@ inline void handleExternalDeviceRequest() noexcept {
     if (ProcessorInterface::isReadOperation()) {
         ProcessorInterface::setupDataLinesForRead();
         for(;;) {
+            waitForCycleUnlock();
             auto result = T::read(ProcessorInterface::getPageIndex(),
                                   ProcessorInterface::getPageOffset(),
                                   ProcessorInterface::getStyle());
@@ -269,9 +276,6 @@ inline void handleExternalDeviceRequest() noexcept {
             }
             ProcessorInterface::setDataBits(result);
             if (informCPU()) {
-                if constexpr (TargetBoard::onType3()) {
-                    delayMicroseconds(2);
-                }
                 break;
             }
             ProcessorInterface::burstNext<IncrementAddress>();
@@ -279,6 +283,7 @@ inline void handleExternalDeviceRequest() noexcept {
     } else {
         ProcessorInterface::setupDataLinesForWrite();
         for (;;) {
+            waitForCycleUnlock();
             auto dataBits = ProcessorInterface::getDataBits();
             if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
                 Serial.print(F("\tPage Index: 0x")) ;
@@ -293,9 +298,6 @@ inline void handleExternalDeviceRequest() noexcept {
                      ProcessorInterface::getStyle(),
                      dataBits);
             if (informCPU()) {
-                if constexpr (TargetBoard::onType3()) {
-                    delayMicroseconds(2);
-                }
                 break;
             }
             // be careful of querying i960 state at this point because the chipset runs at twice the frequency of the i960
@@ -303,24 +305,13 @@ inline void handleExternalDeviceRequest() noexcept {
             ProcessorInterface::burstNext<IncrementAddress>();
         }
     }
-    if constexpr (TargetBoard::onType3()) {
-        delayMicroseconds(2);
-    }
 }
 
 template<bool inDebugMode, bool useInterrupts>
 inline void invocationBody() noexcept {
-    // wait until AS goes from low to high
-    // then wait until the DEN state is asserted
-    if constexpr (TargetBoard::onType3()) {
-        while (!addressStart);
-        addressStart = false;
-        while (!denStart);
-        denStart = false;
-        delayMicroseconds(2);
-    } else {
-        while (DigitalPin<i960Pinout::DEN_>::isDeasserted());
-    }
+    // wait for the management engine to give the go ahead
+    while (!startTransactionTriggered);
+    startTransactionTriggered = false;
 
     // keep processing data requests until we
     // when we do the transition, record the information we need
@@ -445,84 +436,22 @@ void setupDispatchTable() noexcept {
     }
 }
 
-void setupChipsetVersionSpecificPins() noexcept {
-#ifdef CHIPSET_TYPE1
-    Serial.println(F("Bringing up type1 specific aspects!"));
-    setupPins(OUTPUT,
-              i960Pinout::SPI_OFFSET0,
-              i960Pinout::SPI_OFFSET1,
-              i960Pinout::SPI_OFFSET2,
-              i960Pinout::Int0_);
-    digitalWrite<i960Pinout::SPI_OFFSET0, LOW>();
-    digitalWrite<i960Pinout::SPI_OFFSET1, LOW>();
-    digitalWrite<i960Pinout::SPI_OFFSET2, LOW>();
-    digitalWrite<i960Pinout::Int0_, HIGH>();
-    setupPins(INPUT,
-              i960Pinout::BA1,
-              i960Pinout::BA2,
-              i960Pinout::BA3);
-#endif
-#ifdef CHIPSET_TYPE2
-    Serial.println(F("Bringing up type2 specific aspects!"));
-    UBRR1 = 0x0000;
-    pinMode(i960Pinout::SCK1, OUTPUT); // setup XCK1 which is actually SCK1
-    UCSR1C = _BV(UMSEL11) | _BV(UMSEL10); // set usart spi mode of operation and SPI data mode 1,1
-    UCSR1B = _BV(TXEN1) | _BV(RXEN1); // enable transmitter and reciever
-    // set the baud rate. IMPORTANT: The Baud Rate must be set after the Transmitter is enabled
-    UBRR1 = 0x0000; // where maximum speed of FCPU/2 = 0x0000
-    // make sure we setup the PSRAM enable pins
-    pinMode(i960Pinout::INT_EN2, INPUT);
-    pinMode(i960Pinout::INT_EN3, INPUT);
-    pinMode(i960Pinout::PSRAM_EN1, OUTPUT);
-    digitalWrite<i960Pinout::PSRAM_EN1, HIGH>();
-#endif
-#ifdef CHIPSET_TYPE3
-    DigitalPin<i960Pinout::INT_EN2>::configure();
-    DigitalPin<i960Pinout::INT_EN3>::configure();
-    DigitalPin<i960Pinout::DEN_>::configure();
-    pinMode(i960Pinout::AS_, INPUT_PULLUP);
-    pinMode(i960Pinout::DEN_, INPUT);
-    attachInterrupt(digitalPinToInterrupt(static_cast<byte>(i960Pinout::DEN_)), dataCycleStart, FALLING);
-    attachInterrupt(digitalPinToInterrupt(static_cast<byte>(i960Pinout::AS_)), addressCycleStart, FALLING);
-#endif
-}
 void waitForBootSignal() noexcept {
-    if constexpr (TargetBoard::onType1() || TargetBoard::onType2()) {
-        // at this point we have started execution of the i960
-        // wait until we enter self test state
-        while (DigitalPin<i960Pinout::FAIL>::isDeasserted()) {
-            if (DigitalPin<i960Pinout::DEN_>::isAsserted()) {
-                break;
-            }
-        }
-
-        // now wait until we leave self test state
-        while (DigitalPin<i960Pinout::FAIL>::isAsserted()) {
-            if (DigitalPin<i960Pinout::DEN_>::isAsserted()) {
-                break;
-            }
-        }
-    } else {
-        while (DigitalPin<i960Pinout::FAIL>::read() == LOW);
-        attachInterrupt(digitalPinToInterrupt(static_cast<byte>(i960Pinout::FAIL)),
-                        []() { signalHaltState("CHECKSUM FAILURE"); },
-                        LOW);
-    }
+    while (DigitalPin<i960Pinout::FAIL>::read() == LOW);
+    attachInterrupt(i960Pinout::FAIL,
+                    []() { signalHaltState("CHECKSUM FAILURE"); },
+                    LOW);
 }
 // the setup routine runs once when you press reset:
 void setup() {
-#ifdef CHIPSET_TYPE3
     DigitalPin<i960Pinout::Reset4809>::configure();
     DigitalPin<i960Pinout::Reset4809>::assertPin();
-#endif
     // always do this first to make sure that we put the i960 into reset regardless of target
     pinMode(i960Pinout::Reset960, OUTPUT) ;
     digitalWrite<i960Pinout::Reset960, LOW>();
-#ifdef CHIPSET_TYPE3
     // make sure that the 4809 has enough time and also make sure that the i960 has enough time to undegrade itself!
     delay(1);
     DigitalPin<i960Pinout::Reset4809>::deassertPin();
-#endif
     Serial.begin(115200);
     while (!Serial) {
         delay(10);
@@ -534,29 +463,27 @@ void setup() {
     // duration of the setup function
     // get SPI setup ahead of time
     SPI.begin();
-    setupPins(OUTPUT,
-              i960Pinout::PSRAM_EN,
-              i960Pinout::SD_EN,
-              i960Pinout::Ready,
-              i960Pinout::GPIOSelect);
+    configurePins<
+            //i960Pinout::PSRAM_EN,
+            i960Pinout::SD_EN,
+            i960Pinout::Ready,
+            i960Pinout::GPIOSelect,
+            i960Pinout::BE0,
+            i960Pinout::BE1,
+            i960Pinout::BLAST_,
+            i960Pinout::W_R_,
+            i960Pinout::DEN_,
+            i960Pinout::FAIL,
+            i960Pinout::INT_EN0,
+            i960Pinout::INT_EN1,
+            i960Pinout::INT_EN2,
+            i960Pinout::INT_EN3>();
     // all of these pins need to be pulled high
-    digitalWrite<i960Pinout::PSRAM_EN, HIGH>();
-    digitalWrite<i960Pinout::SD_EN, HIGH>();
-    digitalWrite<i960Pinout::Ready, HIGH>();
-    digitalWrite<i960Pinout::GPIOSelect, HIGH>();
-    setupPins(INPUT,
-              i960Pinout::BE0,
-              i960Pinout::BE1,
-              i960Pinout::BLAST_,
-              i960Pinout::W_R_,
-              i960Pinout::DEN_,
-              i960Pinout::FAIL,
-              i960Pinout::INT_EN0,
-              i960Pinout::INT_EN1
-    );
-    setupChipsetVersionSpecificPins();
+    //digitalWrite<i960Pinout::PSRAM_EN, HIGH>();
+    DigitalPin<i960Pinout::SD_EN>::deassertPin();
+    DigitalPin<i960Pinout::Ready>::deassertPin();
+    DigitalPin<i960Pinout::GPIOSelect>::deassertPin();
     // setup the pins that could be attached to an io expander separately
-    //pinMode(i960Pinout::MISO, INPUT_PULLUP);
     theCache.begin();
     // purge the cache pages
     ConfigurationSpace::begin();
@@ -569,20 +496,6 @@ void setup() {
     Serial.println(F("i960Sx chipset brought up fully!"));
     digitalWrite<i960Pinout::Reset960, HIGH>();
     waitForBootSignal();
-    // at this point we are in idle so we are safe to loaf around a bit
-    // at this point, the i960 will request 32-bytes to perform a boot check sum on.
-    // If the checksum is successful then execution will continue as normal
-    // first set of 16-byte request from memory
-
-    // on bootup we need to ignore the interrupt lines for now
-    doInvocationBody<CompileInAddressDebuggingSupport, false>();
-    doInvocationBody<CompileInAddressDebuggingSupport, false>();
-    if constexpr (TargetBoard::onAtmega1284p()) {
-        if (DigitalPin<i960Pinout::FAIL>::isAsserted()) {
-            signalHaltState(F("CHECKSUM FAILURE!"));
-        }
-    }
-    Serial.println(F("SYSTEM BOOT SUCCESSFUL!"));
 }
 // ----------------------------------------------------------------
 // state machine
