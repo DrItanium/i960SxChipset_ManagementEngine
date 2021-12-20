@@ -85,7 +85,7 @@ constexpr auto NumAddressBits = 32;
 constexpr auto CacheLineSize = TargetBoard::getCacheLineSizeInBits();
 constexpr auto CacheSize = TargetBoard::getCacheSize();
 
-using L1Cache = CacheInstance_t<EightWayRandPLRUCacheSet, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t, CompileInCacheSystemDebuggingSupport>;
+using L1Cache = CacheInstance_t<SixteenWayLRUCacheWay, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t, CompileInCacheSystemDebuggingSupport>;
 L1Cache theCache;
 
 //template<template<auto, auto, auto, typename> typename L,
@@ -184,8 +184,9 @@ inline void handleMemoryInterface() noexcept {
         // when dealing with read operations, we can actually easily unroll the do while by starting at the cache offset entry and walking
         // forward until we either hit the end of the cache line or blast is asserted first (both are valid states)
         for (byte i = ProcessorInterface::getCacheOffsetEntry(); i < MaximumNumberOfWordsTransferrableInASingleTransaction; ++i) {
-            waitForCycleUnlock();
+            // start working on getting the given value way ahead of cycle unlock happening
             auto outcome = theEntry.get(i);
+            waitForCycleUnlock();
             if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
                 Serial.print(F("\tOffset: 0x")) ;
                 Serial.print(i << 1, HEX);
@@ -209,8 +210,8 @@ inline void handleMemoryInterface() noexcept {
 
         // Also the manual states that the processor cannot burst across 16-byte boundaries so :D.
         for (byte i = ProcessorInterface::getCacheOffsetEntry(); i < MaximumNumberOfWordsTransferrableInASingleTransaction; ++i) {
-            waitForCycleUnlock();
             auto bits = ProcessorInterface::getDataBits();
+            waitForCycleUnlock();
             if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
                 Serial.print(F("\tOffset: 0x")) ;
                 Serial.print(i << 1, HEX);
