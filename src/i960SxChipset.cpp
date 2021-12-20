@@ -242,10 +242,10 @@ inline void handleExternalDeviceRequest() noexcept {
     if (ProcessorInterface::isReadOperation()) {
         ProcessorInterface::setupDataLinesForRead();
         for(;;) {
-            waitForCycleUnlock();
             auto result = T::read(ProcessorInterface::getPageIndex(),
                                   ProcessorInterface::getPageOffset(),
                                   ProcessorInterface::getStyle());
+            waitForCycleUnlock();
             if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
                 Serial.print(F("\tPage Index: 0x")) ;
                 Serial.println(ProcessorInterface::getPageIndex(), HEX);
@@ -263,8 +263,8 @@ inline void handleExternalDeviceRequest() noexcept {
     } else {
         ProcessorInterface::setupDataLinesForWrite();
         for (;;) {
-            waitForCycleUnlock();
             auto dataBits = ProcessorInterface::getDataBits();
+            waitForCycleUnlock();
             if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
                 Serial.print(F("\tPage Index: 0x")) ;
                 Serial.println(ProcessorInterface::getPageIndex(), HEX);
