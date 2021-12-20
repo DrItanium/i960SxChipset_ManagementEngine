@@ -72,7 +72,74 @@ inline void pulse() noexcept {
     digitalWrite<pin, switchTo>();
     digitalWrite<pin, ((switchTo == LOW) ? HIGH : LOW)>();
 }
+template<i960Pinout pin>
+struct DigitalPinConfiguration {
+    DigitalPinConfiguration() = delete;
+    ~DigitalPinConfiguration() = delete;
+    DigitalPinConfiguration(const DigitalPinConfiguration&) = delete;
+    DigitalPinConfiguration(DigitalPinConfiguration&&) = delete;
+    DigitalPinConfiguration& operator=(const DigitalPinConfiguration&) = delete;
+    DigitalPinConfiguration& operator=(DigitalPinConfiguration&&) = delete;
+    static constexpr bool isSpecialized() noexcept { return false; }
+    static constexpr bool isInputPin() noexcept { return false; }
+    static constexpr bool isOutputPin() noexcept { return false; }
+    static constexpr auto isInputPullupPin() noexcept { return false; }
+    static constexpr auto getDirection() noexcept { return INPUT; }
+    static constexpr auto getPin() noexcept { return pin; }
+    static constexpr auto valid() noexcept { return isValidPin960_v<pin>; }
+    static constexpr auto getAssertionState() noexcept { return LOW; }
+    static constexpr auto getDeassertionState() noexcept { return HIGH; }
+};
 
+template<i960Pinout pin>
+struct DigitalPin2 {
+    using Configuration = DigitalPinConfiguration<pin>;
+    static constexpr auto IsInputPin_v = Configuration::isInputPin();
+    static constexpr auto IsInputPullupPin_v = Configuration::isInputPullupPin();
+    static constexpr auto IsOutputPin_v = Configuration::isOutputPin();
+    static constexpr auto IsSpecialized_v = Configuration::isSpecialized();
+    DigitalPin2() = delete;
+    ~DigitalPin2() = delete;
+    DigitalPin2(const DigitalPin2&) = delete;
+    DigitalPin2(DigitalPin2&&) = delete;
+    DigitalPin2& operator=(const DigitalPin2&) = delete;
+    DigitalPin2& operator=(DigitalPin2&&) = delete;
+    static constexpr bool isInputPin() noexcept { return Configuration::isInputPin(); }
+    static constexpr bool isOutputPin() noexcept { return Configuration::isOutputPin(); }
+    static constexpr bool isInputPullupPin() noexcept { return Configuration::isInputPullupPin(); }
+    static constexpr auto getDirection() noexcept { return Configuration::getDirection(); }
+    static constexpr auto getPin() noexcept { return Configuration::getPin(); }
+    static constexpr auto valid() noexcept { return Configuration::valid(); }
+    static constexpr auto isSpecialized() noexcept { return Configuration::isSpecialized(); }
+    static void configure() noexcept {
+        // do nothing if we are not specialized
+        if constexpr (IsSpecialized_v) {
+            pinMode(getPin(), getDirection());
+            targetPort = &getPortGroup<getPin()>;
+            targetPin = &getPinDescription<pin>().ulPin;
+            //readMask = bitMasks[getPinDescr]
+        }
+        //return (getPortGroup<pin>().IN.reg & (bitMasks[getPinDescription<pin>().ulPin])) != 0 ? HIGH : LOW;
+    }
+    static constexpr auto getAssertionState() noexcept { return Configuration::getAssertionState(); }
+    static constexpr auto getDeassertionState() noexcept { return Configuration::getDeassertionState(); }
+    static constexpr auto read() noexcept {
+        if constexpr (isSpecialized()) {
+            if constexpr (isInputPin() || isInputPullupPin()) {
+                return HIGH;
+            } else {
+                // if this is specialized but an output pin then return low every time
+                return LOW;
+            }
+        } else {
+            return ::digitalRead(getPin());
+        }
+    }
+private:
+    static inline PortGroup* targetPort = nullptr;
+    static inline uint32_t targetPin = 0;
+    static inline uint32_t readMask = 0xFFFF'FFFF;
+};
 
 template<i960Pinout pin>
 struct DigitalPin {
@@ -82,9 +149,11 @@ struct DigitalPin {
     DigitalPin(DigitalPin&&) = delete;
     DigitalPin& operator=(const DigitalPin&) = delete;
     DigitalPin& operator=(DigitalPin&&) = delete;
+
     static constexpr bool isInputPin() noexcept { return false; }
     static constexpr bool isOutputPin() noexcept { return false; }
-    static constexpr bool getDirection() noexcept { return false; }
+    static constexpr bool isInputPullup() noexcept { return false; }
+    static constexpr auto getDirection() noexcept { return false; }
     static constexpr auto getPin() noexcept { return pin; }
     static constexpr auto valid() noexcept { return isValidPin960_v<pin>; }
 };
