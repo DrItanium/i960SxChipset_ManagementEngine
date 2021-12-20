@@ -189,8 +189,8 @@ public:
         }
     }
     [[nodiscard]] static auto getStyle() noexcept {
-        auto lower = static_cast<byte>(DigitalPin<i960Pinout::BE0>::read()) << 4;
-        auto upper = static_cast<byte>(DigitalPin<i960Pinout::BE1>::read()) << 5;
+        auto lower = static_cast<byte>(DigitalPin<i960Pinout::BE0>::read());
+        auto upper = static_cast<byte>(DigitalPin<i960Pinout::BE1>::read()) << 1;
         return static_cast<LoadStoreStyle>(lower | upper);
     }
     [[nodiscard]] static bool isReadOperation() noexcept { return DigitalPin<i960Pinout::W_R_>::isAsserted(); }

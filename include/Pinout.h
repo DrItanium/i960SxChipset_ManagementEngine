@@ -32,12 +32,10 @@ using Address = uint32_t;
  * @brief Sx Load/Store styles that the processor will request
  */
 enum class LoadStoreStyle : uint8_t {
-    // based off of BE0,BE1 pins
-    // no need to shift
-    Full16 = 0b0000'0000,
-    Upper8 = 0b0001'0000,
-    Lower8 = 0b0010'0000,
-    None = 0b0011'0000,
+    Full16 = 0,
+    Upper8,
+    Lower8,
+    None
 };
 enum class i960Pinout : int {
 #ifdef CHIPSET_TYPE3
