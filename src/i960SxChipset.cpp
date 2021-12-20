@@ -109,11 +109,7 @@ void onEndTransaction() noexcept { endTransactionTriggered = true; }
 void onDoCycle() noexcept { doCycleTriggered = true; }
 void onBurstNext() noexcept { burstNextTriggered = true; }
 
-/**
- * @brief
- */
-void
-waitForCycleUnlock() noexcept {
+inline void waitForCycleUnlock() noexcept {
     while (!doCycleTriggered);
     doCycleTriggered = false;
 }

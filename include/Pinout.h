@@ -163,18 +163,6 @@ DefInputPin(i960Pinout::EndTransaction, LOW, HIGH);
 #undef DefInputPin
 #undef DefOutputPin
 
-template<typename ... Pins>
-[[gnu::always_inline]]
-inline void setupPins(decltype(OUTPUT) direction, Pins ... pins) noexcept {
-    (pinMode(pins, direction), ...);
-}
-
-template<typename ... Pins>
-[[gnu::always_inline]]
-inline void digitalWriteBlock(decltype(HIGH) value, Pins ... pins) noexcept {
-    (digitalWrite(pins, value), ...);
-}
-
 template<i960Pinout pinId>
 class PinAsserter {
 public:

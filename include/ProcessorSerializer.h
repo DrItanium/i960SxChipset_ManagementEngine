@@ -70,11 +70,11 @@ class ProcessorInterface {
         DataLines = 0b0000,
         Lower16Lines = 0b0010,
         Upper16Lines = 0b0100,
-        MemoryCommitExtras = 0b0110,
-        OtherDevice0 = 0b1000,
-        OtherDevice1 = 0b1010,
-        OtherDevice2 = 0b1100,
-        OtherDevice3 = 0b1110,
+        OtherDevice0 = 0b0110,
+        OtherDevice1 = 0b1000,
+        OtherDevice2 = 0b1010,
+        OtherDevice3 = 0b1100,
+        OtherDevice4 = 0b1110,
     };
     static constexpr byte generateReadOpcode(ProcessorInterface::IOExpanderAddress address) noexcept {
         return 0b0100'0001 | static_cast<uint8_t>(address);
@@ -168,24 +168,15 @@ public:
     static void begin() noexcept;
     [[nodiscard]] static constexpr Address getAddress() noexcept { return address_.getWholeValue(); }
     [[nodiscard]] static SplitWord16 getDataBits() noexcept {
-        if constexpr (TargetBoard::onType1() || TargetBoard::onType2() || TargetBoard::onType3()) {
-            return readGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>();
-        } else {
-            // stub out
-            return SplitWord16(0);
-        }
+        return readGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>();
     }
     static void setDataBits(uint16_t value) noexcept {
-        if constexpr (TargetBoard::onType1() || TargetBoard::onType2() || TargetBoard::onType3()) {
-            // the latch is preserved in between data line changes
-            // okay we are still pointing as output values
-            // check the latch and see if the output value is the same as what is latched
-            if (latchedDataOutput.getWholeValue() != value) {
-                latchedDataOutput.wholeValue_ = value;
-                writeGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>(latchedDataOutput.getWholeValue());
-            }
-        } else {
-            // do nothing
+        // the latch is preserved in between data line changes
+        // okay we are still pointing as output values
+        // check the latch and see if the output value is the same as what is latched
+        if (latchedDataOutput.getWholeValue() != value) {
+            latchedDataOutput.wholeValue_ = value;
+            writeGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>(latchedDataOutput.getWholeValue());
         }
     }
     [[nodiscard]] static auto getStyle() noexcept {
@@ -220,13 +211,19 @@ private:
             return a | b | c | d;
         }
     }
+private:
+    template<byte offsetMask>
+    inline static void updateCacheOffsetEntry() noexcept {
+        cacheOffsetEntry_ = (address_.bytes[0] >> 1) & offsetMask; // we want to make this quick to increment
+    }
+public:
     template<byte offsetMask>
     inline static void full32BitUpdate() noexcept {
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
         address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
         address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
-        cacheOffsetEntry_ = (address_.bytes[0] >> 1) & offsetMask; // we want to make this quick to increment
+        updateCacheOffsetEntry<offsetMask>();
     }
     template<byte offsetMask>
     static void lower16Update() noexcept {
@@ -234,7 +231,7 @@ private:
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
         address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
-        cacheOffsetEntry_ = (address_.bytes[0] >> 1) & offsetMask; // we want to make this quick to increment
+        updateCacheOffsetEntry<offsetMask>();
     }
     static void upper16Update() noexcept {
         // only read the upper 16-bits
@@ -254,7 +251,7 @@ private:
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
         address_.bytes[0] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOA>();
-        cacheOffsetEntry_ = (address_.bytes[0] >> 1) & offsetMask; // we want to make this quick to increment
+        updateCacheOffsetEntry<offsetMask>();
     }
     static void updateLower8() noexcept {
         // read only the lower half
@@ -336,14 +333,6 @@ public:
             default:
                 full32BitUpdate<offsetMask>();
                 updateTargetFunctions<inDebugMode>();
-                if constexpr (inDebugMode && (debugLevel > 0)) {
-                    Serial.print(F("ADDRESS0: 0x"));
-                    Serial.println(address_.getWholeValue(), HEX);
-                    full32BitUpdate<offsetMask>();
-                    updateTargetFunctions<inDebugMode>();
-                    Serial.print(F("ADDRESS1: 0x"));
-                    Serial.println(address_.getWholeValue(), HEX);
-                }
                 break;
         }
         if constexpr (inDebugMode) {
@@ -373,7 +362,5 @@ private:
     static inline BodyFunction last_ = nullptr;
     static inline BodyFunction lastDebug_ = nullptr;
 };
-// 8 IOExpanders to a single enable line for SPI purposes
-// 4 of them are reserved
 
 #endif //ARDUINO_IOEXPANDERS_H
