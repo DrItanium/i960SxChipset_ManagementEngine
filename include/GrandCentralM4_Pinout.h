@@ -65,13 +65,23 @@ template<i960Pinout pin, decltype(HIGH) value>
 [[gnu::always_inline]]
 inline void digitalWrite() noexcept {
     static_assert(isValidPin960_v<pin>, "Invalid pin provided for digitalWrite");
-    static_assert(DigitalPin<pin>::isOutputPin(), "Templated digitalWrite only applies to pins denoted as output!");
-    digitalWrite(pin, value);
+    // assume that we know what we are doing! so don't support setting the pull-up on input pins
+    if constexpr (value == LOW) {
+        getPortGroup<pin>().OUTCLR.reg = bitMasks[getPinDescription<pin>().ulPin];
+    } else {
+        getPortGroup<pin>().OUTSET.reg = bitMasks[getPinDescription<pin>().ulPin];
+    }
 }
 template<i960Pinout pin>
 [[gnu::always_inline]]
 inline void digitalWrite(decltype(HIGH) value) noexcept {
-    digitalWrite(pin, value);
+    static_assert(isValidPin960_v<pin>, "Invalid pin provided for digitalWrite");
+    // assume that we know what we are doing! so don't support setting the pull-up on input pins
+    if (value == LOW) {
+        getPortGroup<pin>().OUTCLR.reg = bitMasks[getPinDescription<pin>().ulPin];
+    } else {
+        getPortGroup<pin>().OUTSET.reg = bitMasks[getPinDescription<pin>().ulPin];
+    }
 }
 #endif
 #endif //SXCHIPSET_GRAND_CENTRAL_M4_PINOUT_H
