@@ -157,12 +157,7 @@ struct PinAsserter final {
     PinAsserter() noexcept { DigitalPin<pin>::assertPin(); }
     ~PinAsserter() noexcept { DigitalPin<pin>::deassertPin(); }
 };
-volatile bool readyTriggered = false;
 
-void
-handleREADYTrigger() noexcept {
-    readyTriggered = true;
-}
 [[noreturn]] void
 handleChecksumFail() noexcept {
     // keep an eye on the FAIL960 pin, if we run into an issue then tell the chipset this
@@ -260,10 +255,7 @@ void setup() {
                      INT3_960,
                      SYSTEMBOOT,
                      READY960>();
-        // these interrupts are used by the boot process and such
-        //Serial1.println("Setting up Interrupts");
-        attachInterrupt(digitalPinToInterrupt(MCU_READY), handleREADYTrigger, FALLING);
-        //Serial1.println("Waiting for the chipset to be ready");
+        // do not attach an interrupt to MCU_READY, it adds way too much latency on the 4809
         while (DigitalPin<WAITBOOT960>::isAsserted());
     }
 
@@ -302,8 +294,7 @@ transactionBody() noexcept {
     do {
         DigitalPin<DO_CYCLE>::pulse(); // tell the chipset that it is safe to process this data cycle (regardless of where we are)
         // now wait for the chipset to tell us it has satisified the current part of the transaction
-        while (!readyTriggered);
-        readyTriggered = false;
+        while (DigitalPin<MCU_READY>::isDeasserted());
         if (informCPU()) {
             DigitalPin<TRANSACTION_END>::pulse(); // let the chipset know this is the end of the transaction
             break;
