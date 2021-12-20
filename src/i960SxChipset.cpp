@@ -104,10 +104,12 @@ volatile bool startTransactionTriggered = false;
 volatile bool endTransactionTriggered = false;
 volatile bool doCycleTriggered = false;
 volatile bool burstNextTriggered = false;
+volatile bool readyReceivedTriggered = false;
 void onStartTransaction() noexcept { startTransactionTriggered = true; }
 void onEndTransaction() noexcept { endTransactionTriggered = true; }
 void onDoCycle() noexcept { doCycleTriggered = true; }
 void onBurstNext() noexcept { burstNextTriggered = true; }
+void onReadyReceived() noexcept { readyReceivedTriggered = true; }
 
 /**
  * @brief
@@ -121,21 +123,23 @@ waitForCycleUnlock() noexcept {
     // don't pulse READY, instead just pull it low, the interrupt latency on the 4809 is horrible
     // so we just pull Ready high as soon as we get the next phase in.
     DigitalPin<i960Pinout::Ready>::assertPin();
+    while (!readyReceivedTriggered);
+    DigitalPin<i960Pinout::Ready>::deassertPin();
     // make sure that we just wait for the gating signal before continuing
     while (true) {
         // this is mutually exclusive, the management engine will only ever trigger one of these
         if (endTransactionTriggered) {
-            DigitalPin<i960Pinout::Ready>::deassertPin();
             // clear flags
             endTransactionTriggered = false;
             burstNextTriggered = false;
+            readyReceivedTriggered = false;
             return true;
         }
         if (burstNextTriggered) {
-            DigitalPin<i960Pinout::Ready>::deassertPin();
             // clear flags
             endTransactionTriggered = false;
             burstNextTriggered = false;
+            readyReceivedTriggered = false;
             return false;
         }
     }
@@ -464,6 +468,7 @@ void setup() {
             i960Pinout::INT_EN1,
             i960Pinout::INT_EN2,
             i960Pinout::INT_EN3,
+            i960Pinout::ReadyReceived,
             i960Pinout::StartTransaction,
             i960Pinout::EndTransaction,
             i960Pinout::DoCycle,
@@ -472,6 +477,7 @@ void setup() {
     interruptOnFallingEdge(i960Pinout::EndTransaction, onEndTransaction);
     interruptOnFallingEdge(i960Pinout::DoCycle, onDoCycle);
     interruptOnFallingEdge(i960Pinout::BurstNext, onBurstNext);
+    interruptOnFallingEdge(i960Pinout::ReadyReceived, onReadyReceived);
     // all of these pins need to be pulled high
     //digitalWrite<i960Pinout::PSRAM_EN, HIGH>();
     DigitalPin<i960Pinout::SD_EN>::deassertPin();

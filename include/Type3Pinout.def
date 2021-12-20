@@ -11,7 +11,7 @@
    INT_EN1 = 32,
    INT_EN2 = 31,
    INT_EN3 = 30,
-
+   ReadyReceived = 12,
    Reset4809 = 5,
    Ready = 16,
    Reset960 = 17, // really waitboot960
