@@ -287,6 +287,16 @@ struct DigitalPin2 {
             write(getDeassertionState());
         }
     }
+    static void pulse() noexcept {
+        if constexpr (isSpecialized()) {
+            if constexpr (isOutputPin()) {
+                write<getAssertionState()>();
+                write<getDeassertionState()>();
+            }
+        } else {
+            ::pulse<getPin(), getAssertionState()>();
+        }
+    }
 private:
     static inline PortGroup* targetPort_ = nullptr;
     static inline const PinDescription* targetPin_ = nullptr;
