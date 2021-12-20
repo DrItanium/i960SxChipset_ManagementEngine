@@ -29,8 +29,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef SXCHIPSET_SDCARDASRAM_H
 #define SXCHIPSET_SDCARDASRAM_H
 #include "SDCardInterface.h"
-#include <SdFat.h>
-extern SdFat SD;
 
 template<typename T>
 class SDCardAsRam {
