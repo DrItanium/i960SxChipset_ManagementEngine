@@ -59,11 +59,11 @@ constexpr auto Serial0BaseAddress = 0xFB00'0000;
 constexpr auto DisplayBaseAddress = 0xFC00'0000;
 constexpr auto SDBaseAddress = 0xFD00'0000;
 constexpr auto MaximumNumberOfOpenFiles = 256;
-constexpr auto CompileInAddressDebuggingSupport = true;
-constexpr auto AddressDebuggingEnabledOnStartup = true;
-constexpr auto CompileInCacheSystemDebuggingSupport = true;
-constexpr auto CompileInExtendedDebugInformation = true;
-constexpr auto ValidateTransferDuringInstall = false;
+constexpr auto CompileInAddressDebuggingSupport = false;
+constexpr auto AddressDebuggingEnabledOnStartup = false;
+constexpr auto CompileInCacheSystemDebuggingSupport = false;
+constexpr auto CompileInExtendedDebugInformation = false;
+constexpr auto ValidateTransferDuringInstall = true;
 /**
  * @brief When set to true, the interrupt lines the mcp23s17 provides are used to determine which bytes to read
  */
