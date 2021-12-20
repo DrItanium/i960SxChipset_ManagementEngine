@@ -120,18 +120,21 @@ waitForCycleUnlock() noexcept {
 [[nodiscard]] bool informCPU() noexcept {
     // don't pulse READY, instead just pull it low, the interrupt latency on the 4809 is horrible
     // so we just pull Ready high as soon as we get the next phase in.
-    DigitalPin<i960Pinout::Ready>::pulse();
+    //DigitalPin<i960Pinout::Ready>::pulse();
+    DigitalPin<i960Pinout::Ready>::assertPin();
     // make sure that we just wait for the gating signal before continuing
     while (true) {
         // this is mutually exclusive, the management engine will only ever trigger one of these
         if (endTransactionTriggered) {
             // clear flags
+            DigitalPin<i960Pinout::Ready>::deassertPin();
             endTransactionTriggered = false;
             burstNextTriggered = false;
             return true;
         }
         if (burstNextTriggered) {
             // clear flags
+            DigitalPin<i960Pinout::Ready>::deassertPin();
             endTransactionTriggered = false;
             burstNextTriggered = false;
             return false;

@@ -260,7 +260,7 @@ void setup() {
                      SYSTEMBOOT,
                      READY960>();
         // do not attach an interrupt to MCU_READY, it adds way too much latency on the 4809
-        attachInterrupt(digitalPinToInterrupt(MCU_READY), handleREADY, FALLING);
+        //attachInterrupt(digitalPinToInterrupt(MCU_READY), handleREADY, FALLING);
         while (DigitalPin<WAITBOOT960>::isAsserted());
     }
 
@@ -299,18 +299,23 @@ transactionBody() noexcept {
     do {
         DigitalPin<DO_CYCLE>::pulse(); // tell the chipset that it is safe to process this data cycle (regardless of where we are)
         // now wait for the chipset to tell us it has satisified the current part of the transaction
-        while (!readyTriggered);
-        readyTriggered = false;
+        while (DigitalPin<MCU_READY>::isDeasserted());
+        //while (!readyTriggered);
+        //readyTriggered = false;
         if (informCPU()) {
             DigitalPin<TRANSACTION_END>::pulse(); // let the chipset know this is the end of the transaction
+            // we wait until the chipset pulls this pin high again before continuing, that way we maintain synchronization
+            while (DigitalPin<MCU_READY>::isAsserted());
             break;
         } else {
             // if we got here then it is a burst transaction and as such
             // let the chipset know this is the next word of the burst transaction
             // this will act as a gate action
             DigitalPin<BURST_NEXT>::pulse();
-        }
-    } while (true);
+            // we wait until the chipset pulls this pin high again before continuing, that way we maintain synchronization
+            while (DigitalPin<MCU_READY>::isAsserted());
+       }
+} while (true);
     // now we just loop back around and wait for the next
 }
 
