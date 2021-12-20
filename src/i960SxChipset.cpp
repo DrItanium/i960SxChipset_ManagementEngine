@@ -117,7 +117,7 @@ waitForCycleUnlock() noexcept {
     while (!doCycleTriggered);
     doCycleTriggered = false;
 }
-[[nodiscard]] bool informCPU() noexcept {
+[[nodiscard]] inline bool informCPU() noexcept {
     // don't pulse READY, instead just pull it low, the interrupt latency on the 4809 is horrible
     // so we just pull Ready high as soon as we get the next phase in.
     //DigitalPin<i960Pinout::Ready>::pulse();
