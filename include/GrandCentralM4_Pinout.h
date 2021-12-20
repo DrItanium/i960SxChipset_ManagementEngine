@@ -34,20 +34,44 @@ public:
     ~InterruptDisabler() noexcept { interrupts(); }
 };
 
+template<i960Pinout pin>
+[[gnu::always_inline]]
+inline const PinDescription& getPinDescription() noexcept {
+    return g_APinDescription[static_cast<int>(pin)];
+}
+template<i960Pinout pin>
+[[gnu::always_inline]]
+inline PortGroup & getPortGroup() noexcept {
+    return PORT->Group[getPinDescription<pin>().ulPort];
+}
+static constexpr uint32_t bitMasks[32] {
+#define X(index) (1ul << (index))
+#define Y(baseIndex) X(baseIndex + 0), X(baseIndex + 1), X(baseIndex + 2), X(baseIndex + 3), X(baseIndex + 4), X(baseIndex + 5), X(baseIndex + 6), X(baseIndex + 7)
+        Y(0),
+        Y(8),
+        Y(16),
+        Y(24),
+#undef Y
+#undef X
+};
+template<i960Pinout pin>
+[[gnu::always_inline]]
+inline auto digitalRead() noexcept {
+    static_assert(isValidPin960_v<pin>, "Invalid pin provided for digitalRead");
+    return (getPortGroup<pin>().IN.reg & (bitMasks[getPinDescription<pin>().ulPin])) != 0 ? HIGH : LOW;
+}
+
 template<i960Pinout pin, decltype(HIGH) value>
 [[gnu::always_inline]]
 inline void digitalWrite() noexcept {
+    static_assert(isValidPin960_v<pin>, "Invalid pin provided for digitalWrite");
+    static_assert(DigitalPin<pin>::isOutputPin(), "Templated digitalWrite only applies to pins denoted as output!");
     digitalWrite(pin, value);
 }
 template<i960Pinout pin>
 [[gnu::always_inline]]
 inline void digitalWrite(decltype(HIGH) value) noexcept {
     digitalWrite(pin, value);
-}
-template<i960Pinout pin>
-[[gnu::always_inline]]
-inline auto digitalRead() noexcept {
-    return digitalRead(pin);
 }
 #endif
 #endif //SXCHIPSET_GRAND_CENTRAL_M4_PINOUT_H

@@ -59,7 +59,9 @@ inline auto digitalRead(i960Pinout ip) {
 }
 template<i960Pinout pin>
 constexpr auto isValidPin960_v = static_cast<int>(pin) < static_cast<int>(i960Pinout::Count);
-#include "GrandCentralM4_Pinout.h"
+template<i960Pinout pin> [[gnu::always_inline]] inline int digitalRead() noexcept;
+template<i960Pinout pin, decltype(HIGH) value> [[gnu::always_inline]] inline void digitalWrite() noexcept;
+template<i960Pinout pin> [[gnu::always_inline]] inline void digitalWrite(decltype(HIGH) value) noexcept;
 template<i960Pinout pin>
 [[gnu::always_inline]] inline void digitalWrite(bool level) noexcept {
     digitalWrite<pin>(level ? HIGH : LOW);
@@ -139,10 +141,6 @@ struct DigitalPin {
 
 DefSPICSPin(i960Pinout::GPIOSelect);
 DefSPICSPin(i960Pinout::SD_EN);
-DefSPICSPin(i960Pinout::PSRAM_EN);
-DefSPICSPin(i960Pinout::PSRAM_EN1);
-DefSPICSPin(i960Pinout::PSRAM_EN2);
-DefSPICSPin(i960Pinout::PSRAM_EN3);
 
 DefOutputPin(i960Pinout::Reset960, LOW, HIGH);
 DefOutputPin(i960Pinout::Ready, LOW, HIGH);
@@ -195,6 +193,7 @@ inline void interruptOnRisingEdge(i960Pinout pin, voidFuncPtr callback) noexcept
 }
 
 
+#include "GrandCentralM4_Pinout.h"
 
 
 #endif //ARDUINO_PINOUT_H
