@@ -88,12 +88,12 @@ class ProcessorInterface {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
         SplitWord16 output(0);
-        digitalWrite<i960Pinout::GPIOSelect, LOW>();
+        DigitalPin<i960Pinout::GPIOSelect>::assertPin();
         SPI.transfer(generateReadOpcode(addr));
         SPI.transfer(static_cast<byte>(opcode));
         output.bytes[0] = SPI.transfer(0);
         output.bytes[1] = SPI.transfer(0);
-        digitalWrite<i960Pinout::GPIOSelect, HIGH>();
+        DigitalPin<i960Pinout::GPIOSelect>::deassertPin();
         if constexpr (standalone) {
             SPI.endTransaction();
         }
@@ -104,11 +104,11 @@ class ProcessorInterface {
         if constexpr (standalone) {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
-        digitalWrite<i960Pinout::GPIOSelect, LOW>();
+        DigitalPin<i960Pinout::GPIOSelect>::assertPin();
         SPI.transfer(generateReadOpcode(addr));
         SPI.transfer(static_cast<byte>(opcode));
         auto outcome = SPI.transfer(0);
-        digitalWrite<i960Pinout::GPIOSelect, HIGH>();
+        DigitalPin<i960Pinout::GPIOSelect>::deassertPin();
         if constexpr (standalone) {
             SPI.endTransaction();
         }
@@ -121,12 +121,12 @@ class ProcessorInterface {
         if constexpr (standalone) {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
-        digitalWrite<i960Pinout::GPIOSelect, LOW>();
-    SPI.transfer(generateWriteOpcode(addr));
-    SPI.transfer(static_cast<byte>(opcode));
-    SPI.transfer(valueDiv.bytes[0]);
-    SPI.transfer(valueDiv.bytes[1]);
-        digitalWrite<i960Pinout::GPIOSelect, HIGH>();
+        DigitalPin<i960Pinout::GPIOSelect>::assertPin();
+        SPI.transfer(generateWriteOpcode(addr));
+        SPI.transfer(static_cast<byte>(opcode));
+        SPI.transfer(valueDiv.bytes[0]);
+        SPI.transfer(valueDiv.bytes[1]);
+        DigitalPin<i960Pinout::GPIOSelect>::deassertPin();
         if constexpr (standalone) {
             SPI.endTransaction();
         }
@@ -136,11 +136,11 @@ class ProcessorInterface {
         if constexpr (standalone) {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
-        digitalWrite<i960Pinout::GPIOSelect, LOW>();
-    SPI.transfer(generateWriteOpcode(addr));
-    SPI.transfer(static_cast<byte>(opcode));
-    SPI.transfer(value);
-        digitalWrite<i960Pinout::GPIOSelect, HIGH>();
+        DigitalPin<i960Pinout::GPIOSelect>::assertPin();
+        SPI.transfer(generateWriteOpcode(addr));
+        SPI.transfer(static_cast<byte>(opcode));
+        SPI.transfer(value);
+        DigitalPin<i960Pinout::GPIOSelect>::deassertPin();
         if constexpr (standalone) {
             SPI.endTransaction();
         }
