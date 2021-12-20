@@ -92,8 +92,8 @@ struct DigitalPinConfiguration {
 };
 
 #define DefInputPin2(pin, assert, deassert) \
-template<i960Pinout pin> \
-struct DigitalPinConfiguration<i960Pinout:: pin> { \
+template<> \
+struct DigitalPinConfiguration<pin> { \
     DigitalPinConfiguration() = delete; \
     ~DigitalPinConfiguration() = delete; \
     DigitalPinConfiguration(const DigitalPinConfiguration&) = delete; \
@@ -112,8 +112,8 @@ struct DigitalPinConfiguration<i960Pinout:: pin> { \
 }
 
 #define DefOutputPin2(pin, assert, deassert) \
-template<i960Pinout pin> \
-struct DigitalPinConfiguration<i960Pinout:: pin> { \
+template<> \
+struct DigitalPinConfiguration<pin> { \
     DigitalPinConfiguration() = delete; \
     ~DigitalPinConfiguration() = delete; \
     DigitalPinConfiguration(const DigitalPinConfiguration&) = delete; \
@@ -132,8 +132,8 @@ struct DigitalPinConfiguration<i960Pinout:: pin> { \
 }
 
 #define DefInputPullupPin2(pin, assert, deassert) \
-template<i960Pinout pin> \
-struct DigitalPinConfiguration<i960Pinout:: pin> { \
+template<> \
+struct DigitalPinConfiguration<pin> { \
     DigitalPinConfiguration() = delete; \
     ~DigitalPinConfiguration() = delete; \
     DigitalPinConfiguration(const DigitalPinConfiguration&) = delete; \
@@ -289,11 +289,11 @@ struct DigitalPin2 {
     }
 private:
     static inline PortGroup* targetPort_ = nullptr;
-    static inline PinDescription* targetPin_ = nullptr;
+    static inline const PinDescription* targetPin_ = nullptr;
     static inline uint32_t readMask_ = 0xFFFF'FFFF;
     static inline bool configured_ = false;
 };
-
+#if 0
 template<i960Pinout pin>
 struct DigitalPin {
     DigitalPin() = delete;
@@ -379,6 +379,10 @@ DefInputPin(i960Pinout::EndTransaction, LOW, HIGH);
 #undef DefSPICSPin
 #undef DefInputPin
 #undef DefOutputPin
+#else
+template<i960Pinout pin>
+using DigitalPin = DigitalPin2<pin>;
+#endif
 
 template<i960Pinout pinId>
 class PinAsserter {
