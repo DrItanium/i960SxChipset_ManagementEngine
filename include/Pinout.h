@@ -91,6 +91,90 @@ struct DigitalPinConfiguration {
     static constexpr auto getDeassertionState() noexcept { return HIGH; }
 };
 
+#define DefInputPin2(pin, assert, deassert) \
+template<i960Pinout pin> \
+struct DigitalPinConfiguration<i960Pinout:: pin> { \
+    DigitalPinConfiguration() = delete; \
+    ~DigitalPinConfiguration() = delete; \
+    DigitalPinConfiguration(const DigitalPinConfiguration&) = delete; \
+    DigitalPinConfiguration(DigitalPinConfiguration&&) = delete; \
+    DigitalPinConfiguration& operator=(const DigitalPinConfiguration&) = delete; \
+    DigitalPinConfiguration& operator=(DigitalPinConfiguration&&) = delete; \
+    static constexpr bool isSpecialized() noexcept { return true; } \
+    static constexpr bool isInputPin() noexcept { return true; } \
+    static constexpr bool isOutputPin() noexcept { return false; } \
+    static constexpr auto isInputPullupPin() noexcept { return false; } \
+    static constexpr auto getDirection() noexcept { return INPUT; } \
+    static constexpr auto getPin() noexcept { return pin; } \
+    static constexpr auto valid() noexcept { return isValidPin960_v<pin>; } \
+    static constexpr auto getAssertionState() noexcept { return assert; } \
+    static constexpr auto getDeassertionState() noexcept { return deassert; } \
+}
+
+#define DefOutputPin2(pin, assert, deassert) \
+template<i960Pinout pin> \
+struct DigitalPinConfiguration<i960Pinout:: pin> { \
+    DigitalPinConfiguration() = delete; \
+    ~DigitalPinConfiguration() = delete; \
+    DigitalPinConfiguration(const DigitalPinConfiguration&) = delete; \
+    DigitalPinConfiguration(DigitalPinConfiguration&&) = delete; \
+    DigitalPinConfiguration& operator=(const DigitalPinConfiguration&) = delete; \
+    DigitalPinConfiguration& operator=(DigitalPinConfiguration&&) = delete; \
+    static constexpr bool isSpecialized() noexcept { return true; } \
+    static constexpr bool isInputPin() noexcept { return false; } \
+    static constexpr bool isOutputPin() noexcept { return true; } \
+    static constexpr auto isInputPullupPin() noexcept { return false; } \
+    static constexpr auto getDirection() noexcept { return OUTPUT; } \
+    static constexpr auto getPin() noexcept { return pin; } \
+    static constexpr auto valid() noexcept { return isValidPin960_v<pin>; } \
+    static constexpr auto getAssertionState() noexcept { return assert; } \
+    static constexpr auto getDeassertionState() noexcept { return deassert; } \
+}
+
+#define DefInputPullupPin2(pin, assert, deassert) \
+template<i960Pinout pin> \
+struct DigitalPinConfiguration<i960Pinout:: pin> { \
+    DigitalPinConfiguration() = delete; \
+    ~DigitalPinConfiguration() = delete; \
+    DigitalPinConfiguration(const DigitalPinConfiguration&) = delete; \
+    DigitalPinConfiguration(DigitalPinConfiguration&&) = delete; \
+    DigitalPinConfiguration& operator=(const DigitalPinConfiguration&) = delete; \
+    DigitalPinConfiguration& operator=(DigitalPinConfiguration&&) = delete; \
+    static constexpr bool isSpecialized() noexcept { return true; } \
+    static constexpr bool isInputPin() noexcept { return false; } \
+    static constexpr bool isOutputPin() noexcept { return false; } \
+    static constexpr auto isInputPullupPin() noexcept { return true; } \
+    static constexpr auto getDirection() noexcept { return INPUT_PULLUP; } \
+    static constexpr auto getPin() noexcept { return pin; } \
+    static constexpr auto valid() noexcept { return isValidPin960_v<pin>; } \
+    static constexpr auto getAssertionState() noexcept { return assert; } \
+    static constexpr auto getDeassertionState() noexcept { return deassert; } \
+}
+
+#define DefSPICSPin2(pin) DefOutputPin2(pin, LOW, HIGH)
+
+DefSPICSPin2(i960Pinout::GPIOSelect);
+DefSPICSPin2(i960Pinout::SD_EN);
+
+DefOutputPin2(i960Pinout::Reset960, LOW, HIGH);
+DefOutputPin2(i960Pinout::Ready, LOW, HIGH);
+DefOutputPin2(i960Pinout::Reset4809, LOW, HIGH);
+DefInputPin2(i960Pinout::SuccessfulBoot, HIGH, LOW);
+DefInputPin2(i960Pinout::W_R_, LOW, HIGH);
+DefInputPin2(i960Pinout::BE0, LOW, HIGH);
+DefInputPin2(i960Pinout::BE1, LOW, HIGH);
+DefInputPin2(i960Pinout::INT_EN0, LOW, HIGH);
+DefInputPin2(i960Pinout::INT_EN1, LOW, HIGH);
+DefInputPin2(i960Pinout::INT_EN2, LOW, HIGH);
+DefInputPin2(i960Pinout::INT_EN3, LOW, HIGH);
+DefInputPin2(i960Pinout::DoCycle, LOW, HIGH);
+DefInputPin2(i960Pinout::BurstNext, LOW, HIGH);
+DefInputPin2(i960Pinout::StartTransaction, LOW, HIGH);
+DefInputPin2(i960Pinout::EndTransaction, LOW, HIGH);
+#undef DefOutputPin2
+#undef DefInputPin2
+#undef DefInputPullupPin2
+
 template<i960Pinout pin>
 struct DigitalPin2 {
     using Configuration = DigitalPinConfiguration<pin>;
@@ -226,7 +310,6 @@ struct DigitalPin {
     static constexpr auto getPin() noexcept { return pin; }
     static constexpr auto valid() noexcept { return isValidPin960_v<pin>; }
 };
-
 #define DefOutputPin(pin, asserted, deasserted) \
     template<> \
     struct DigitalPin< pin > { \
