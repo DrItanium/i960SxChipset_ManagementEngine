@@ -178,10 +178,6 @@ DefInputPin2(i960Pinout::EndTransaction, LOW, HIGH);
 template<i960Pinout pin>
 struct DigitalPin2 {
     using Configuration = DigitalPinConfiguration<pin>;
-    static constexpr auto IsInputPin_v = Configuration::isInputPin();
-    static constexpr auto IsInputPullupPin_v = Configuration::isInputPullupPin();
-    static constexpr auto IsOutputPin_v = Configuration::isOutputPin();
-    static constexpr auto IsSpecialized_v = Configuration::isSpecialized();
     DigitalPin2() = delete;
     ~DigitalPin2() = delete;
     DigitalPin2(const DigitalPin2&) = delete;
@@ -199,7 +195,7 @@ struct DigitalPin2 {
         if (!configured_) {
             configured_ = true;
             // do nothing if we are not specialized
-            if constexpr (IsSpecialized_v) {
+            if constexpr (isSpecialized()) {
                 pinMode(getPin(), getDirection());
                 targetPort_ = &getPortGroup<getPin()>();
                 targetPin_ = &getPinDescription<getPin()>();
@@ -210,7 +206,8 @@ struct DigitalPin2 {
     }
     static constexpr auto getAssertionState() noexcept { return Configuration::getAssertionState(); }
     static constexpr auto getDeassertionState() noexcept { return Configuration::getDeassertionState(); }
-    static auto read() noexcept {
+    [[gnu::always_inline]]
+    static inline auto read() noexcept {
         if constexpr (isSpecialized()) {
             if constexpr (isInputPin() || isInputPullupPin()) {
                 return (targetPort_->IN.reg & readMask_) != 0 ? HIGH : LOW;
@@ -222,7 +219,8 @@ struct DigitalPin2 {
             return ::digitalRead(getPin());
         }
     }
-    static auto isDeasserted() noexcept {
+    [[gnu::always_inline]]
+    static inline auto isDeasserted() noexcept {
         if constexpr (isSpecialized()) {
             if constexpr (isOutputPin()) {
                 return false;
@@ -233,7 +231,8 @@ struct DigitalPin2 {
             return false;
         }
     }
-    static auto isAsserted() noexcept {
+    [[gnu::always_inline]]
+    static inline auto isAsserted() noexcept {
         if constexpr (isSpecialized()) {
             if constexpr (isOutputPin()) {
                 return false;
@@ -246,7 +245,8 @@ struct DigitalPin2 {
     }
 
     template<decltype(LOW) value>
-    static void write() noexcept {
+    [[gnu::always_inline]]
+    static inline void write() noexcept {
         if constexpr (isSpecialized()) {
             if constexpr (isOutputPin()) {
                 if constexpr (value == LOW) {
@@ -262,14 +262,16 @@ struct DigitalPin2 {
             ::digitalWrite(getPin(), value);
         }
     }
-    static void write(decltype(LOW) value) noexcept {
+    [[gnu::always_inline]]
+    static inline void write(decltype(LOW) value) noexcept {
         if (value == LOW) {
             write<LOW>();
         } else {
             write<HIGH>();
         }
     }
-    static void assertPin() noexcept {
+    [[gnu::always_inline]]
+    static inline void assertPin() noexcept {
         if constexpr (isSpecialized()) {
             if constexpr (isOutputPin()) {
                 write<getAssertionState()>();
@@ -278,7 +280,8 @@ struct DigitalPin2 {
             write(getAssertionState());
         }
     }
-    static void deassertPin() noexcept {
+    [[gnu::always_inline]]
+    static inline void deassertPin() noexcept {
         if constexpr (isSpecialized()) {
             if constexpr (isOutputPin()) {
                 write<getDeassertionState()>();
@@ -287,7 +290,8 @@ struct DigitalPin2 {
             write(getDeassertionState());
         }
     }
-    static void pulse() noexcept {
+    [[gnu::always_inline]]
+    static inline void pulse() noexcept {
         if constexpr (isSpecialized()) {
             if constexpr (isOutputPin()) {
                 write<getAssertionState()>();
