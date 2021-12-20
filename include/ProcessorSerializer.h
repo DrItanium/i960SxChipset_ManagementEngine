@@ -207,7 +207,8 @@ private:
             if constexpr (usePortReads) {
                 static constexpr uint32_t PortMask = 0x00F0'0000;
                 // in this case I know that INT_EN[0,3] are lined up correctly so this is a very cheap operation
-                return static_cast<byte>((PortMask & DigitalPin<i960Pinout::INT_EN0>::readPort()) >> 20);
+                auto portContents = DigitalPin<i960Pinout::INT_EN0>::readPort();
+                return static_cast<byte>((PortMask & portContents) >> 20);
             } else {
                 auto a = static_cast<byte>(DigitalPin<i960Pinout::INT_EN0>::read());
                 auto b = static_cast<byte>(DigitalPin<i960Pinout::INT_EN1>::read()) << 1;
