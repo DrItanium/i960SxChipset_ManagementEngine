@@ -120,13 +120,11 @@ inline void waitForCycleUnlock() noexcept {
             // clear flags
             DigitalPin<i960Pinout::Ready>::deassertPin();
             endTransactionTriggered = false;
-            burstNextTriggered = false;
             return true;
         }
         if (burstNextTriggered) {
             // clear flags
             DigitalPin<i960Pinout::Ready>::deassertPin();
-            endTransactionTriggered = false;
             burstNextTriggered = false;
             return false;
         }
