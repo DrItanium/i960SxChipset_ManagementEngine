@@ -301,6 +301,18 @@ struct DigitalPin2 {
             ::pulse<getPin(), getAssertionState()>();
         }
     }
+    static inline uint32_t readPort() noexcept {
+        if constexpr (isSpecialized()) {
+            return targetPort_->IN.reg;
+        } else {
+            return 0;
+        }
+    }
+    static inline void writePort(uint32_t value) noexcept {
+        if constexpr (isSpecialized()) {
+            return targetPort_->OUT.reg = value;
+        }
+    }
 private:
     static inline PortGroup* targetPort_ = nullptr;
     static inline const PinDescription* targetPin_ = nullptr;
