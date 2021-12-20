@@ -112,21 +112,24 @@ struct DigitalPin2 {
     static constexpr auto valid() noexcept { return Configuration::valid(); }
     static constexpr auto isSpecialized() noexcept { return Configuration::isSpecialized(); }
     static void configure() noexcept {
-        // do nothing if we are not specialized
-        if constexpr (IsSpecialized_v) {
-            pinMode(getPin(), getDirection());
-            targetPort = &getPortGroup<getPin()>;
-            targetPin = &getPinDescription<pin>().ulPin;
-            //readMask = bitMasks[getPinDescr]
+        if (!configured_) {
+            configured_ = true;
+            // do nothing if we are not specialized
+            if constexpr (IsSpecialized_v) {
+                pinMode(getPin(), getDirection());
+                targetPort_ = &getPortGroup<getPin()>();
+                targetPin_ = &getPinDescription<getPin()>();
+                readMask_ = 1ul << targetPin_->ulPin;
+            }
         }
         //return (getPortGroup<pin>().IN.reg & (bitMasks[getPinDescription<pin>().ulPin])) != 0 ? HIGH : LOW;
     }
     static constexpr auto getAssertionState() noexcept { return Configuration::getAssertionState(); }
     static constexpr auto getDeassertionState() noexcept { return Configuration::getDeassertionState(); }
-    static constexpr auto read() noexcept {
+    static auto read() noexcept {
         if constexpr (isSpecialized()) {
             if constexpr (isInputPin() || isInputPullupPin()) {
-                return HIGH;
+                return (targetPort_->IN.reg & readMask_) != 0 ? HIGH : LOW;
             } else {
                 // if this is specialized but an output pin then return low every time
                 return LOW;
@@ -135,10 +138,76 @@ struct DigitalPin2 {
             return ::digitalRead(getPin());
         }
     }
+    static auto isDeasserted() noexcept {
+        if constexpr (isSpecialized()) {
+            if constexpr (isOutputPin()) {
+                return false;
+            } else {
+                return read() == getDeassertionState();
+            }
+        } else {
+            return false;
+        }
+    }
+    static auto isAsserted() noexcept {
+        if constexpr (isSpecialized()) {
+            if constexpr (isOutputPin()) {
+                return false;
+            } else {
+                return read() == getAssertionState();
+            }
+        } else {
+            return false;
+        }
+    }
+
+    template<decltype(LOW) value>
+    static void write() noexcept {
+        if constexpr (isSpecialized()) {
+            if constexpr (isOutputPin()) {
+                if constexpr (value == LOW) {
+                    targetPort_->OUTCLR.reg = readMask_;
+                } else {
+                    targetPort_->OUTSET.reg = readMask_;
+                }
+            } else {
+                // do nothing
+            }
+        } else {
+            // oh it isn't specialized so just call the normal digitalWrite to be on the safe side
+            ::digitalWrite(getPin(), value);
+        }
+    }
+    static void write(decltype(LOW) value) noexcept {
+        if (value == LOW) {
+            write<LOW>();
+        } else {
+            write<HIGH>();
+        }
+    }
+    static void assertPin() noexcept {
+        if constexpr (isSpecialized()) {
+            if constexpr (isOutputPin()) {
+                write<getAssertionState()>();
+            }
+        } else {
+            write(getAssertionState());
+        }
+    }
+    static void deassertPin() noexcept {
+        if constexpr (isSpecialized()) {
+            if constexpr (isOutputPin()) {
+                write<getDeassertionState()>();
+            }
+        } else {
+            write(getDeassertionState());
+        }
+    }
 private:
-    static inline PortGroup* targetPort = nullptr;
-    static inline uint32_t targetPin = 0;
-    static inline uint32_t readMask = 0xFFFF'FFFF;
+    static inline PortGroup* targetPort_ = nullptr;
+    static inline PinDescription* targetPin_ = nullptr;
+    static inline uint32_t readMask_ = 0xFFFF'FFFF;
+    static inline bool configured_ = false;
 };
 
 template<i960Pinout pin>
