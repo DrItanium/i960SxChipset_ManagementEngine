@@ -22,6 +22,7 @@ constexpr auto TRANSACTION_START = PIN_PC1;
 constexpr auto BURST_NEXT = PIN_PC2;
 constexpr auto TRANSACTION_END = PIN_PC3;
 
+constexpr auto READY_RECEIVED = PIN_PD1;
 constexpr auto MCU_READY = PIN_PD2;
 constexpr auto READY960 = PIN_PD3;
 constexpr auto BLAST = PIN_PD4;
@@ -127,7 +128,7 @@ struct DigitalPin {
 DefInputPin(DEN, LOW, HIGH);
 DefInputPin(AS, LOW, HIGH);
 DefInputPin(BLAST, LOW, HIGH);
-DefInputPin(MCU_READY, LOW, HIGH);
+
 DefInputPin(FAIL960, HIGH, LOW);
 DefInputPin(HLDA960, HIGH, LOW);
 
@@ -145,8 +146,10 @@ DefOutputPin(TRANSACTION_START, LOW, HIGH);
 DefOutputPin(TRANSACTION_END, LOW, HIGH);
 DefOutputPin(DO_CYCLE, LOW, HIGH);
 DefOutputPin(BURST_NEXT, LOW, HIGH);
+DefOutputPin(READY_RECEIVED, LOW, HIGH);
 
 DefInputPullupPin(WAITBOOT960, LOW, HIGH);
+DefInputPullupPin(MCU_READY, LOW, HIGH);
 #undef DefInputPin
 #undef DefOutputPin
 #undef DefInputPullupPin
@@ -166,7 +169,6 @@ handleChecksumFail() noexcept {
         delay(1000);
     }
 }
-
 inline void
 triggerInt0() noexcept {
     DigitalPin<INT0_960>::pulse();
@@ -238,6 +240,7 @@ void setup() {
                 INT2_960,
                 INT3_960,
                 SYSTEMBOOT,
+                READY_RECEIVED,
                 TRANSACTION_START,
                 TRANSACTION_END,
                 DO_CYCLE,
@@ -254,6 +257,7 @@ void setup() {
                      INT2_960,
                      INT3_960,
                      SYSTEMBOOT,
+                    READY_RECEIVED,
                      READY960>();
         // do not attach an interrupt to MCU_READY, it adds way too much latency on the 4809
         while (DigitalPin<WAITBOOT960>::isAsserted());
@@ -295,6 +299,7 @@ transactionBody() noexcept {
         DigitalPin<DO_CYCLE>::pulse(); // tell the chipset that it is safe to process this data cycle (regardless of where we are)
         // now wait for the chipset to tell us it has satisified the current part of the transaction
         while (DigitalPin<MCU_READY>::isDeasserted());
+        DigitalPin<READY_RECEIVED>::pulse();
         if (informCPU()) {
             DigitalPin<TRANSACTION_END>::pulse(); // let the chipset know this is the end of the transaction
             break;
