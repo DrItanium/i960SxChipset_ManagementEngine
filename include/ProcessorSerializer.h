@@ -199,16 +199,22 @@ public:
             }
     }
 private:
-    template<bool useInterrupts = true>
+    template<bool useInterrupts = true, bool usePortReads = true>
     static byte getUpdateKind() noexcept {
         if constexpr (!useInterrupts) {
             return 0;
         } else {
-            auto a = static_cast<byte>(DigitalPin<i960Pinout::INT_EN0>::read());
-            auto b = static_cast<byte>(DigitalPin<i960Pinout::INT_EN1>::read()) << 1;
-            auto c = static_cast<byte>(DigitalPin<i960Pinout::INT_EN2>::read()) << 2;
-            auto d = static_cast<byte>(DigitalPin<i960Pinout::INT_EN3>::read()) << 3;
-            return a | b | c | d;
+            if constexpr (usePortReads) {
+                static constexpr uint32_t PortMask = 0x00F0'0000;
+                // in this case I know that INT_EN[0,3] are lined up correctly so this is a very cheap operation
+                return static_cast<byte>((PortMask & DigitalPin<i960Pinout::INT_EN0>::readPort()) >> 20);
+            } else {
+                auto a = static_cast<byte>(DigitalPin<i960Pinout::INT_EN0>::read());
+                auto b = static_cast<byte>(DigitalPin<i960Pinout::INT_EN1>::read()) << 1;
+                auto c = static_cast<byte>(DigitalPin<i960Pinout::INT_EN2>::read()) << 2;
+                auto d = static_cast<byte>(DigitalPin<i960Pinout::INT_EN3>::read()) << 3;
+                return a | b | c | d;
+            }
         }
     }
 private:
