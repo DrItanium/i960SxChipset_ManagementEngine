@@ -22,7 +22,6 @@ constexpr auto TRANSACTION_START = PIN_PC1;
 constexpr auto BURST_NEXT = PIN_PC2;
 constexpr auto TRANSACTION_END = PIN_PC3;
 
-constexpr auto READY_RECEIVED = PIN_PD1;
 constexpr auto MCU_READY = PIN_PD2;
 constexpr auto READY960 = PIN_PD3;
 constexpr auto BLAST = PIN_PD4;
@@ -146,7 +145,6 @@ DefOutputPin(TRANSACTION_START, LOW, HIGH);
 DefOutputPin(TRANSACTION_END, LOW, HIGH);
 DefOutputPin(DO_CYCLE, LOW, HIGH);
 DefOutputPin(BURST_NEXT, LOW, HIGH);
-DefOutputPin(READY_RECEIVED, LOW, HIGH);
 
 DefInputPullupPin(WAITBOOT960, LOW, HIGH);
 DefInputPullupPin(MCU_READY, LOW, HIGH);
@@ -244,7 +242,6 @@ void setup() {
                 INT2_960,
                 INT3_960,
                 SYSTEMBOOT,
-                READY_RECEIVED,
                 TRANSACTION_START,
                 TRANSACTION_END,
                 DO_CYCLE,
@@ -261,7 +258,6 @@ void setup() {
                      INT2_960,
                      INT3_960,
                      SYSTEMBOOT,
-                    READY_RECEIVED,
                      READY960>();
         // do not attach an interrupt to MCU_READY, it adds way too much latency on the 4809
         attachInterrupt(digitalPinToInterrupt(MCU_READY), handleREADY, FALLING);
@@ -305,7 +301,6 @@ transactionBody() noexcept {
         // now wait for the chipset to tell us it has satisified the current part of the transaction
         while (!readyTriggered);
         readyTriggered = false;
-        //DigitalPin<READY_RECEIVED>::pulse();
         if (informCPU()) {
             DigitalPin<TRANSACTION_END>::pulse(); // let the chipset know this is the end of the transaction
             break;

@@ -104,12 +104,10 @@ volatile bool startTransactionTriggered = false;
 volatile bool endTransactionTriggered = false;
 volatile bool doCycleTriggered = false;
 volatile bool burstNextTriggered = false;
-volatile bool readyReceivedTriggered = false;
 void onStartTransaction() noexcept { startTransactionTriggered = true; }
 void onEndTransaction() noexcept { endTransactionTriggered = true; }
 void onDoCycle() noexcept { doCycleTriggered = true; }
 void onBurstNext() noexcept { burstNextTriggered = true; }
-void onReadyReceived() noexcept { readyReceivedTriggered = true; }
 
 /**
  * @brief
@@ -464,7 +462,6 @@ void setup() {
             i960Pinout::INT_EN1,
             i960Pinout::INT_EN2,
             i960Pinout::INT_EN3,
-            i960Pinout::ReadyReceived,
             i960Pinout::StartTransaction,
             i960Pinout::EndTransaction,
             i960Pinout::DoCycle,
@@ -473,7 +470,6 @@ void setup() {
     interruptOnFallingEdge(i960Pinout::EndTransaction, onEndTransaction);
     interruptOnFallingEdge(i960Pinout::DoCycle, onDoCycle);
     interruptOnFallingEdge(i960Pinout::BurstNext, onBurstNext);
-    //interruptOnFallingEdge(i960Pinout::ReadyReceived, onReadyReceived);
     // all of these pins need to be pulled high
     //digitalWrite<i960Pinout::PSRAM_EN, HIGH>();
     DigitalPin<i960Pinout::SD_EN>::deassertPin();
