@@ -83,7 +83,7 @@ class ProcessorInterface {
         return 0b0100'0000 | static_cast<uint8_t>(address);
     }
     template<IOExpanderAddress addr, MCP23x17Registers opcode, bool standalone = true>
-    static SplitWord16 read16() noexcept {
+    static inline SplitWord16 read16() noexcept {
         if constexpr (standalone) {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
@@ -100,7 +100,7 @@ class ProcessorInterface {
         return output;
     }
     template<IOExpanderAddress addr, MCP23x17Registers opcode, bool standalone = true>
-    static uint8_t read8() noexcept {
+    static inline uint8_t read8() noexcept {
         if constexpr (standalone) {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
@@ -116,7 +116,7 @@ class ProcessorInterface {
     }
 
     template<IOExpanderAddress addr, MCP23x17Registers opcode, bool standalone = true>
-    static void write16(uint16_t value) noexcept {
+    static inline void write16(uint16_t value) noexcept {
         SplitWord16 valueDiv(value);
         if constexpr (standalone) {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
@@ -132,7 +132,7 @@ class ProcessorInterface {
         }
     }
     template<IOExpanderAddress addr, MCP23x17Registers opcode, bool standalone = true>
-    static void write8(uint8_t value) noexcept {
+    static inline void write8(uint8_t value) noexcept {
         if constexpr (standalone) {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
@@ -271,7 +271,7 @@ private:
 public:
     template<bool inDebugMode, byte offsetMask, bool useInterrupts = true, int debugLevel = 0>
     static void newDataCycle() noexcept {
-        switch (getUpdateKind<useInterrupts>()) {
+        switch (getUpdateKind<useInterrupts>() & 0b1111) {
             case 0b0001:
                 updateLower8();
                 upper16Update();
