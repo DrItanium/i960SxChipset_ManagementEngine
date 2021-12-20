@@ -215,6 +215,10 @@ template<int ... pins>
 void deassertPins() noexcept {
     (DigitalPin<pins>::deassertPin(), ...);
 }
+volatile bool readyTriggered = false;
+void handleREADY() noexcept {
+    readyTriggered = true;
+}
 void setup() {
     configureClockSource();
     // always pull this low to start
@@ -260,6 +264,7 @@ void setup() {
                     READY_RECEIVED,
                      READY960>();
         // do not attach an interrupt to MCU_READY, it adds way too much latency on the 4809
+        attachInterrupt(digitalPinToInterrupt(MCU_READY), handleREADY, FALLING);
         while (DigitalPin<WAITBOOT960>::isAsserted());
     }
 
@@ -298,8 +303,9 @@ transactionBody() noexcept {
     do {
         DigitalPin<DO_CYCLE>::pulse(); // tell the chipset that it is safe to process this data cycle (regardless of where we are)
         // now wait for the chipset to tell us it has satisified the current part of the transaction
-        while (DigitalPin<MCU_READY>::isDeasserted());
-        DigitalPin<READY_RECEIVED>::pulse();
+        while (!readyTriggered);
+        readyTriggered = false;
+        //DigitalPin<READY_RECEIVED>::pulse();
         if (informCPU()) {
             DigitalPin<TRANSACTION_END>::pulse(); // let the chipset know this is the end of the transaction
             break;
