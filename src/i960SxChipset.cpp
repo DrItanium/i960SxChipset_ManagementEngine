@@ -82,15 +82,11 @@ using FallbackMemory = SDCardAsRam<TheSDInterface >;
 template<TargetMCU mcu> struct BackingMemoryStorage final { using Type = FallbackMemory; };
 
 using BackingMemoryStorage_t = BackingMemoryStorage<TargetBoard::getMCUTarget()>::Type;
-constexpr auto NumAddressBitsForPSRAMCache = 26;
-constexpr auto NumAddressBits = NumAddressBitsForPSRAMCache;
+constexpr auto NumAddressBits = 32;
 constexpr auto CacheLineSize = TargetBoard::getCacheLineSizeInBits();
 constexpr auto CacheSize = TargetBoard::getCacheSize();
 
-//using L1Cache = CacheInstance_t<EightWayTreePLRUCacheSet, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
-//using L1Cache = CacheInstance_t<EightWayLRUCacheWay, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
 using L1Cache = CacheInstance_t<EightWayRandPLRUCacheSet, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t, CompileInCacheSystemDebuggingSupport>;
-//using L1Cache = CacheInstance_t<SixteenWayLRUCacheWay, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t, CompileInCacheSystemDebuggingSupport>;
 L1Cache theCache;
 
 //template<template<auto, auto, auto, typename> typename L,
@@ -396,11 +392,11 @@ void setupDispatchTable() noexcept {
     for (auto& entry : lookupTable) {
         entry = fallbackBody<false>;
     }
-    lookupTable[0] = handleMemoryInterface<false>;
-    // only chipset type 1 has access to the full 64 megabytes
-    lookupTable[1] = handleMemoryInterface<false>;
-    lookupTable[2] = handleMemoryInterface<false>;
-    lookupTable[3] = handleMemoryInterface<false>;
+    // since this uses SD card as memory, just increase the size of it to 1 gigabyte
+    // 64 * 16 => 64 sixteen megabyte sections
+    for (int i = 0; i < 64; ++i) {
+       lookupTable[i] = handleMemoryInterface<false>;
+    }
     lookupTable[TheRTCInterface ::SectionID] = handleExternalDeviceRequest<false, TheRTCInterface >;
     lookupTable[TheDisplayInterface ::SectionID] = handleExternalDeviceRequest<false, TheDisplayInterface>;
     lookupTable[TheSDInterface ::SectionID] = handleExternalDeviceRequest<false, TheSDInterface>;
@@ -410,10 +406,9 @@ void setupDispatchTable() noexcept {
         for (auto &entry: lookupTable_Debug) {
             entry = fallbackBody<true>;
         }
-        lookupTable_Debug[0] = handleMemoryInterface<true>;
-        lookupTable_Debug[1] = handleMemoryInterface<true>;
-        lookupTable_Debug[2] = handleMemoryInterface<true>;
-        lookupTable_Debug[3] = handleMemoryInterface<true>;
+        for (int i = 0; i < 64; ++i) {
+            lookupTable[i] = handleMemoryInterface<true>;
+        }
         lookupTable_Debug[TheRTCInterface::SectionID] = handleExternalDeviceRequest<true, TheRTCInterface>;
         lookupTable_Debug[TheDisplayInterface::SectionID] = handleExternalDeviceRequest<true, TheDisplayInterface>;
         lookupTable_Debug[TheSDInterface::SectionID] = handleExternalDeviceRequest<true, TheSDInterface>;
