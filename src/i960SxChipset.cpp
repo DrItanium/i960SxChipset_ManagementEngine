@@ -95,19 +95,23 @@ L1Cache theCache;
 //using L1Cache = MultiCache<L, NumberOfCaches, IndividualCacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
 //L1Cache<DirectMappedCacheWay, 11, 1024, 6> theCache;
 
+enum class EndCycleKind {
+    Waiting = 0,
+    EndTransaction,
+    BurstNext,
+};
 volatile bool startTransactionTriggered = false;
-volatile bool endTransactionTriggered = false;
 volatile bool doCycleTriggered = false;
-volatile bool burstNextTriggered = false;
+volatile EndCycleKind endCycleIs = EndCycleKind::Waiting;
 void onStartTransaction() noexcept { startTransactionTriggered = true; }
 void onDoCycle() noexcept { doCycleTriggered = true; }
 
 void onEndTransaction() noexcept {
-    endTransactionTriggered = true;
+    endCycleIs = EndCycleKind::EndTransaction;
     DigitalPin<i960Pinout::Ready>::deassertPin();
 }
 void onBurstNext() noexcept {
-    burstNextTriggered = true;
+    endCycleIs = EndCycleKind::BurstNext;
     DigitalPin<i960Pinout::Ready>::deassertPin();
 }
 inline void waitForCycleUnlock() noexcept {
@@ -120,21 +124,10 @@ inline void waitForCycleUnlock() noexcept {
     //DigitalPin<i960Pinout::Ready>::pulse();
     DigitalPin<i960Pinout::Ready>::assertPin();
     // make sure that we just wait for the gating signal before continuing
-    while (true) {
-        // this is mutually exclusive, the management engine will only ever trigger one of these
-        if (endTransactionTriggered) {
-            // clear flags
-            //DigitalPin<i960Pinout::Ready>::deassertPin();
-            endTransactionTriggered = false;
-            return true;
-        }
-        if (burstNextTriggered) {
-            // clear flags
-            //DigitalPin<i960Pinout::Ready>::deassertPin();
-            burstNextTriggered = false;
-            return false;
-        }
-    }
+    while (endCycleIs == EndCycleKind::Waiting);
+    auto outcome = endCycleIs;
+    endCycleIs = EndCycleKind::Waiting;
+    return outcome == EndCycleKind::EndTransaction;
 }
 constexpr auto IncrementAddress = true;
 constexpr auto LeaveAddressAlone = false;
