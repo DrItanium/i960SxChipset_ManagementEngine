@@ -76,7 +76,7 @@ public:
     }
     [[nodiscard]] constexpr bool matches(TaggedAddress addr) const noexcept { return isValid() && (addr.getRest() == key_); }
     [[nodiscard]] constexpr auto get(OffsetType offset) const noexcept { return data[offset].getWholeValue(); }
-    void set(OffsetType offset, LoadStoreStyle style, SplitWord16 value) noexcept {
+    inline void set(OffsetType offset, LoadStoreStyle style, SplitWord16 value) noexcept {
         // while unsafe, assume it is correct because we only get this from the ProcessorSerializer, perhaps directly grab it?
         if (auto &target = data[offset]; target.getWholeValue() != value.getWholeValue()) {
             // now hold onto the old value
