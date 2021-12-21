@@ -153,6 +153,21 @@ class ProcessorInterface {
     static inline void writeGPIO16(uint16_t value) noexcept {
         write16<addr, MCP23x17Registers::GPIO, standalone>(value);
     }
+    template<IOExpanderAddress addr, MCP23x17Registers reg, bool standalone = true>
+    static inline void writeGPIO8(uint8_t value) noexcept {
+        static_assert(reg == MCP23x17Registers::GPIOA ||
+                      reg == MCP23x17Registers::GPIOB ||
+                      reg == MCP23x17Registers::GPIO, "Register must be one of the GPIO addresses for the MCP23S17");
+        write8<addr, reg, standalone>(value);
+    }
+    template<IOExpanderAddress addr, bool standalone = true>
+    static inline void writeGPIOUpper(uint8_t value) noexcept {
+        writeGPIO8<addr, MCP23x17Registers::GPIOB, standalone>(value);
+    }
+    template<IOExpanderAddress addr, bool standalone = true>
+    static inline void writeGPIOLower(uint8_t value) noexcept {
+        writeGPIO8<addr, MCP23x17Registers::GPIOA, standalone>(value);
+    }
     template<IOExpanderAddress addr, bool standalone = true>
     static inline void writeDirection(uint16_t value) noexcept {
         write16<addr, MCP23x17Registers::IODIR, standalone>(value);
@@ -175,8 +190,19 @@ public:
         // okay we are still pointing as output values
         // check the latch and see if the output value is the same as what is latched
         if (latchedDataOutput.getWholeValue() != value) {
-            latchedDataOutput.wholeValue_ = value;
-            writeGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>(latchedDataOutput.getWholeValue());
+            if (latchedDataOutput.getLowerHalf() == static_cast<byte>(value)) {
+                // only the upper half needs to be updated
+                latchedDataOutput.wholeValue_ = value;
+                writeGPIOUpper<ProcessorInterface::IOExpanderAddress::DataLines>(latchedDataOutput.getUpperHalf());
+            } else if (latchedDataOutput.getUpperHalf() == static_cast<byte>(value >> 8)) {
+                // only the lower half needs to be updated
+                latchedDataOutput.wholeValue_ = value;
+                writeGPIOLower<ProcessorInterface::IOExpanderAddress::DataLines>(latchedDataOutput.getLowerHalf());
+            } else {
+                // it is a mixed difference
+                latchedDataOutput.wholeValue_ = value;
+                writeGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>(latchedDataOutput.getWholeValue());
+            }
         }
     }
     template<bool usePortReads = true>
