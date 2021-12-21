@@ -154,7 +154,7 @@ inline void handleMemoryInterface() noexcept {
         ProcessorInterface::setupDataLinesForRead();
         // when dealing with read operations, we can actually easily unroll the do while by starting at the cache offset entry and walking
         // forward until we either hit the end of the cache line or blast is asserted first (both are valid states)
-        for (byte i = ProcessorInterface::getCacheOffsetEntry(); i < MaximumNumberOfWordsTransferrableInASingleTransaction; ++i) {
+        for (byte i = ProcessorInterface::getCacheOffsetEntry<decltype(theCache)::CacheEntryMask>(); i < MaximumNumberOfWordsTransferrableInASingleTransaction; ++i) {
             // start working on getting the given value way ahead of cycle unlock happening
             auto outcome = theEntry.get(i);
             waitForCycleUnlock();
@@ -180,7 +180,7 @@ inline void handleMemoryInterface() noexcept {
         // far as we can go with how the Sx works!
 
         // Also the manual states that the processor cannot burst across 16-byte boundaries so :D.
-        for (byte i = ProcessorInterface::getCacheOffsetEntry(); i < MaximumNumberOfWordsTransferrableInASingleTransaction; ++i) {
+        for (byte i = ProcessorInterface::getCacheOffsetEntry<decltype(theCache)::CacheEntryMask>(); i < MaximumNumberOfWordsTransferrableInASingleTransaction; ++i) {
             auto bits = ProcessorInterface::getDataBits();
             waitForCycleUnlock();
             if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
