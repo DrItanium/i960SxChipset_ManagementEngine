@@ -105,7 +105,7 @@ inline void waitForCycleUnlock() noexcept {
     DigitalPin<i960Pinout::Ready>::assertPin();
     // make sure that we just wait for the gating signal before continuing
     while (true) {
-        if (DigitalPin<i960Pinout::EndTransaction>::isAsserted()) {
+        if (DigitalPin<i960Pinout::InTransaction>::isDeasserted()) {
             DigitalPin<i960Pinout::Ready>::deassertPin();
             return true;
         }
@@ -275,7 +275,7 @@ inline void handleExternalDeviceRequest() noexcept {
 template<bool inDebugMode, bool useInterrupts>
 inline void invocationBody() noexcept {
     // wait for the management engine to give the go ahead
-    while (DigitalPin<i960Pinout::StartTransaction>::isDeasserted());
+    while (DigitalPin<i960Pinout::InTransaction>::isDeasserted());
 
     // keep processing data requests until we
     // when we do the transition, record the information we need
@@ -438,8 +438,7 @@ void setup() {
             i960Pinout::INT_EN1,
             i960Pinout::INT_EN2,
             i960Pinout::INT_EN3,
-            i960Pinout::StartTransaction,
-            i960Pinout::EndTransaction,
+            i960Pinout::InTransaction,
             i960Pinout::DoCycle,
             i960Pinout::BurstNext>();
     // all of these pins need to be pulled high
