@@ -14,26 +14,15 @@ union TaggedAddress {
     static constexpr auto MaximumAddressSize = totalBits;
     static_assert((NumLowestBits + NumTagBits + NumRestBits) == MaximumAddressSize, "Too many or too few bits for this given tagged address!");
     static_assert((MaximumAddressSize >= 26) && (MaximumAddressSize <= 32), "Addresses cannot be smaller than 26 bits!");
-    using TagType = conditional_t<TargetBoard::onAtmega1284p(), ClosestBitValue_t<NumTagBits>, Address>;
-    using RestType = conditional_t<TargetBoard::onAtmega1284p(), ClosestBitValue_t<NumRestBits>, Address>;
-    using LowerType = conditional_t<TargetBoard::onAtmega1284p(), ClosestBitValue_t<NumLowestBits>, Address>;
-    using PSRAMAddressType = conditional_t<TargetBoard::onAtmega1284p(), uint24_t, Address>;
-    using PSRAMIndexType = conditional_t<TargetBoard::onAtmega1284p(), byte, Address>;
     constexpr explicit TaggedAddress(Address value = 0) noexcept : base(value) { }
-    constexpr explicit TaggedAddress(RestType key, TagType tag, LowerType offset = 0) noexcept : lowest(offset), tagIndex(tag), rest(key) { }
+    constexpr explicit TaggedAddress(Address key, Address tag, Address offset = 0) noexcept : lowest(offset), tagIndex(tag), rest(key) { }
     void clear() noexcept { base = 0; }
     [[nodiscard]] constexpr auto getTagIndex() const noexcept { return tagIndex; }
     [[nodiscard]] constexpr auto getAddress() const noexcept { return base; }
     [[nodiscard]] constexpr auto getLowest() const noexcept { return lowest; }
     [[nodiscard]] constexpr auto getOffset() const noexcept { return lowest; }
     [[nodiscard]] constexpr auto getRest() const noexcept { return rest; }
-    [[nodiscard]] constexpr auto getPSRAMChipId() const noexcept { return offset; }
-    [[nodiscard]] constexpr auto getPSRAMIndex() const noexcept { return psramIndex; }
-    [[nodiscard]] constexpr auto getPSRAMAddress() const noexcept { return psramIndex; }
-    [[nodiscard]] constexpr auto getPSRAMAddress_High() const noexcept { return bytes_[2]; }
-    [[nodiscard]] constexpr auto getPSRAMAddress_Middle() const noexcept { return bytes_[1]; }
-    [[nodiscard]] constexpr auto getPSRAMAddress_Low() const noexcept { return bytes_[0]; }
-    [[nodiscard]] TaggedAddress aligned() const noexcept {
+    [[nodiscard]] constexpr TaggedAddress aligned() const noexcept {
         TaggedAddress result(base);
         result.lowest = 0;
         return result;
@@ -42,13 +31,9 @@ union TaggedAddress {
 private:
     Address base;
     struct {
-        LowerType lowest : NumLowestBits;
-        TagType tagIndex : NumTagBits;
-        RestType rest : NumRestBits;
-    };
-    struct {
-        PSRAMAddressType psramIndex : 23;
-        PSRAMIndexType offset : 3;
+        Address lowest : NumLowestBits;
+        Address tagIndex : NumTagBits;
+        Address rest : NumRestBits;
     };
     byte bytes_[4];
 };

@@ -40,7 +40,7 @@ public:
     static constexpr size_t NumWordsCached = NumBytesCached / sizeof(SplitWord16);
     static constexpr byte CacheEntryMask = NumWordsCached - 1;
     using TaggedAddress = ::TaggedAddress<numTagBits, maxAddressBits, numLowestBits, debugMode>;
-    using OffsetType = typename TaggedAddress::LowerType ;
+    using OffsetType = Address;
     static constexpr OffsetType  InvalidCacheLineState = 0xFF;
     static constexpr OffsetType CleanCacheLineState = 0xFE;
 public:
@@ -114,7 +114,7 @@ public:
     [[nodiscard]] constexpr bool isClean() const noexcept { return dirty_ == CleanCacheLineState; }
 private:
     SplitWord16 data[NumWordsCached]; // 16 bytes
-    typename TaggedAddress::RestType key_ = 0;
+    Address key_ = 0;
     /**
      * @brief Describes lowest dirty word in a valid cache line; also denotes if the cache line is valid or not
      */
