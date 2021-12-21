@@ -100,10 +100,16 @@ volatile bool endTransactionTriggered = false;
 volatile bool doCycleTriggered = false;
 volatile bool burstNextTriggered = false;
 void onStartTransaction() noexcept { startTransactionTriggered = true; }
-void onEndTransaction() noexcept { endTransactionTriggered = true; }
 void onDoCycle() noexcept { doCycleTriggered = true; }
-void onBurstNext() noexcept { burstNextTriggered = true; }
 
+void onEndTransaction() noexcept {
+    endTransactionTriggered = true;
+    DigitalPin<i960Pinout::Ready>::deassertPin();
+}
+void onBurstNext() noexcept {
+    burstNextTriggered = true;
+    DigitalPin<i960Pinout::Ready>::deassertPin();
+}
 inline void waitForCycleUnlock() noexcept {
     while (!doCycleTriggered);
     doCycleTriggered = false;
@@ -118,13 +124,13 @@ inline void waitForCycleUnlock() noexcept {
         // this is mutually exclusive, the management engine will only ever trigger one of these
         if (endTransactionTriggered) {
             // clear flags
-            DigitalPin<i960Pinout::Ready>::deassertPin();
+            //DigitalPin<i960Pinout::Ready>::deassertPin();
             endTransactionTriggered = false;
             return true;
         }
         if (burstNextTriggered) {
             // clear flags
-            DigitalPin<i960Pinout::Ready>::deassertPin();
+            //DigitalPin<i960Pinout::Ready>::deassertPin();
             burstNextTriggered = false;
             return false;
         }
