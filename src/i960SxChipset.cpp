@@ -96,16 +96,10 @@ inline void waitForCycleUnlock() noexcept {
     //DigitalPin<i960Pinout::Ready>::pulse();
     DigitalPin<i960Pinout::Ready>::assertPin();
     // make sure that we just wait for the gating signal before continuing
-    while (true) {
-        if (DigitalPin<i960Pinout::InTransaction>::isDeasserted()) {
-            DigitalPin<i960Pinout::Ready>::deassertPin();
-            return true;
-        }
-        if (DigitalPin<i960Pinout::BurstNext>::isAsserted()) {
-            DigitalPin<i960Pinout::Ready>::deassertPin();
-            return false;
-        }
-    }
+    while (DigitalPin<i960Pinout::InTransaction>::isAsserted() && DigitalPin<i960Pinout::BurstNext>::isDeasserted());
+    bool outcome = DigitalPin<i960Pinout::InTransaction>::isDeasserted();
+    DigitalPin<i960Pinout::Ready>::deassertPin();
+    return outcome;
 }
 constexpr auto IncrementAddress = true;
 constexpr auto LeaveAddressAlone = false;
