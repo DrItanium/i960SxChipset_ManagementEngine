@@ -271,6 +271,11 @@ struct DigitalPin2 {
         }
     }
     [[gnu::always_inline]]
+    static inline void write(bool value) noexcept {
+        write(value ? HIGH : LOW);
+    }
+
+    [[gnu::always_inline]]
     static inline void assertPin() noexcept {
         if constexpr (isSpecialized()) {
             if constexpr (isOutputPin()) {
