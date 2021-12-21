@@ -305,18 +305,20 @@ transactionBody() noexcept {
         //while (!readyTriggered);
         //readyTriggered = false;
         if (informCPU()) {
-            DigitalPin<TRANSACTION_START>::deassertPin(); // let the chipset know that we are ending the transaction
-            //DigitalPin<TRANSACTION_END>::pulse(); // let the chipset know this is the end of the transaction
+            DigitalPin<TRANSACTION_START>::deassertPin(); // let the chipset know that we are ending the transaction by ending start transaction
+            DigitalPin<TRANSACTION_END>::assertPin(); // let the chipset know this is the end of the transaction
             // we wait until the chipset pulls this pin high again before continuing, that way we maintain synchronization
             while (DigitalPin<MCU_READY>::isAsserted());
+            DigitalPin<TRANSACTION_END>::deassertPin();
             break;
         } else {
             // if we got here then it is a burst transaction and as such
             // let the chipset know this is the next word of the burst transaction
             // this will act as a gate action
-            DigitalPin<BURST_NEXT>::pulse();
+            DigitalPin<BURST_NEXT>::assertPin();
             // we wait until the chipset pulls this pin high again before continuing, that way we maintain synchronization
             while (DigitalPin<MCU_READY>::isAsserted());
+            DigitalPin<BURST_NEXT>::deassertPin();
        }
     } while (true);
     // now we just loop back around and wait for the next
