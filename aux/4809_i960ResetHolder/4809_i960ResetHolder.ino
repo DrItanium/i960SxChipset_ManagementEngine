@@ -294,24 +294,27 @@ transactionBody() noexcept {
         // instead of pulsing do cycle, we just assert do cycle while we wait
         DigitalPin<DO_CYCLE>::assertPin();
         // now wait for the chipset to tell us it has satisified the current part of the transaction
+        if (DigitalPin<BLAST>::isAsserted()) {
+            // break out of the current loop if we are in the last transaction
+            break;
+        }
         while (DigitalPin<MCU_READY>::isDeasserted());
         DigitalPin<DO_CYCLE>::deassertPin();
-        if (informCPU()) {
-            DigitalPin<IN_TRANSACTION>::deassertPin(); // let the chipset know that we are ending the transaction by ending start transaction
-            // we wait until the chipset pulls this pin high again before continuing, that way we maintain synchronization
-            while (DigitalPin<MCU_READY>::isAsserted());
-            break;
-        } else {
-            // if we got here then it is a burst transaction and as such
-            // let the chipset know this is the next word of the burst transaction
-            // this will act as a gate action
-            DigitalPin<BURST_NEXT>::assertPin();
-            // we wait until the chipset pulls this pin high again before continuing, that way we maintain synchronization
-            while (DigitalPin<MCU_READY>::isAsserted());
-            DigitalPin<BURST_NEXT>::deassertPin();
-       }
+        DigitalPin<READY960>::pulse();
+        // if we got here then it is a burst transaction and as such
+        // let the chipset know this is the next word of the burst transaction
+        // this will act as a gate action
+        DigitalPin<BURST_NEXT>::assertPin();
+        // we wait until the chipset pulls this pin high again before continuing, that way we maintain synchronization
+        while (DigitalPin<MCU_READY>::isAsserted());
+        DigitalPin<BURST_NEXT>::deassertPin();
     } while (true);
-    // now we just loop back around and wait for the next
+    // the end of the current transaction needs to be straightline code
+    while (DigitalPin<MCU_READY>::isDeasserted());
+    DigitalPin<DO_CYCLE>::deassertPin();
+    DigitalPin<READY960>::pulse();
+    DigitalPin<IN_TRANSACTION>::deassertPin();
+    while (DigitalPin<MCU_READY>::isAsserted());
 }
 
 
