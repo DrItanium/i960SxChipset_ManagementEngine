@@ -293,8 +293,8 @@ inline void
 transactionBody() noexcept {
     // okay so we need to wait for AS and DEN to go low
     while (DigitalPin<DEN>::isDeasserted());
-    /// @todo look into triggering transaction start before checking to see if den was triggered, does it improve responsiveness?
-    DigitalPin<TRANSACTION_START>::pulse(); // tell the chipset that it can safely pull down the base address of the transaction
+    DigitalPin<TRANSACTION_START>::assertPin(); // tell the chipset that we are starting a transaction
+    //DigitalPin<TRANSACTION_START>::pulse(); // tell the chipset that it can safely pull down the base address of the transaction
     // okay now we need to emulate the wait loop
     do {
         // instead of pulsing do cycle, we just assert do cycle while we wait
@@ -305,6 +305,7 @@ transactionBody() noexcept {
         //while (!readyTriggered);
         //readyTriggered = false;
         if (informCPU()) {
+            DigitalPin<TRANSACTION_START>::deassertPin(); // let the chipset know that we are ending the transaction
             DigitalPin<TRANSACTION_END>::pulse(); // let the chipset know this is the end of the transaction
             // we wait until the chipset pulls this pin high again before continuing, that way we maintain synchronization
             while (DigitalPin<MCU_READY>::isAsserted());
@@ -317,7 +318,7 @@ transactionBody() noexcept {
             // we wait until the chipset pulls this pin high again before continuing, that way we maintain synchronization
             while (DigitalPin<MCU_READY>::isAsserted());
        }
-} while (true);
+    } while (true);
     // now we just loop back around and wait for the next
 }
 
