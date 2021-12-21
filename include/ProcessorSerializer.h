@@ -185,14 +185,6 @@ public:
             // assume for now that BE0 and BE1 are the same port
             // in this case it is PA14 and PA15 so just shift right by 14 and mask
             auto portContents = DigitalPin<i960Pinout::BE0>::readPort();
-#if 0
-            Serial.print("PORT CONTENTS: 0x");
-            Serial.println(portContents, HEX);
-            Serial.print("SHIFTED 14 PORT CONTENTS: 0b");
-            Serial.println(static_cast<byte>(portContents >> 14), BIN);
-            Serial.print("SHIFTED 14 PORT CONTENTS + MASK: 0b");
-            Serial.println(static_cast<byte>(portContents >> 14) & 0b11, BIN);
-#endif
             return static_cast<LoadStoreStyle>((portContents >> 14) & 0b11);
         } else {
             auto lower = static_cast<byte>(DigitalPin<i960Pinout::BE0>::read());
