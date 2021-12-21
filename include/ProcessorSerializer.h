@@ -231,50 +231,6 @@ private:
     inline static void updateCacheOffsetEntry() noexcept {
         cacheOffsetEntry_ = (address_.bytes[0] >> 1) & offsetMask; // we want to make this quick to increment
     }
-public:
-    template<byte offsetMask>
-    inline static void full32BitUpdate() noexcept {
-        // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
-        // where we can insert operations to take place that would otherwise be waiting
-        address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
-        address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
-        updateCacheOffsetEntry<offsetMask>();
-    }
-    template<byte offsetMask>
-    static void lower16Update() noexcept {
-        // read only the lower half
-        // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
-        // where we can insert operations to take place that would otherwise be waiting
-        address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
-        updateCacheOffsetEntry<offsetMask>();
-    }
-    static void upper16Update() noexcept {
-        // only read the upper 16-bits
-        address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
-    }
-    static void updateHighest8() noexcept {
-        // only read the upper 8 bits
-        address_.bytes[3] = read8<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPIOB>();
-    }
-    static void updateHigher8() noexcept {
-        // only read the upper 8 bits
-        address_.bytes[2] = read8<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPIOA>();
-    }
-    template<byte offsetMask>
-    static void updateLowest8() noexcept {
-        // read only the lower half
-        // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
-        // where we can insert operations to take place that would otherwise be waiting
-        address_.bytes[0] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOA>();
-        updateCacheOffsetEntry<offsetMask>();
-    }
-    static void updateLower8() noexcept {
-        // read only the lower half
-        // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
-        // where we can insert operations to take place that would otherwise be waiting
-        address_.bytes[1] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOB>();
-    }
-private:
     template<bool inDebugMode>
     inline static void updateTargetFunctions() noexcept {
         if constexpr (auto a = getBody<inDebugMode>(address_.bytes[3]); inDebugMode) {
@@ -284,41 +240,82 @@ private:
         }
     }
 public:
+    template<byte offsetMask, bool inDebugMode>
+    static inline void full32BitUpdate() noexcept {
+        // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
+        // where we can insert operations to take place that would otherwise be waiting
+        address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
+        updateCacheOffsetEntry<offsetMask>();
+        address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
+        updateTargetFunctions<inDebugMode>();
+    }
+    template<byte offsetMask>
+    static inline void lower16Update() noexcept {
+        // read only the lower half
+        // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
+        // where we can insert operations to take place that would otherwise be waiting
+        address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
+        updateCacheOffsetEntry<offsetMask>();
+    }
+    template<bool inDebugMode>
+    static inline void upper16Update() noexcept {
+        // only read the upper 16-bits
+        address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
+        updateTargetFunctions<inDebugMode>();
+    }
+    template<bool inDebugMode>
+    static inline void updateHighest8() noexcept {
+        // only read the upper 8 bits
+        address_.bytes[3] = read8<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPIOB>();
+        updateTargetFunctions<inDebugMode>();
+    }
+    static inline void updateHigher8() noexcept {
+        // only read the upper 8 bits
+        address_.bytes[2] = read8<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPIOA>();
+    }
+    template<byte offsetMask>
+    static inline void updateLowest8() noexcept {
+        // read only the lower half
+        // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
+        // where we can insert operations to take place that would otherwise be waiting
+        address_.bytes[0] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOA>();
+        updateCacheOffsetEntry<offsetMask>();
+    }
+    static inline void updateLower8() noexcept {
+        // read only the lower half
+        // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
+        // where we can insert operations to take place that would otherwise be waiting
+        address_.bytes[1] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOB>();
+    }
+public:
     template<bool inDebugMode, byte offsetMask, bool useInterrupts = true, int debugLevel = 0>
-    static void newDataCycle() noexcept {
-        switch (getUpdateKind<useInterrupts>() & 0b1111) {
+    static inline void newDataCycle() noexcept {
+        switch (getUpdateKind<useInterrupts>()) {
             case 0b0001:
                 updateLower8();
-                upper16Update();
-                updateTargetFunctions<inDebugMode>();
+                upper16Update<inDebugMode>();
                 break;
             case 0b0010:
                 updateLowest8<offsetMask>();
-                upper16Update();
-                updateTargetFunctions<inDebugMode>();
+                upper16Update<inDebugMode>();
                 break;
             case 0b0011:
-                upper16Update();
-                updateTargetFunctions<inDebugMode>();
+                upper16Update<inDebugMode>();
                 break;
             case 0b0100:
                 lower16Update<offsetMask>();
-                updateHighest8();
-                updateTargetFunctions<inDebugMode>();
+                updateHighest8<inDebugMode>();
                 break;
             case 0b0101:
                 updateLower8();
-                updateHighest8();
-                updateTargetFunctions<inDebugMode>();
+                updateHighest8<inDebugMode>();
                 break;
             case 0b0110:
                 updateLowest8<offsetMask>();
-                updateHighest8();
-                updateTargetFunctions<inDebugMode>();
+                updateHighest8<inDebugMode>();
                 break;
             case 0b0111:
-                updateHighest8();
-                updateTargetFunctions<inDebugMode>();
+                updateHighest8<inDebugMode>();
                 break;
             case 0b1000:
                 lower16Update<offsetMask>();
@@ -346,8 +343,7 @@ public:
                 break;
             case 0b1111: break;
             default:
-                full32BitUpdate<offsetMask>();
-                updateTargetFunctions<inDebugMode>();
+                full32BitUpdate<offsetMask, inDebugMode>();
                 break;
         }
         if constexpr (inDebugMode) {
@@ -357,7 +353,8 @@ public:
         }
     }
     template<bool advanceAddress = true>
-    static void burstNext() noexcept {
+    [[gnu::always_inline]]
+    static inline void burstNext() noexcept {
         if constexpr (advanceAddress) {
             address_.wholeValue_ += 2;
         }
