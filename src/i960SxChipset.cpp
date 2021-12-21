@@ -72,6 +72,7 @@ constexpr auto UseIOExpanderAddressLineInterrupts = true;
  */
 constexpr auto BindDoCycleToInterrupt = false;
 constexpr auto BindStartTransactionToInterrupt = false;
+constexpr auto BindEndTransactionToInterrupt = false;
 using TheDisplayInterface = DisplayInterface<DisplayBaseAddress>;
 using TheSDInterface = SDCardInterface<MaximumNumberOfOpenFiles, SDBaseAddress>;
 using TheConsoleInterface = Serial0Interface<Serial0BaseAddress, CompileInAddressDebuggingSupport, AddressDebuggingEnabledOnStartup>;
@@ -133,10 +134,22 @@ inline void waitForCycleUnlock() noexcept {
     //DigitalPin<i960Pinout::Ready>::pulse();
     DigitalPin<i960Pinout::Ready>::assertPin();
     // make sure that we just wait for the gating signal before continuing
-    while (endCycleIs == EndCycleKind::Waiting);
-    auto outcome = endCycleIs;
-    endCycleIs = EndCycleKind::Waiting;
-    return outcome == EndCycleKind::EndTransaction;
+    if constexpr (BindEndTransactionToInterrupt) {
+        while (endCycleIs == EndCycleKind::Waiting);
+        auto outcome = endCycleIs;
+        endCycleIs = EndCycleKind::Waiting;
+        return outcome == EndCycleKind::EndTransaction;
+    } else {
+        while (true) {
+            if (DigitalPin<i960Pinout::StartTransaction>::isDeasserted()) {
+                DigitalPin<i960Pinout::Ready>::deassertPin();
+                return true;
+            } else if (endCycleIs == EndCycleKind::BurstNext) {
+               endCycleIs = EndCycleKind::Waiting;
+               return false;
+            }
+        }
+    }
 }
 constexpr auto IncrementAddress = true;
 constexpr auto LeaveAddressAlone = false;
@@ -473,7 +486,9 @@ void setup() {
     if constexpr (BindStartTransactionToInterrupt) {
         interruptOnFallingEdge(i960Pinout::StartTransaction, onStartTransaction);
     }
-    interruptOnFallingEdge(i960Pinout::EndTransaction, onEndTransaction);
+    if constexpr (BindEndTransactionToInterrupt) {
+        interruptOnFallingEdge(i960Pinout::EndTransaction, onEndTransaction);
+    }
     interruptOnFallingEdge(i960Pinout::BurstNext, onBurstNext);
     if constexpr (BindDoCycleToInterrupt) {
         interruptOnFallingEdge(i960Pinout::DoCycle, onDoCycle);
