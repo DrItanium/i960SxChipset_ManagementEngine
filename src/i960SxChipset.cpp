@@ -67,12 +67,6 @@ constexpr auto ValidateTransferDuringInstall = true;
  * @brief When set to true, the interrupt lines the mcp23s17 provides are used to determine which bytes to read
  */
 constexpr auto UseIOExpanderAddressLineInterrupts = true;
-/**
- * @brief Set to false if you want to use polling on the do cycle pin, enable this if you run into a bunch of checksum errors randomly
- */
-constexpr auto BindDoCycleToInterrupt = false;
-constexpr auto BindStartTransactionToInterrupt = false;
-constexpr auto BindEndTransactionToInterrupt = false;
 using TheDisplayInterface = DisplayInterface<DisplayBaseAddress>;
 using TheSDInterface = SDCardInterface<MaximumNumberOfOpenFiles, SDBaseAddress>;
 using TheConsoleInterface = Serial0Interface<Serial0BaseAddress, CompileInAddressDebuggingSupport, AddressDebuggingEnabledOnStartup>;
@@ -101,32 +95,8 @@ L1Cache theCache;
 //using L1Cache = MultiCache<L, NumberOfCaches, IndividualCacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
 //L1Cache<DirectMappedCacheWay, 11, 1024, 6> theCache;
 
-enum class EndCycleKind {
-    Waiting = 0,
-    EndTransaction,
-    BurstNext,
-};
-volatile bool startTransactionTriggered = false;
-volatile bool doCycleTriggered = false;
-volatile EndCycleKind endCycleIs = EndCycleKind::Waiting;
-void onStartTransaction() noexcept { startTransactionTriggered = true; }
-void onDoCycle() noexcept { doCycleTriggered = true; }
-
-void onEndTransaction() noexcept {
-    endCycleIs = EndCycleKind::EndTransaction;
-    DigitalPin<i960Pinout::Ready>::deassertPin();
-}
-void onBurstNext() noexcept {
-    endCycleIs = EndCycleKind::BurstNext;
-    DigitalPin<i960Pinout::Ready>::deassertPin();
-}
 inline void waitForCycleUnlock() noexcept {
-    if constexpr (BindDoCycleToInterrupt) {
-        while (!doCycleTriggered);
-        doCycleTriggered = false;
-    } else {
-        while (DigitalPin<i960Pinout::DoCycle>::isDeasserted());
-    }
+    while (DigitalPin<i960Pinout::DoCycle>::isDeasserted());
 }
 [[nodiscard]] inline bool informCPU() noexcept {
     // don't pulse READY, instead just pull it low, the interrupt latency on the 4809 is horrible
@@ -134,20 +104,14 @@ inline void waitForCycleUnlock() noexcept {
     //DigitalPin<i960Pinout::Ready>::pulse();
     DigitalPin<i960Pinout::Ready>::assertPin();
     // make sure that we just wait for the gating signal before continuing
-    if constexpr (BindEndTransactionToInterrupt) {
-        while (endCycleIs == EndCycleKind::Waiting);
-        auto outcome = endCycleIs;
-        endCycleIs = EndCycleKind::Waiting;
-        return outcome == EndCycleKind::EndTransaction;
-    } else {
-        while (true) {
-            if (DigitalPin<i960Pinout::StartTransaction>::isDeasserted()) {
-                DigitalPin<i960Pinout::Ready>::deassertPin();
-                return true;
-            } else if (endCycleIs == EndCycleKind::BurstNext) {
-               endCycleIs = EndCycleKind::Waiting;
-               return false;
-            }
+    while (true) {
+        if (DigitalPin<i960Pinout::EndTransaction>::isAsserted()) {
+            DigitalPin<i960Pinout::Ready>::deassertPin();
+            return true;
+        }
+        if (DigitalPin<i960Pinout::BurstNext>::isAsserted()) {
+            DigitalPin<i960Pinout::Ready>::deassertPin();
+            return false;
         }
     }
 }
@@ -311,12 +275,7 @@ inline void handleExternalDeviceRequest() noexcept {
 template<bool inDebugMode, bool useInterrupts>
 inline void invocationBody() noexcept {
     // wait for the management engine to give the go ahead
-    if constexpr (BindStartTransactionToInterrupt) {
-        while (!startTransactionTriggered);
-        startTransactionTriggered = false;
-    } else {
-        while (DigitalPin<i960Pinout::StartTransaction>::isDeasserted());
-    }
+    while (DigitalPin<i960Pinout::StartTransaction>::isDeasserted());
 
     // keep processing data requests until we
     // when we do the transition, record the information we need
@@ -483,16 +442,6 @@ void setup() {
             i960Pinout::EndTransaction,
             i960Pinout::DoCycle,
             i960Pinout::BurstNext>();
-    if constexpr (BindStartTransactionToInterrupt) {
-        interruptOnFallingEdge(i960Pinout::StartTransaction, onStartTransaction);
-    }
-    if constexpr (BindEndTransactionToInterrupt) {
-        interruptOnFallingEdge(i960Pinout::EndTransaction, onEndTransaction);
-    }
-    interruptOnFallingEdge(i960Pinout::BurstNext, onBurstNext);
-    if constexpr (BindDoCycleToInterrupt) {
-        interruptOnFallingEdge(i960Pinout::DoCycle, onDoCycle);
-    }
     // all of these pins need to be pulled high
     DigitalPin<i960Pinout::SD_EN>::deassertPin();
     DigitalPin<i960Pinout::Ready>::deassertPin();
