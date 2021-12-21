@@ -299,7 +299,6 @@ transactionBody() noexcept {
     do {
         // instead of pulsing do cycle, we just assert do cycle while we wait
         DigitalPin<DO_CYCLE>::assertPin();
-        //DigitalPin<DO_CYCLE>::pulse(); // tell the chipset that it is safe to process this data cycle (regardless of where we are)
         // now wait for the chipset to tell us it has satisified the current part of the transaction
         while (DigitalPin<MCU_READY>::isDeasserted());
         DigitalPin<DO_CYCLE>::deassertPin();
