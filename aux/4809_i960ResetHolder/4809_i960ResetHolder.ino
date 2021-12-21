@@ -274,14 +274,6 @@ void setup() {
     attachInterrupt(digitalPinToInterrupt(FAIL960), handleChecksumFail, RISING);
 }
 
-inline bool
-informCPU() noexcept {
-    // sample blast at this point, I can guarantee it accurate for this cycle
-    bool isBurstLast = DigitalPin<BLAST>::isAsserted();
-    // pulse ready since it will automatically be synchronized by the external hardware
-    DigitalPin<READY960>::pulse();
-    return isBurstLast;
-}
 [[gnu::always_inline]]
 inline void
 transactionBody() noexcept {
@@ -300,11 +292,11 @@ transactionBody() noexcept {
         }
         while (DigitalPin<MCU_READY>::isDeasserted());
         DigitalPin<DO_CYCLE>::deassertPin();
+        DigitalPin<BURST_NEXT>::assertPin();
         DigitalPin<READY960>::pulse();
         // if we got here then it is a burst transaction and as such
         // let the chipset know this is the next word of the burst transaction
         // this will act as a gate action
-        DigitalPin<BURST_NEXT>::assertPin();
         // we wait until the chipset pulls this pin high again before continuing, that way we maintain synchronization
         while (DigitalPin<MCU_READY>::isAsserted());
         DigitalPin<BURST_NEXT>::deassertPin();
@@ -312,8 +304,8 @@ transactionBody() noexcept {
     // the end of the current transaction needs to be straightline code
     while (DigitalPin<MCU_READY>::isDeasserted());
     DigitalPin<DO_CYCLE>::deassertPin();
-    DigitalPin<READY960>::pulse();
     DigitalPin<IN_TRANSACTION>::deassertPin();
+    DigitalPin<READY960>::pulse();
     while (DigitalPin<MCU_READY>::isAsserted());
 }
 
