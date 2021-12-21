@@ -227,10 +227,10 @@ public:
         }
     }
     inline static void setupDataLinesForRead() noexcept {
-            if (dataLinesDirection_) {
-                dataLinesDirection_ = ~dataLinesDirection_;
-                writeDirection<ProcessorInterface::IOExpanderAddress::DataLines>(0);
-            }
+        if (dataLinesDirection_) {
+            dataLinesDirection_ = ~dataLinesDirection_;
+            writeDirection<ProcessorInterface::IOExpanderAddress::DataLines>(0);
+        }
     }
 private:
     template<bool useInterrupts = true, bool usePortReads = true>
