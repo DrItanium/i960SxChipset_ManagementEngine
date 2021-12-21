@@ -190,19 +190,9 @@ public:
         // okay we are still pointing as output values
         // check the latch and see if the output value is the same as what is latched
         if (latchedDataOutput.getWholeValue() != value) {
-            if (latchedDataOutput.getLowerHalf() == static_cast<byte>(value)) {
-                // only the upper half needs to be updated
-                latchedDataOutput.wholeValue_ = value;
-                writeGPIOUpper<ProcessorInterface::IOExpanderAddress::DataLines>(latchedDataOutput.getUpperHalf());
-            } else if (latchedDataOutput.getUpperHalf() == static_cast<byte>(value >> 8)) {
-                // only the lower half needs to be updated
-                latchedDataOutput.wholeValue_ = value;
-                writeGPIOLower<ProcessorInterface::IOExpanderAddress::DataLines>(latchedDataOutput.getLowerHalf());
-            } else {
-                // it is a mixed difference
-                latchedDataOutput.wholeValue_ = value;
-                writeGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>(latchedDataOutput.getWholeValue());
-            }
+            // it is a mixed difference
+            latchedDataOutput.wholeValue_ = value;
+            writeGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>(latchedDataOutput.getWholeValue());
         }
     }
     template<bool usePortReads = true>
