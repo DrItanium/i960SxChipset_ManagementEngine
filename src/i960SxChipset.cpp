@@ -81,19 +81,11 @@ using FallbackMemory = SDCardAsRam<TheSDInterface >;
 template<TargetMCU mcu> struct BackingMemoryStorage final { using Type = FallbackMemory; };
 
 using BackingMemoryStorage_t = BackingMemoryStorage<TargetBoard::getMCUTarget()>::Type;
-constexpr auto NumAddressBits = 32;
 constexpr auto CacheLineSize = TargetBoard::getCacheLineSizeInBits();
 constexpr auto CacheSize = TargetBoard::getCacheSize();
 
-using L1Cache = CacheInstance_t<SixteenWayLRUCacheWay, CacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t, CompileInCacheSystemDebuggingSupport>;
+using L1Cache = CacheInstance_t<EightWayRandPLRUCacheSet, CacheSize, 32, CacheLineSize, BackingMemoryStorage_t, CompileInCacheSystemDebuggingSupport>;
 L1Cache theCache;
-
-//template<template<auto, auto, auto, typename> typename L,
-//        byte NumberOfCaches,
-//        uint16_t IndividualCacheSize,
-//        byte CacheLineSize>
-//using L1Cache = MultiCache<L, NumberOfCaches, IndividualCacheSize, NumAddressBits, CacheLineSize, BackingMemoryStorage_t>;
-//L1Cache<DirectMappedCacheWay, 11, 1024, 6> theCache;
 
 inline void waitForCycleUnlock() noexcept {
     while (DigitalPin<i960Pinout::DoCycle>::isDeasserted());
