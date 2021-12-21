@@ -18,9 +18,8 @@ constexpr auto WAITBOOT960 = PIN_PF4;
 constexpr auto FAIL960 = PIN_PF5;
 
 constexpr auto DO_CYCLE = PIN_PC0;
-constexpr auto TRANSACTION_START = PIN_PC1;
+constexpr auto IN_TRANSACTION = PIN_PC1;
 constexpr auto BURST_NEXT = PIN_PC2;
-constexpr auto TRANSACTION_END = PIN_PC3;
 
 constexpr auto MCU_READY = PIN_PD2;
 constexpr auto READY960 = PIN_PD3;
@@ -141,8 +140,7 @@ DefOutputPin(INT1_960, HIGH, LOW);
 DefOutputPin(INT2_960, HIGH, LOW);
 DefOutputPin(INT3_960, LOW, HIGH);
 DefOutputPin(SYSTEMBOOT, HIGH, LOW);
-DefOutputPin(TRANSACTION_START, LOW, HIGH);
-DefOutputPin(TRANSACTION_END, LOW, HIGH);
+DefOutputPin(IN_TRANSACTION, LOW, HIGH);
 DefOutputPin(DO_CYCLE, LOW, HIGH);
 DefOutputPin(BURST_NEXT, LOW, HIGH);
 
@@ -242,15 +240,13 @@ void setup() {
                 INT2_960,
                 INT3_960,
                 SYSTEMBOOT,
-                TRANSACTION_START,
-                TRANSACTION_END,
+                IN_TRANSACTION,
                 DO_CYCLE,
                 BURST_NEXT>();
 
         deassertPins<BURST_NEXT,
                      DO_CYCLE,
-                     TRANSACTION_START,
-                     TRANSACTION_END,
+                     IN_TRANSACTION,
                      LOCK960,
                      HOLD960,
                      INT0_960,
@@ -259,8 +255,6 @@ void setup() {
                      INT3_960,
                      SYSTEMBOOT,
                      READY960>();
-        // do not attach an interrupt to MCU_READY, it adds way too much latency on the 4809
-        //attachInterrupt(digitalPinToInterrupt(MCU_READY), handleREADY, FALLING);
         while (DigitalPin<WAITBOOT960>::isAsserted());
     }
 
@@ -293,7 +287,7 @@ inline void
 transactionBody() noexcept {
     // okay so we need to wait for AS and DEN to go low
     while (DigitalPin<DEN>::isDeasserted());
-    DigitalPin<TRANSACTION_START>::assertPin(); // tell the chipset that we are starting a transaction
+    DigitalPin<IN_TRANSACTION>::assertPin(); // tell the chipset that we are starting a transaction
     //DigitalPin<TRANSACTION_START>::pulse(); // tell the chipset that it can safely pull down the base address of the transaction
     // okay now we need to emulate the wait loop
     do {
@@ -302,14 +296,10 @@ transactionBody() noexcept {
         // now wait for the chipset to tell us it has satisified the current part of the transaction
         while (DigitalPin<MCU_READY>::isDeasserted());
         DigitalPin<DO_CYCLE>::deassertPin();
-        //while (!readyTriggered);
-        //readyTriggered = false;
         if (informCPU()) {
-            DigitalPin<TRANSACTION_START>::deassertPin(); // let the chipset know that we are ending the transaction by ending start transaction
-            DigitalPin<TRANSACTION_END>::assertPin(); // let the chipset know this is the end of the transaction
+            DigitalPin<IN_TRANSACTION>::deassertPin(); // let the chipset know that we are ending the transaction by ending start transaction
             // we wait until the chipset pulls this pin high again before continuing, that way we maintain synchronization
             while (DigitalPin<MCU_READY>::isAsserted());
-            DigitalPin<TRANSACTION_END>::deassertPin();
             break;
         } else {
             // if we got here then it is a burst transaction and as such
