@@ -101,10 +101,10 @@ enum class EndCycleKind {
     BurstNext,
 };
 volatile bool startTransactionTriggered = false;
-volatile bool doCycleTriggered = false;
+//volatile bool doCycleTriggered = false;
 volatile EndCycleKind endCycleIs = EndCycleKind::Waiting;
 void onStartTransaction() noexcept { startTransactionTriggered = true; }
-void onDoCycle() noexcept { doCycleTriggered = true; }
+//void onDoCycle() noexcept { doCycleTriggered = true; }
 
 void onEndTransaction() noexcept {
     endCycleIs = EndCycleKind::EndTransaction;
@@ -115,8 +115,9 @@ void onBurstNext() noexcept {
     DigitalPin<i960Pinout::Ready>::deassertPin();
 }
 inline void waitForCycleUnlock() noexcept {
-    while (!doCycleTriggered);
-    doCycleTriggered = false;
+    while (DigitalPin<i960Pinout::DoCycle>::isDeasserted());
+    //while (!doCycleTriggered);
+    //doCycleTriggered = false;
 }
 [[nodiscard]] inline bool informCPU() noexcept {
     // don't pulse READY, instead just pull it low, the interrupt latency on the 4809 is horrible
@@ -459,7 +460,7 @@ void setup() {
             i960Pinout::BurstNext>();
     interruptOnFallingEdge(i960Pinout::StartTransaction, onStartTransaction);
     interruptOnFallingEdge(i960Pinout::EndTransaction, onEndTransaction);
-    interruptOnFallingEdge(i960Pinout::DoCycle, onDoCycle);
+    //interruptOnFallingEdge(i960Pinout::DoCycle, onDoCycle);
     interruptOnFallingEdge(i960Pinout::BurstNext, onBurstNext);
     // all of these pins need to be pulled high
     //digitalWrite<i960Pinout::PSRAM_EN, HIGH>();
