@@ -209,7 +209,8 @@ public:
         }
     }
     [[nodiscard]] static bool isReadOperation() noexcept { return DigitalPin<i960Pinout::W_R_>::isAsserted(); }
-    [[nodiscard]] static auto getCacheOffsetEntry() noexcept { return cacheOffsetEntry_; }
+    template<byte offsetMask>
+    [[nodiscard]] static auto getCacheOffsetEntry() noexcept { return (address_.bytes[0] >> 1) & offsetMask; }
     inline static void setupDataLinesForWrite() noexcept {
         if (!dataLinesDirection_) {
             dataLinesDirection_ = ~dataLinesDirection_;
@@ -243,10 +244,6 @@ private:
         }
     }
 private:
-    template<byte offsetMask>
-    inline static void updateCacheOffsetEntry() noexcept {
-        cacheOffsetEntry_ = (address_.bytes[0] >> 1) & offsetMask; // we want to make this quick to increment
-    }
     template<bool inDebugMode>
     inline static void updateTargetFunctions() noexcept {
         if constexpr (auto a = getBody<inDebugMode>(address_.bytes[3]); inDebugMode) {
@@ -261,7 +258,6 @@ public:
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
         address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
-        updateCacheOffsetEntry<offsetMask>();
         address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
         updateTargetFunctions<inDebugMode>();
     }
@@ -271,7 +267,6 @@ public:
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
         address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
-        updateCacheOffsetEntry<offsetMask>();
     }
     template<bool inDebugMode>
     static inline void upper16Update() noexcept {
@@ -295,7 +290,6 @@ public:
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
         address_.bytes[0] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOA>();
-        updateCacheOffsetEntry<offsetMask>();
     }
     static inline void updateLower8() noexcept {
         // read only the lower half
@@ -385,7 +379,6 @@ private:
     static inline SplitWord32 address_{0};
     static inline SplitWord16 latchedDataOutput {0};
     static inline byte dataLinesDirection_ = 0xFF;
-    static inline byte cacheOffsetEntry_ = 0;
     static inline bool initialized_ = false;
     static inline BodyFunction last_ = nullptr;
     static inline BodyFunction lastDebug_ = nullptr;
