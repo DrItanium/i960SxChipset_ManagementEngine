@@ -179,10 +179,24 @@ public:
             writeGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>(latchedDataOutput.getWholeValue());
         }
     }
+    template<bool usePortReads = true>
     [[nodiscard]] static auto getStyle() noexcept {
-        auto lower = static_cast<byte>(DigitalPin<i960Pinout::BE0>::read());
-        auto upper = static_cast<byte>(DigitalPin<i960Pinout::BE1>::read()) << 1;
-        return static_cast<LoadStoreStyle>(lower | upper);
+        if constexpr (usePortReads) {
+            // assume for now that BE0 and BE1 are the same port
+            // in this case it is PA14 and PA15 so just shift right by 14 and mask
+            auto portContents = DigitalPin<i960Pinout::BE0>::readPort();
+            Serial.print("PORT CONTENTS: 0x");
+            Serial.println(portContents, HEX);
+            Serial.print("SHIFTED 13 PORT CONTENTS: 0x");
+            Serial.println(portContents >> 13, HEX);
+            Serial.print("SHIFTED 13 PORT CONTENTS + MASK: 0x");
+            Serial.println((portContents >> 13) & 0b11, HEX);
+            return static_cast<LoadStoreStyle>((portContents >> 13) & 0b11);
+        } else {
+            auto lower = static_cast<byte>(DigitalPin<i960Pinout::BE0>::read());
+            auto upper = static_cast<byte>(DigitalPin<i960Pinout::BE1>::read()) << 1;
+            return static_cast<LoadStoreStyle>(lower | upper);
+        }
     }
     [[nodiscard]] static bool isReadOperation() noexcept { return DigitalPin<i960Pinout::W_R_>::isAsserted(); }
     [[nodiscard]] static auto getCacheOffsetEntry() noexcept { return cacheOffsetEntry_; }
