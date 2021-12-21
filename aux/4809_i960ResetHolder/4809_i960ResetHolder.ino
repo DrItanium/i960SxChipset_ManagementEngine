@@ -306,7 +306,7 @@ transactionBody() noexcept {
         //readyTriggered = false;
         if (informCPU()) {
             DigitalPin<TRANSACTION_START>::deassertPin(); // let the chipset know that we are ending the transaction
-            DigitalPin<TRANSACTION_END>::pulse(); // let the chipset know this is the end of the transaction
+            //DigitalPin<TRANSACTION_END>::pulse(); // let the chipset know this is the end of the transaction
             // we wait until the chipset pulls this pin high again before continuing, that way we maintain synchronization
             while (DigitalPin<MCU_READY>::isAsserted());
             break;
