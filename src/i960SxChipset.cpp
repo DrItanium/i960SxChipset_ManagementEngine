@@ -71,6 +71,7 @@ constexpr auto UseIOExpanderAddressLineInterrupts = true;
  * @brief Set to false if you want to use polling on the do cycle pin, enable this if you run into a bunch of checksum errors randomly
  */
 constexpr auto BindDoCycleToInterrupt = false;
+constexpr auto BindStartTransactionToInterrupt = false;
 using TheDisplayInterface = DisplayInterface<DisplayBaseAddress>;
 using TheSDInterface = SDCardInterface<MaximumNumberOfOpenFiles, SDBaseAddress>;
 using TheConsoleInterface = Serial0Interface<Serial0BaseAddress, CompileInAddressDebuggingSupport, AddressDebuggingEnabledOnStartup>;
@@ -297,8 +298,12 @@ inline void handleExternalDeviceRequest() noexcept {
 template<bool inDebugMode, bool useInterrupts>
 inline void invocationBody() noexcept {
     // wait for the management engine to give the go ahead
-    while (!startTransactionTriggered);
-    startTransactionTriggered = false;
+    if constexpr (BindStartTransactionToInterrupt) {
+        while (!startTransactionTriggered);
+        startTransactionTriggered = false;
+    } else {
+        while (DigitalPin<i960Pinout::StartTransaction>::isDeasserted());
+    }
 
     // keep processing data requests until we
     // when we do the transition, record the information we need
@@ -465,7 +470,9 @@ void setup() {
             i960Pinout::EndTransaction,
             i960Pinout::DoCycle,
             i960Pinout::BurstNext>();
-    interruptOnFallingEdge(i960Pinout::StartTransaction, onStartTransaction);
+    if constexpr (BindStartTransactionToInterrupt) {
+        interruptOnFallingEdge(i960Pinout::StartTransaction, onStartTransaction);
+    }
     interruptOnFallingEdge(i960Pinout::EndTransaction, onEndTransaction);
     interruptOnFallingEdge(i960Pinout::BurstNext, onBurstNext);
     if constexpr (BindDoCycleToInterrupt) {
