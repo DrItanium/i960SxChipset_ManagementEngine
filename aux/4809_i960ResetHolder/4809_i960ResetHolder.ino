@@ -165,23 +165,6 @@ handleChecksumFail() noexcept {
         delay(1000);
     }
 }
-inline void
-triggerInt0() noexcept {
-    DigitalPin<INT0_960>::pulse();
-}
-inline void
-triggerInt1() noexcept {
-    DigitalPin<INT1_960>::pulse();
-}
-inline void
-triggerInt2() noexcept {
-    DigitalPin<INT2_960>::pulse();
-}
-
-inline void
-triggerInt3() noexcept {
-    DigitalPin<INT3_960>::pulse();
-}
 
 void configureClockSource() noexcept {
     byte clkBits = 0;
@@ -272,46 +255,50 @@ void setup() {
     //Serial1.println("SYSTEM BOOTED!");
     // after this point, if FAIL960 ever goes from LOW to HIGH again, then we have checksum failed!
     attachInterrupt(digitalPinToInterrupt(FAIL960), handleChecksumFail, RISING);
+    /// @todo put logic loop here?
 }
-
 [[gnu::always_inline]]
-inline void
-transactionBody() noexcept {
-    // okay so we need to wait for AS and DEN to go low
-    while (DigitalPin<DEN>::isDeasserted());
-    DigitalPin<IN_TRANSACTION>::assertPin(); // tell the chipset that we are starting a transaction
-    //DigitalPin<TRANSACTION_START>::pulse(); // tell the chipset that it can safely pull down the base address of the transaction
-    // okay now we need to emulate the wait loop
-    do {
-        // instead of pulsing do cycle, we just assert do cycle while we wait
-        DigitalPin<DO_CYCLE>::assertPin();
-        // now wait for the chipset to tell us it has satisified the current part of the transaction
-        if (DigitalPin<BLAST>::isAsserted()) {
-            // break out of the current loop if we are in the last transaction
-            break;
-        }
-        while (DigitalPin<MCU_READY>::isDeasserted());
-        DigitalPin<DO_CYCLE>::deassertPin();
-        DigitalPin<BURST_NEXT>::assertPin();
-        DigitalPin<READY960>::pulse();
-        // if we got here then it is a burst transaction and as such
-        // let the chipset know this is the next word of the burst transaction
-        // this will act as a gate action
-        // we wait until the chipset pulls this pin high again before continuing, that way we maintain synchronization
-        while (DigitalPin<MCU_READY>::isAsserted());
-        DigitalPin<BURST_NEXT>::deassertPin();
-    } while (true);
-    // the end of the current transaction needs to be straightline code
-    while (DigitalPin<MCU_READY>::isDeasserted());
-    DigitalPin<DO_CYCLE>::deassertPin();
-    DigitalPin<IN_TRANSACTION>::deassertPin();
+inline void informCPUAndWait() noexcept {
     DigitalPin<READY960>::pulse();
     while (DigitalPin<MCU_READY>::isAsserted());
 }
 
+[[gnu::always_inline]]
+inline void waitForCycleEnd() noexcept {
+    while (DigitalPin<MCU_READY>::isDeasserted());
+    DigitalPin<DO_CYCLE>::deassertPin();
+}
 
+[[noreturn]]
 void loop() {
-    while (true) {
-        transactionBody();
+    for (;;) {
+        // okay so we need to wait for AS and DEN to go low
+        while (DigitalPin<DEN>::isDeasserted());
+        {
+            PinAsserter<IN_TRANSACTION> transactionEnter; // tell the chipset that we are starting a transaction
+            // okay now we need to emulate the wait loop
+            for (;;) {
+                // instead of pulsing do cycle, we just assert do cycle while we wait
+                DigitalPin<DO_CYCLE>::assertPin();
+                // now wait for the chipset to tell us it has satisified the current part of the transaction
+                if (DigitalPin<BLAST>::isAsserted()) {
+                    // break out of the current loop if we are in the last transaction
+                    break;
+                }
+                // we are dealing with a burst transaction at this point
+                waitForCycleEnd();
+                {
+                    // let the chipset know that the operation will continue
+                    PinAsserter<BURST_NEXT> letChipsetKnowBurstNext;
+                    // let the i960 know and then wait for the chipset to pull MCU READY high
+                    informCPUAndWait();
+                }
+                // pull BURST_NEXT low
+            }
+            // the end of the current transaction needs to be straightline code
+            waitForCycleEnd();
+        }
+        // let the i960 know and then wait for chipset to pull MCU READY high
+        informCPUAndWait();
     }
 }
