@@ -243,10 +243,21 @@ private:
 private:
     template<bool inDebugMode>
     inline static void updateTargetFunctions() noexcept {
-        if constexpr (auto a = getBody<inDebugMode>(address_.bytes[3]); inDebugMode) {
-            lastDebug_ = a;
+        if constexpr (TargetBoard::separateReadWriteFunctionPointers()) {
+            if constexpr (auto a = getReadBody<inDebugMode>(address_.bytes[3]),
+                               b = getWriteBody<inDebugMode>(address_.bytes[3]); inDebugMode) {
+                lastReadDebug_ = a;
+                lastWriteDebug_ = b;
+            } else {
+                lastRead_ = a;
+                lastWrite_ = b;
+            }
         } else {
-            last_ = a;
+            if constexpr (auto a = getBody<inDebugMode>(address_.bytes[3]); inDebugMode) {
+                lastDebug_ = a;
+            } else {
+                last_ = a;
+            }
         }
     }
 public:
@@ -350,10 +361,28 @@ public:
                 full32BitUpdate<inDebugMode>();
                 break;
         }
-        if constexpr (inDebugMode) {
-            lastDebug_();
+        if constexpr (TargetBoard::separateReadWriteFunctionPointers()) {
+            if (ProcessorInterface::isReadOperation()) {
+                setupDataLinesForRead();
+                if constexpr (inDebugMode) {
+                    lastReadDebug_();
+                } else {
+                    lastRead_();
+                }
+            } else {
+                setupDataLinesForWrite();
+                if constexpr (inDebugMode) {
+                    lastWriteDebug_();
+                } else {
+                    lastWrite_();
+                }
+            }
         } else {
-            last_();
+            if constexpr (inDebugMode) {
+                lastDebug_();
+            } else {
+                last_();
+            }
         }
     }
     template<bool advanceAddress = true>
@@ -403,6 +432,10 @@ private:
     static inline bool initialized_ = false;
     static inline BodyFunction last_ = nullptr;
     static inline BodyFunction lastDebug_ = nullptr;
+    static inline BodyFunction lastRead_ = nullptr;
+    static inline BodyFunction lastWrite_ = nullptr;
+    static inline BodyFunction lastReadDebug_ = nullptr;
+    static inline BodyFunction lastWriteDebug_ = nullptr;
 };
 
 #endif //ARDUINO_IOEXPANDERS_H
