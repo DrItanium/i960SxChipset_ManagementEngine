@@ -144,7 +144,65 @@ inline void fallbackBody() noexcept {
         } while (true);
     }
 }
+template<bool inDebugMode>
+inline void handleMemoryInterfaceRead(L1Cache::CacheEntry& theEntry, int start, int end) noexcept {
+    ProcessorInterface::setupDataLinesForRead();
+    // when dealing with read operations, we can actually easily unroll the do while by starting at the cache offset entry and walking
+    // forward until we either hit the end of the cache line or blast is asserted first (both are valid states)
+    for (auto i = start; i < end; ++i) {
+        // start working on getting the given value way ahead of cycle unlock happening
+        waitForCycleUnlock();
+        if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
+            auto outcome = theEntry.get(i);
+            Serial.print(F("\tOffset: 0x")) ;
+            Serial.print(i << 1, HEX);
+            Serial.print(F(" (")) ;
+            Serial.print(i);
+            Serial.print(F("),  Read the value: 0x"));
+            Serial.println(outcome, HEX);
+            ProcessorInterface::setDataBits(outcome);
+        } else {
+            ProcessorInterface::setDataBits(theEntry.get(i));
+        }
+        // Only pay for what we need even if it is slower
+        if (informCPU()) {
+            break;
+        }
+        // so if I don't increment the address, I think we run too fast xD based on some experimentation
+        ProcessorInterface::burstNext<LeaveAddressAlone>();
+    }
+}
+template<bool inDebugMode>
+inline void handleMemoryInterfaceWrite(L1Cache::CacheEntry& theEntry, int start, int end) noexcept {
+    ProcessorInterface::setupDataLinesForWrite();
+    // when dealing with writes to the cache line we are safe in just looping through from the start to at most 8 because that is as
+    // far as we can go with how the Sx works!
 
+    // Also the manual states that the processor cannot burst across 16-byte boundaries so :D.
+    for (auto i = start; i < end; ++i) {
+        waitForCycleUnlock();
+        if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
+            auto bits = ProcessorInterface::getDataBits();
+            Serial.print(F("\tOffset: 0x")) ;
+            Serial.print(i << 1, HEX);
+            Serial.print(F(" (")) ;
+            Serial.print(i);
+            Serial.print(F("),  Writing the value: 0x"));
+            Serial.println(bits.getWholeValue(), HEX);
+            theEntry.set(i, ProcessorInterface::getStyle(), bits);
+        } else {
+
+            theEntry.set(i, ProcessorInterface::getStyle(), ProcessorInterface::getDataBits());
+        }
+        if (informCPU()) {
+            break;
+        }
+        // the manual doesn't state that the burst transaction will always have BE0 and BE1 pulled low and this is very true, you must
+        // check the pins because it will do unaligned burst transactions but even that will never span multiple 16-byte entries
+        // so if I don't increment the address, I think we run too fast xD based on some experimentation
+        ProcessorInterface::burstNext<LeaveAddressAlone>();
+    }
+}
 template<bool inDebugMode>
 inline void handleMemoryInterface() noexcept {
     if constexpr (inDebugMode) {
@@ -155,60 +213,9 @@ inline void handleMemoryInterface() noexcept {
     auto start = ProcessorInterface::getCacheOffsetEntry<decltype(theCache)::CacheEntryMask>();
     auto end = start + 8;
     if (auto& theEntry = theCache.getLine(); ProcessorInterface::isReadOperation()) {
-        ProcessorInterface::setupDataLinesForRead();
-        // when dealing with read operations, we can actually easily unroll the do while by starting at the cache offset entry and walking
-        // forward until we either hit the end of the cache line or blast is asserted first (both are valid states)
-        for (auto i = start; i < end; ++i) {
-            // start working on getting the given value way ahead of cycle unlock happening
-            waitForCycleUnlock();
-            if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
-                auto outcome = theEntry.get(i);
-                Serial.print(F("\tOffset: 0x")) ;
-                Serial.print(i << 1, HEX);
-                Serial.print(F(" (")) ;
-                Serial.print(i);
-                Serial.print(F("),  Read the value: 0x"));
-                Serial.println(outcome, HEX);
-                ProcessorInterface::setDataBits(outcome);
-            } else {
-                ProcessorInterface::setDataBits(theEntry.get(i));
-            }
-            // Only pay for what we need even if it is slower
-            if (informCPU()) {
-                break;
-            }
-            // so if I don't increment the address, I think we run too fast xD based on some experimentation
-            ProcessorInterface::burstNext<LeaveAddressAlone>();
-        }
+        handleMemoryInterfaceRead<inDebugMode>(theEntry, start, end);
     } else {
-        ProcessorInterface::setupDataLinesForWrite();
-        // when dealing with writes to the cache line we are safe in just looping through from the start to at most 8 because that is as
-        // far as we can go with how the Sx works!
-
-        // Also the manual states that the processor cannot burst across 16-byte boundaries so :D.
-        for (auto i = start; i < end; ++i) {
-            waitForCycleUnlock();
-            if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
-                auto bits = ProcessorInterface::getDataBits();
-                Serial.print(F("\tOffset: 0x")) ;
-                Serial.print(i << 1, HEX);
-                Serial.print(F(" (")) ;
-                Serial.print(i);
-                Serial.print(F("),  Writing the value: 0x"));
-                Serial.println(bits.getWholeValue(), HEX);
-                theEntry.set(i, ProcessorInterface::getStyle(), bits);
-            } else {
-
-                theEntry.set(i, ProcessorInterface::getStyle(), ProcessorInterface::getDataBits());
-            }
-            if (informCPU()) {
-                break;
-            }
-            // the manual doesn't state that the burst transaction will always have BE0 and BE1 pulled low and this is very true, you must
-            // check the pins because it will do unaligned burst transactions but even that will never span multiple 16-byte entries
-            // so if I don't increment the address, I think we run too fast xD based on some experimentation
-            ProcessorInterface::burstNext<LeaveAddressAlone>();
-        }
+        handleMemoryInterfaceWrite<inDebugMode>(theEntry, start, end);
     }
 }
 template<bool inDebugMode, typename T>
