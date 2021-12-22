@@ -294,9 +294,9 @@ public:
         // where we can insert operations to take place that would otherwise be waiting
         address_.bytes[1] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOB>();
     }
-public:
+private:
     template<bool inDebugMode>
-    static inline void newDataCycle() noexcept {
+    static inline void newDataCycleCommon() noexcept {
         switch (getUpdateKind()) {
             case 0b0001:
                 updateLower8();
@@ -353,14 +353,20 @@ public:
                 full32BitUpdate<inDebugMode>();
                 break;
         }
-        if constexpr (TargetBoard::cacheHandlersWithFunctionPointers()) {
-           if constexpr (inDebugMode) {
-               lastDebug_();
-           } else {
-               last_();
-           }
+    }
+public:
+    template<bool inDebugMode>
+    static inline byte startNewDataCycle() noexcept {
+        newDataCycleCommon<inDebugMode>();
+        return address_.bytes[3];
+    }
+    template<bool inDebugMode>
+    static inline void newDataCycle() noexcept {
+        newDataCycleCommon<inDebugMode>();
+        if constexpr (inDebugMode) {
+            lastDebug_();
         } else {
-            invokeBody<inDebugMode>(address_.bytes[3]);
+            last_();
         }
     }
     template<bool advanceAddress = true>

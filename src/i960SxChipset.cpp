@@ -258,8 +258,7 @@ inline void handleExternalDeviceRequest() noexcept {
         }
     }
 }
-
-template<bool inDebugMode, bool useInterrupts>
+template<bool inDebugMode>
 inline void invocationBody() noexcept {
     // wait for the management engine to give the go ahead
     while (DigitalPin<i960Pinout::InTransaction>::isDeasserted());
@@ -269,18 +268,39 @@ inline void invocationBody() noexcept {
     // there are only two parts to this code, either we map into ram or chipset functions
     // we can just check if we are in ram, otherwise it is considered to be chipset. This means that everything not ram is chipset
     // and so we are actually continually mirroring the mapping for the sake of simplicity
-    ProcessorInterface::newDataCycle<inDebugMode>();
+    if constexpr (TargetBoard::cacheHandlersWithFunctionPointers()) {
+        ProcessorInterface::newDataCycle<inDebugMode>();
+    } else {
+        switch (ProcessorInterface::startNewDataCycle<inDebugMode>()) {
+#define X(base) case ((base) + 0): case ((base) + 1): case ((base) + 2): case ((base) + 3): case ((base) + 4): case ((base) + 5): case ((base)+6): case ((base)+7)
+            X((8*0)):
+            X((8*1)):
+            X((8*2)):
+            X((8*3)):
+            X((8*4)):
+            X((8*5)):
+            X((8*6)):
+            X((8*7)):
+                handleMemoryInterface<inDebugMode>();
+#undef X
+            case TheRTCInterface::SectionID: handleExternalDeviceRequest<inDebugMode, TheRTCInterface>(); break;
+            case TheDisplayInterface::SectionID: handleExternalDeviceRequest<inDebugMode, TheDisplayInterface>(); break;
+            case TheSDInterface::SectionID: handleExternalDeviceRequest<inDebugMode, TheSDInterface>(); break;
+            case TheConsoleInterface::SectionID: handleExternalDeviceRequest<inDebugMode, TheConsoleInterface>(); break;
+            case ConfigurationSpace::SectionID: handleExternalDeviceRequest<inDebugMode, ConfigurationSpace>(); break;
+            default: fallbackBody<inDebugMode>(); break;
+        }
+    }
 }
-template<bool allowAddressDebuggingCodePath, bool useInterrupts>
 void doInvocationBody() noexcept {
-    if constexpr (allowAddressDebuggingCodePath) {
+    if constexpr (TargetBoard::compileInAddressDebuggingSupport()) {
         if (TheConsoleInterface::addressDebuggingEnabled())  {
-            invocationBody<true, useInterrupts>();
+            invocationBody<true>();
         } else {
-            invocationBody<false, useInterrupts>();
+            invocationBody<false>();
         }
     } else {
-        invocationBody<false, useInterrupts>();
+        invocationBody<false>();
     }
 }
 void installBootImage() noexcept {
@@ -489,7 +509,7 @@ void loop() {
     // and doesn't seem to impact performance in burst transactions
 
     for (;;) {
-        doInvocationBody<CompileInAddressDebuggingSupport, UseIOExpanderAddressLineInterrupts>();
+        doInvocationBody();
     }
 }
 
@@ -526,48 +546,6 @@ BodyFunction getDebugBody(byte index) noexcept {
         return lookupTable_Debug[index];
     } else {
         return fallbackBody<true>;
-    }
-}
-template<bool inDebugMode>
-void
-switchTableInvoke(byte index) noexcept {
-    switch (index) {
-#define X(base) case ((base) + 0): case ((base) + 1): case ((base) + 2): case ((base) + 3): case ((base) + 4): case ((base) + 5): case ((base)+6): case ((base)+7)
-        X((8*0)):
-        X((8*1)):
-        X((8*2)):
-        X((8*3)):
-        X((8*4)):
-        X((8*5)):
-        X((8*6)):
-        X((8*7)):
-            handleMemoryInterface<inDebugMode>();
-#undef X
-        case TheRTCInterface::SectionID: handleExternalDeviceRequest<inDebugMode, TheRTCInterface>(); break;
-        case TheDisplayInterface::SectionID: handleExternalDeviceRequest<inDebugMode, TheDisplayInterface>(); break;
-        case TheSDInterface::SectionID: handleExternalDeviceRequest<inDebugMode, TheSDInterface>(); break;
-        case TheConsoleInterface::SectionID: handleExternalDeviceRequest<inDebugMode, TheConsoleInterface>(); break;
-        case ConfigurationSpace::SectionID: handleExternalDeviceRequest<inDebugMode, ConfigurationSpace>(); break;
-        default: fallbackBody<inDebugMode>(); break;
-    }
-
-}
-void invokeNonDebugBody(byte index) noexcept {
-    if constexpr (DoSwitchTableInvocation) {
-        switchTableInvoke<false>(index);
-    } else {
-        lookupTable[index]();
-    }
-}
-void invokeDebugBody(byte index) noexcept {
-    if constexpr (CompileInAddressDebuggingSupport) {
-        if constexpr (DoSwitchTableInvocation) {
-            switchTableInvoke<true>(index);
-        } else {
-            lookupTable_Debug[index]();
-        }
-    } else {
-        fallbackBody<true>();
     }
 }
 
