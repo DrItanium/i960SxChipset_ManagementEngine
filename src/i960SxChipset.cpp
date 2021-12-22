@@ -152,7 +152,6 @@ inline void handleMemoryInterfaceRead() noexcept {
     auto start = ProcessorInterface::getCacheOffsetEntry<decltype(theCache)::CacheEntryMask>();
     auto end = start + 8;
     auto& theEntry = theCache.getLine();
-    ProcessorInterface::setupDataLinesForRead();
     // when dealing with read operations, we can actually easily unroll the do while by starting at the cache offset entry and walking
     // forward until we either hit the end of the cache line or blast is asserted first (both are valid states)
     for (auto i = start; i < end; ++i) {
@@ -186,7 +185,6 @@ inline void handleMemoryInterfaceWrite() noexcept {
     auto start = ProcessorInterface::getCacheOffsetEntry<decltype(theCache)::CacheEntryMask>();
     auto end = start + 8;
     auto& theEntry = theCache.getLine();
-    ProcessorInterface::setupDataLinesForWrite();
     // when dealing with writes to the cache line we are safe in just looping through from the start to at most 8 because that is as
     // far as we can go with how the Sx works!
 
@@ -220,8 +218,10 @@ inline void handleMemoryInterface() noexcept {
     // okay we are dealing with the psram chips
     // now take the time to compute the cache offset entries
     if (ProcessorInterface::isReadOperation()) {
+        ProcessorInterface::setupDataLinesForRead();
         handleMemoryInterfaceRead<inDebugMode>();
     } else {
+        ProcessorInterface::setupDataLinesForWrite();
         handleMemoryInterfaceWrite<inDebugMode>();
     }
 }
@@ -230,7 +230,6 @@ inline void handleExternalDeviceRequestRead() noexcept {
     if constexpr (inDebugMode) {
         displayRequestedAddress();
     }
-    ProcessorInterface::setupDataLinesForRead();
     for(;;) {
         waitForCycleUnlock();
         if constexpr (inDebugMode && TargetBoard::compileInExtendedDebugInformation()) {
@@ -262,7 +261,6 @@ inline void handleExternalDeviceRequestWrite() noexcept {
     if constexpr (inDebugMode) {
         displayRequestedAddress();
     }
-    ProcessorInterface::setupDataLinesForWrite();
     for (;;) {
         waitForCycleUnlock();
         if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
@@ -296,8 +294,10 @@ inline void handleExternalDeviceRequest() noexcept {
     // with burst transactions in the core chipset, we do not have access to a cache line to write into.
     // instead we need to do the old style infinite iteration design
     if (ProcessorInterface::isReadOperation()) {
+        ProcessorInterface::setupDataLinesForRead();
         handleExternalDeviceRequestRead<inDebugMode, T>();
     } else {
+        ProcessorInterface::setupDataLinesForWrite();
         handleExternalDeviceRequestWrite<inDebugMode, T>();
     }
 }
