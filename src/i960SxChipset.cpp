@@ -525,5 +525,39 @@ BodyFunction getDebugBody(byte index) noexcept {
         return fallbackBody<true>;
     }
 }
+template<bool inDebugMode>
+void
+switchTableInvoke(byte index) noexcept {
+    switch (index) {
+#define X(base) case (base + 0): case (base + 1): case (base + 2): case (base + 3): case (base + 4): case (base + 5): case (base+6): case (base+7)
+        X((8*0)):
+        X((8*1)):
+        X((8*2)):
+        X((8*3)):
+        X((8*4)):
+        X((8*5)):
+        X((8*6)):
+        X((8*7)):
+            handleMemoryInterface<inDebugMode>();
+#undef X
+        case TheRTCInterface::SectionID: handleExternalDeviceRequest<inDebugMode, TheRTCInterface>(); break;
+        case TheDisplayInterface::SectionID: handleExternalDeviceRequest<inDebugMode, TheDisplayInterface>(); break;
+        case TheSDInterface::SectionID: handleExternalDeviceRequest<inDebugMode, TheSDInterface>(); break;
+        case TheConsoleInterface::SectionID: handleExternalDeviceRequest<inDebugMode, TheConsoleInterface>(); break;
+        case ConfigurationSpace::SectionID: handleExternalDeviceRequest<inDebugMode, ConfigurationSpace>(); break;
+        default: fallbackBody<inDebugMode>(); break;
+    }
+
+}
+void invokeNonDebugBody(byte index) noexcept {
+    lookupTable[index]();
+}
+void invokeDebugBody(byte index) noexcept {
+    if constexpr (CompileInAddressDebuggingSupport) {
+        lookupTable_Debug[index]();
+    } else {
+        fallbackBody<true>();
+    }
+}
 
 SdFat SD;

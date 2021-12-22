@@ -44,6 +44,18 @@ BodyFunction getBody(byte index) noexcept {
     }
 }
 
+void invokeNonDebugBody(byte index) noexcept;
+void invokeDebugBody(byte index) noexcept;
+
+template<bool inDebugMode>
+inline void invokeBody(byte index) noexcept {
+    if constexpr (inDebugMode) {
+        invokeDebugBody(index);
+    } else {
+        invokeNonDebugBody(index);
+    }
+}
+
 [[noreturn]] void signalHaltState(const __FlashStringHelper* msg) noexcept;
 [[noreturn]] void signalHaltState(const char* msg) noexcept;
 #ifdef __arm__
