@@ -611,4 +611,26 @@ BodyFunction getDebugBody(byte index) noexcept {
     }
 }
 
+BodyFunction getNonDebugReadBody(byte index) noexcept {
+    return lookupTableRead[index];
+}
+BodyFunction getDebugReadBody(byte index) noexcept {
+    if constexpr (CompileInAddressDebuggingSupport) {
+        return lookupTableRead_Debug[index];
+    } else {
+        return fallbackBodyRead<true>;
+    }
+
+}
+BodyFunction getNonDebugWriteBody(byte index) noexcept {
+    return lookupTableWrite[index];
+}
+BodyFunction getDebugWriteBody(byte index) noexcept {
+    if constexpr (CompileInAddressDebuggingSupport) {
+        return lookupTableWrite_Debug[index];
+    } else {
+        return fallbackBodyWrite<true>;
+    }
+
+}
 SdFat SD;

@@ -44,15 +44,27 @@ BodyFunction getBody(byte index) noexcept {
     }
 }
 
-void invokeNonDebugBody(byte index) noexcept;
-void invokeDebugBody(byte index) noexcept;
+BodyFunction getNonDebugReadBody(byte index) noexcept;
+BodyFunction getDebugReadBody(byte index) noexcept;
+BodyFunction getNonDebugWriteBody(byte index) noexcept;
+BodyFunction getDebugWriteBody(byte index) noexcept;
 
 template<bool inDebugMode>
-inline void invokeBody(byte index) noexcept {
+BodyFunction getReadBody(byte index) noexcept {
     if constexpr (inDebugMode) {
-        invokeDebugBody(index);
+        return getDebugReadBody(index);
     } else {
-        invokeNonDebugBody(index);
+        return getNonDebugReadBody(index);
+    }
+}
+
+
+template<bool inDebugMode>
+BodyFunction getWriteBody(byte index) noexcept {
+    if constexpr (inDebugMode) {
+        return getDebugWriteBody(index);
+    } else {
+        return getNonDebugWriteBody(index);
     }
 }
 
