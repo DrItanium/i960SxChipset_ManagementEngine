@@ -40,6 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "EightWayPseudoLRUEntry.h"
 #include "SixteenWayPseudoLRUEntry.h"
 #include "EightWayRandPLRUEntry.h"
+#include "SixteenWayRandPLRUEntry.h"
 #include "EightWayTreePLRUEntry.h"
 #include "SinglePoolCache.h"
 #include "MultiCache.h"
