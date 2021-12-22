@@ -145,7 +145,13 @@ inline void fallbackBody() noexcept {
     }
 }
 template<bool inDebugMode>
-inline void handleMemoryInterfaceRead(L1Cache::CacheEntry& theEntry, int start, int end) noexcept {
+inline void handleMemoryInterfaceRead() noexcept {
+    if constexpr (inDebugMode) {
+        displayRequestedAddress();
+    }
+    auto start = ProcessorInterface::getCacheOffsetEntry<decltype(theCache)::CacheEntryMask>();
+    auto end = start + 8;
+    auto& theEntry = theCache.getLine();
     ProcessorInterface::setupDataLinesForRead();
     // when dealing with read operations, we can actually easily unroll the do while by starting at the cache offset entry and walking
     // forward until we either hit the end of the cache line or blast is asserted first (both are valid states)
@@ -173,7 +179,13 @@ inline void handleMemoryInterfaceRead(L1Cache::CacheEntry& theEntry, int start, 
     }
 }
 template<bool inDebugMode>
-inline void handleMemoryInterfaceWrite(L1Cache::CacheEntry& theEntry, int start, int end) noexcept {
+inline void handleMemoryInterfaceWrite() noexcept {
+    if constexpr (inDebugMode) {
+        displayRequestedAddress();
+    }
+    auto start = ProcessorInterface::getCacheOffsetEntry<decltype(theCache)::CacheEntryMask>();
+    auto end = start + 8;
+    auto& theEntry = theCache.getLine();
     ProcessorInterface::setupDataLinesForWrite();
     // when dealing with writes to the cache line we are safe in just looping through from the start to at most 8 because that is as
     // far as we can go with how the Sx works!
@@ -205,17 +217,12 @@ inline void handleMemoryInterfaceWrite(L1Cache::CacheEntry& theEntry, int start,
 }
 template<bool inDebugMode>
 inline void handleMemoryInterface() noexcept {
-    if constexpr (inDebugMode) {
-        displayRequestedAddress();
-    }
     // okay we are dealing with the psram chips
     // now take the time to compute the cache offset entries
-    auto start = ProcessorInterface::getCacheOffsetEntry<decltype(theCache)::CacheEntryMask>();
-    auto end = start + 8;
-    if (auto& theEntry = theCache.getLine(); ProcessorInterface::isReadOperation()) {
-        handleMemoryInterfaceRead<inDebugMode>(theEntry, start, end);
+    if (ProcessorInterface::isReadOperation()) {
+        handleMemoryInterfaceRead<inDebugMode>();
     } else {
-        handleMemoryInterfaceWrite<inDebugMode>(theEntry, start, end);
+        handleMemoryInterfaceWrite<inDebugMode>();
     }
 }
 template<bool inDebugMode, typename T>
