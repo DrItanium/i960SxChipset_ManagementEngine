@@ -173,59 +173,66 @@ enum class TargetMCU {
     GrandCentralM4_Type3,
     Unknown,
 };
+enum class ConfigurationOptions : byte {
+    CompileInAddressDebuggingSupport = 0,
+    AddressDebuggingSupportEnabledOnStartup,
+    CompileInCacheSystemDebuggingSupport,
+    CompileInExtendedDebugInformation,
+    ValidateTransferDuringInstall,
+    UseIOExpanderAddressLineInterrupts,
+    CacheHandlersWithFunctionPointers,
+    UsePortReads,
+};
+enum class ConfigurationFlags : uint64_t {
+    None = 0,
+#define X(name) name = static_cast<uint64_t>(static_cast<uint64_t>(1) << (static_cast<uint64_t>(ConfigurationOptions:: name)))
+    X(CompileInAddressDebuggingSupport),
+    X(AddressDebuggingSupportEnabledOnStartup),
+    X(CompileInCacheSystemDebuggingSupport),
+    X(CompileInExtendedDebugInformation),
+    X(ValidateTransferDuringInstall),
+    X(UseIOExpanderAddressLineInterrupts),
+    X(CacheHandlersWithFunctionPointers),
+    X(UsePortReads),
+#undef X
+};
+template<ConfigurationFlags ... flags>
+constexpr ConfigurationFlags makeConfigFlags() noexcept {
+    return static_cast<ConfigurationFlags>((static_cast<uint64_t>(flags) | ...));
+}
 class MCUConfiguration final {
 public:
     constexpr MCUConfiguration(uint32_t sramSize,
                                uint32_t ioExpanderSpeedCap,
                                uint32_t numBitsPerCacheLine,
                                uint32_t cacheSizeInBytes,
-                               bool compileInAddressDebug,
-                               bool addressDebugEnabledOnStartup,
-                               bool compileInCacheSystemDebug,
-                               bool compileInExtendedDebug,
-                               bool validateTransferDuringInstall,
-                               bool useIOExpanderInterrupts,
-                               bool cacheHandlersWithFunctionPointers,
-                               bool usePortReads
+                               ConfigurationFlags flags
     ) noexcept : sramAmount_(sramSize),
                  ioExpanderPeripheralSpeed_(ioExpanderSpeedCap > 10_MHz ? 10_MHz : ioExpanderSpeedCap),
                  numBitsPerCacheLine_(numBitsPerCacheLine),
                  cacheSizeInBytes_(cacheSizeInBytes),
-                 compileInAddressDebuggingSupport_(compileInAddressDebug),
-                 addressDebuggingEnabledOnStartup_(addressDebugEnabledOnStartup),
-                 compileInCacheSystemDebuggingSupport_(compileInCacheSystemDebug),
-                 compileInExtendedDebugInformation_(compileInExtendedDebug),
-                 validateTransferDuringInstall_(validateTransferDuringInstall),
-                 useIOExpanderAddressLineInterrupts_(useIOExpanderInterrupts),
-                 cacheHandlersWithFunctionPointers_(cacheHandlersWithFunctionPointers),
-                 usePortReads_(usePortReads)
+                 flags_(flags)
                  {}
 
     [[nodiscard]] constexpr uint32_t getSramAmount() const noexcept { return sramAmount_; }
     [[nodiscard]] constexpr auto runIOExpanderSPIInterfaceAt() const noexcept  { return ioExpanderPeripheralSpeed_; }
     [[nodiscard]] constexpr auto getNumBitsPerCacheLine() const noexcept { return numBitsPerCacheLine_; }
     [[nodiscard]] constexpr auto getCacheSizeInBytes() const noexcept { return cacheSizeInBytes_; }
-    [[nodiscard]] constexpr auto compileInAddressDebuggingSupport() const noexcept { return compileInAddressDebuggingSupport_; }
-    [[nodiscard]] constexpr auto addressDebuggingEnabledOnStartup() const noexcept { return addressDebuggingEnabledOnStartup_; }
-    [[nodiscard]] constexpr auto compileInCacheSystemDebuggingSupport() const noexcept { return compileInCacheSystemDebuggingSupport_; }
-    [[nodiscard]] constexpr auto compileInExtendedDebugInformation() const noexcept { return compileInExtendedDebugInformation_; }
-    [[nodiscard]] constexpr auto validateTransferDuringInstall() const noexcept { return validateTransferDuringInstall_; }
-    [[nodiscard]] constexpr auto useIOExpanderAddressLineInterrupts() const noexcept { return useIOExpanderAddressLineInterrupts_; }
-    [[nodiscard]] constexpr auto cacheHandlersWithFunctionPointers() const noexcept { return cacheHandlersWithFunctionPointers_; }
-    [[nodiscard]] constexpr auto usePortReads() const noexcept { return usePortReads_; }
+    template<ConfigurationFlags flag> [[nodiscard]] constexpr auto flagSet() const noexcept { return (static_cast<uint64_t>(flags_) & static_cast<uint64_t>(flag)) != 0; }
+    [[nodiscard]] constexpr auto compileInAddressDebuggingSupport() const noexcept { return flagSet<ConfigurationFlags::CompileInAddressDebuggingSupport>(); }
+    [[nodiscard]] constexpr auto addressDebuggingEnabledOnStartup() const noexcept { return flagSet<ConfigurationFlags::AddressDebuggingSupportEnabledOnStartup>(); }
+    [[nodiscard]] constexpr auto compileInCacheSystemDebuggingSupport() const noexcept { return flagSet<ConfigurationFlags::CompileInCacheSystemDebuggingSupport>(); }
+    [[nodiscard]] constexpr auto compileInExtendedDebugInformation() const noexcept { return flagSet<ConfigurationFlags::CompileInExtendedDebugInformation>(); }
+    [[nodiscard]] constexpr auto validateTransferDuringInstall() const noexcept { return flagSet<ConfigurationFlags::ValidateTransferDuringInstall>(); }
+    [[nodiscard]] constexpr auto useIOExpanderAddressLineInterrupts() const noexcept { return flagSet<ConfigurationFlags::UseIOExpanderAddressLineInterrupts>(); }
+    [[nodiscard]] constexpr auto cacheHandlersWithFunctionPointers() const noexcept { return flagSet<ConfigurationFlags::CacheHandlersWithFunctionPointers>(); }
+    [[nodiscard]] constexpr auto usePortReads() const noexcept { return flagSet<ConfigurationFlags::UsePortReads>(); }
 private:
     uint32_t sramAmount_;
     uint32_t ioExpanderPeripheralSpeed_;
     uint32_t numBitsPerCacheLine_;
     uint32_t cacheSizeInBytes_;
-    bool compileInAddressDebuggingSupport_;
-    bool addressDebuggingEnabledOnStartup_;
-    bool compileInCacheSystemDebuggingSupport_;
-    bool compileInExtendedDebugInformation_;
-    bool validateTransferDuringInstall_;
-    bool useIOExpanderAddressLineInterrupts_;
-    bool cacheHandlersWithFunctionPointers_;
-    bool usePortReads_;
+    ConfigurationFlags flags_;
 };
 template<TargetMCU mcu>
 constexpr MCUConfiguration BoardDescription = {
@@ -233,14 +240,10 @@ constexpr MCUConfiguration BoardDescription = {
         10_MHz,
         6, // 64 bytes
         8192,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true,
-        true,
-        true,
+        makeConfigFlags <ConfigurationFlags::UsePortReads,
+                ConfigurationFlags::CacheHandlersWithFunctionPointers,
+                ConfigurationFlags::UseIOExpanderAddressLineInterrupts,
+                ConfigurationFlags::ValidateTransferDuringInstall>()
 };
 
 template<>
@@ -249,14 +252,9 @@ constexpr MCUConfiguration BoardDescription<TargetMCU::GrandCentralM4_Type3> = {
         8_MHz, // although 10_MHz is the max, the clock rate of 120MHz makes the clock rate actually 12MHz, I know 8mhz works
         6,
         128_KB,
-        false,
-        false,
-        false,
-        false,
-        true,
-        true,
-        true,
-        true,
+        makeConfigFlags<ConfigurationFlags::UsePortReads,
+        ConfigurationFlags::UseIOExpanderAddressLineInterrupts,
+        ConfigurationFlags::ValidateTransferDuringInstall>()
 };
 
 class TargetBoard {
