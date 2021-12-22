@@ -67,7 +67,6 @@ constexpr auto ValidateTransferDuringInstall = TargetBoard::validateTransferDuri
  * @brief When set to true, the interrupt lines the mcp23s17 provides are used to determine which bytes to read
  */
 constexpr auto UseIOExpanderAddressLineInterrupts = TargetBoard::useIOExpanderAddressLineInterrupts();
-constexpr auto DoSwitchTableInvocation = TargetBoard::cacheHandlersWithFunctionPointers();
 using TheDisplayInterface = DisplayInterface<DisplayBaseAddress>;
 using TheSDInterface = SDCardInterface<MaximumNumberOfOpenFiles, SDBaseAddress>;
 using TheConsoleInterface = Serial0Interface<Serial0BaseAddress, CompileInAddressDebuggingSupport, AddressDebuggingEnabledOnStartup>;
@@ -268,30 +267,7 @@ inline void invocationBody() noexcept {
     // there are only two parts to this code, either we map into ram or chipset functions
     // we can just check if we are in ram, otherwise it is considered to be chipset. This means that everything not ram is chipset
     // and so we are actually continually mirroring the mapping for the sake of simplicity
-    if constexpr (TargetBoard::cacheHandlersWithFunctionPointers()) {
-        ProcessorInterface::newDataCycle<inDebugMode>();
-    } else {
-        switch (ProcessorInterface::startNewDataCycle<inDebugMode>()) {
-#define X(base) case ((base) + 0): case ((base) + 1): case ((base) + 2): case ((base) + 3): case ((base) + 4): case ((base) + 5): case ((base)+6): case ((base)+7)
-            X((8*0)):
-            X((8*1)):
-            X((8*2)):
-            X((8*3)):
-            X((8*4)):
-            X((8*5)):
-            X((8*6)):
-            X((8*7)):
-                handleMemoryInterface<inDebugMode>();
-                break;
-#undef X
-            case TheRTCInterface::SectionID: handleExternalDeviceRequest<inDebugMode, TheRTCInterface>(); break;
-            case TheDisplayInterface::SectionID: handleExternalDeviceRequest<inDebugMode, TheDisplayInterface>(); break;
-            case TheSDInterface::SectionID: handleExternalDeviceRequest<inDebugMode, TheSDInterface>(); break;
-            case TheConsoleInterface::SectionID: handleExternalDeviceRequest<inDebugMode, TheConsoleInterface>(); break;
-            case ConfigurationSpace::SectionID: handleExternalDeviceRequest<inDebugMode, ConfigurationSpace>(); break;
-            default: fallbackBody<inDebugMode>(); break;
-        }
-    }
+    ProcessorInterface::newDataCycle<inDebugMode>();
 }
 void doInvocationBody() noexcept {
     if constexpr (TargetBoard::compileInAddressDebuggingSupport()) {
@@ -378,34 +354,32 @@ using DispatchTable = BodyFunction[256];
 DispatchTable lookupTable;
 DispatchTable lookupTable_Debug;
 void setupDispatchTable() noexcept {
-    if constexpr (TargetBoard::cacheHandlersWithFunctionPointers()) {
-        Serial.println(F("Setting up the initial lookup table"));
-        for (auto &entry: lookupTable) {
-            entry = fallbackBody<false>;
+    Serial.println(F("Setting up the initial lookup table"));
+    for (auto &entry: lookupTable) {
+        entry = fallbackBody<false>;
+    }
+    // since this uses SD card as memory, just increase the size of it to 1 gigabyte
+    // 64 * 16 => 64 sixteen megabyte sections
+    for (int i = 0; i < 64; ++i) {
+        lookupTable[i] = handleMemoryInterface<false>;
+    }
+    lookupTable[TheRTCInterface::SectionID] = handleExternalDeviceRequest<false, TheRTCInterface>;
+    lookupTable[TheDisplayInterface::SectionID] = handleExternalDeviceRequest<false, TheDisplayInterface>;
+    lookupTable[TheSDInterface::SectionID] = handleExternalDeviceRequest<false, TheSDInterface>;
+    lookupTable[TheConsoleInterface::SectionID] = handleExternalDeviceRequest<false, TheConsoleInterface>;
+    lookupTable[ConfigurationSpace::SectionID] = handleExternalDeviceRequest<false, ConfigurationSpace>;
+    if constexpr (TargetBoard::compileInAddressDebuggingSupport()) {
+        for (auto &entry: lookupTable_Debug) {
+            entry = fallbackBody<true>;
         }
-        // since this uses SD card as memory, just increase the size of it to 1 gigabyte
-        // 64 * 16 => 64 sixteen megabyte sections
         for (int i = 0; i < 64; ++i) {
-            lookupTable[i] = handleMemoryInterface<false>;
+            lookupTable[i] = handleMemoryInterface<true>;
         }
-        lookupTable[TheRTCInterface::SectionID] = handleExternalDeviceRequest<false, TheRTCInterface>;
-        lookupTable[TheDisplayInterface::SectionID] = handleExternalDeviceRequest<false, TheDisplayInterface>;
-        lookupTable[TheSDInterface::SectionID] = handleExternalDeviceRequest<false, TheSDInterface>;
-        lookupTable[TheConsoleInterface::SectionID] = handleExternalDeviceRequest<false, TheConsoleInterface>;
-        lookupTable[ConfigurationSpace::SectionID] = handleExternalDeviceRequest<false, ConfigurationSpace>;
-        if constexpr (TargetBoard::compileInAddressDebuggingSupport()) {
-            for (auto &entry: lookupTable_Debug) {
-                entry = fallbackBody<true>;
-            }
-            for (int i = 0; i < 64; ++i) {
-                lookupTable[i] = handleMemoryInterface<true>;
-            }
-            lookupTable_Debug[TheRTCInterface::SectionID] = handleExternalDeviceRequest<true, TheRTCInterface>;
-            lookupTable_Debug[TheDisplayInterface::SectionID] = handleExternalDeviceRequest<true, TheDisplayInterface>;
-            lookupTable_Debug[TheSDInterface::SectionID] = handleExternalDeviceRequest<true, TheSDInterface>;
-            lookupTable_Debug[TheConsoleInterface::SectionID] = handleExternalDeviceRequest<true, TheConsoleInterface>;
-            lookupTable_Debug[ConfigurationSpace::SectionID] = handleExternalDeviceRequest<true, ConfigurationSpace>;
-        }
+        lookupTable_Debug[TheRTCInterface::SectionID] = handleExternalDeviceRequest<true, TheRTCInterface>;
+        lookupTable_Debug[TheDisplayInterface::SectionID] = handleExternalDeviceRequest<true, TheDisplayInterface>;
+        lookupTable_Debug[TheSDInterface::SectionID] = handleExternalDeviceRequest<true, TheSDInterface>;
+        lookupTable_Debug[TheConsoleInterface::SectionID] = handleExternalDeviceRequest<true, TheConsoleInterface>;
+        lookupTable_Debug[ConfigurationSpace::SectionID] = handleExternalDeviceRequest<true, ConfigurationSpace>;
     }
 }
 

@@ -180,7 +180,6 @@ enum class ConfigurationOptions : byte {
     CompileInExtendedDebugInformation,
     ValidateTransferDuringInstall,
     UseIOExpanderAddressLineInterrupts,
-    CacheHandlersWithFunctionPointers,
     UsePortReads,
 };
 enum class ConfigurationFlags : uint64_t {
@@ -192,7 +191,6 @@ enum class ConfigurationFlags : uint64_t {
     X(CompileInExtendedDebugInformation),
     X(ValidateTransferDuringInstall),
     X(UseIOExpanderAddressLineInterrupts),
-    X(CacheHandlersWithFunctionPointers),
     X(UsePortReads),
 #undef X
 };
@@ -225,7 +223,6 @@ public:
     [[nodiscard]] constexpr auto compileInExtendedDebugInformation() const noexcept { return flagSet<ConfigurationFlags::CompileInExtendedDebugInformation>(); }
     [[nodiscard]] constexpr auto validateTransferDuringInstall() const noexcept { return flagSet<ConfigurationFlags::ValidateTransferDuringInstall>(); }
     [[nodiscard]] constexpr auto useIOExpanderAddressLineInterrupts() const noexcept { return flagSet<ConfigurationFlags::UseIOExpanderAddressLineInterrupts>(); }
-    [[nodiscard]] constexpr auto cacheHandlersWithFunctionPointers() const noexcept { return flagSet<ConfigurationFlags::CacheHandlersWithFunctionPointers>(); }
     [[nodiscard]] constexpr auto usePortReads() const noexcept { return flagSet<ConfigurationFlags::UsePortReads>(); }
 private:
     uint32_t sramAmount_;
@@ -241,7 +238,6 @@ constexpr MCUConfiguration BoardDescription = {
         6, // 64 bytes
         8192,
         makeConfigFlags <ConfigurationFlags::UsePortReads,
-                ConfigurationFlags::CacheHandlersWithFunctionPointers,
                 ConfigurationFlags::UseIOExpanderAddressLineInterrupts,
                 ConfigurationFlags::ValidateTransferDuringInstall>()
 };
@@ -287,7 +283,6 @@ public:
     [[nodiscard]] static constexpr auto compileInExtendedDebugInformation() noexcept { return BoardDescription<getMCUTarget()>.compileInExtendedDebugInformation(); }
     [[nodiscard]] static constexpr auto validateTransferDuringInstall() noexcept { return BoardDescription<getMCUTarget()>.validateTransferDuringInstall(); }
     [[nodiscard]] static constexpr auto useIOExpanderAddressLineInterrupts() noexcept { return BoardDescription<getMCUTarget()>.useIOExpanderAddressLineInterrupts(); }
-    [[nodiscard]] static constexpr auto cacheHandlersWithFunctionPointers() noexcept { return BoardDescription<getMCUTarget()>.cacheHandlersWithFunctionPointers(); }
     [[nodiscard]] static constexpr auto usePortReads() noexcept { return BoardDescription<getMCUTarget()>.usePortReads(); }
 public:
     TargetBoard() = delete;

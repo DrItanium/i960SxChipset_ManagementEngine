@@ -243,12 +243,10 @@ private:
 private:
     template<bool inDebugMode>
     inline static void updateTargetFunctions() noexcept {
-        if constexpr (TargetBoard::cacheHandlersWithFunctionPointers()) {
-            if constexpr (auto a = getBody<inDebugMode>(address_.bytes[3]); inDebugMode) {
-                lastDebug_ = a;
-            } else {
-                last_ = a;
-            }
+        if constexpr (auto a = getBody<inDebugMode>(address_.bytes[3]); inDebugMode) {
+            lastDebug_ = a;
+        } else {
+            last_ = a;
         }
     }
 public:
@@ -294,9 +292,8 @@ public:
         // where we can insert operations to take place that would otherwise be waiting
         address_.bytes[1] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOB>();
     }
-private:
     template<bool inDebugMode>
-    static inline void newDataCycleCommon() noexcept {
+    static inline void newDataCycle() noexcept {
         switch (getUpdateKind()) {
             case 0b0001:
                 updateLower8();
@@ -353,16 +350,6 @@ private:
                 full32BitUpdate<inDebugMode>();
                 break;
         }
-    }
-public:
-    template<bool inDebugMode>
-    static inline byte startNewDataCycle() noexcept {
-        newDataCycleCommon<inDebugMode>();
-        return address_.bytes[3];
-    }
-    template<bool inDebugMode>
-    static inline void newDataCycle() noexcept {
-        newDataCycleCommon<inDebugMode>();
         if constexpr (inDebugMode) {
             lastDebug_();
         } else {
