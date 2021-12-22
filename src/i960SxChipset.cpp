@@ -219,6 +219,66 @@ inline void handleMemoryInterface() noexcept {
     }
 }
 template<bool inDebugMode, typename T>
+inline void handleExternalDeviceRequestRead() noexcept {
+    ProcessorInterface::setupDataLinesForRead();
+    for(;;) {
+        waitForCycleUnlock();
+        if constexpr (inDebugMode && TargetBoard::compileInExtendedDebugInformation()) {
+            auto result = T::read(ProcessorInterface::getPageIndex(),
+                                  ProcessorInterface::getPageOffset(),
+                                  ProcessorInterface::getStyle());
+            Serial.print(F("\tPage Index: 0x")) ;
+            Serial.println(ProcessorInterface::getPageIndex(), HEX);
+            Serial.print(F("\tPage Offset: 0x")) ;
+            Serial.println(ProcessorInterface::getPageOffset(), HEX);
+            Serial.print(F("\tRead Value: 0x"));
+            Serial.println(result, HEX);
+            ProcessorInterface::setDataBits(result);
+        } else {
+            ProcessorInterface::setDataBits(
+                    T::read(ProcessorInterface::getPageIndex(),
+                            ProcessorInterface::getPageOffset(),
+                            ProcessorInterface::getStyle()));
+
+        }
+        if (informCPU()) {
+            break;
+        }
+        ProcessorInterface::burstNext<IncrementAddress>();
+    }
+}
+template<bool inDebugMode, typename T>
+inline void handleExternalDeviceRequestWrite() noexcept {
+    ProcessorInterface::setupDataLinesForWrite();
+    for (;;) {
+        waitForCycleUnlock();
+        if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
+            auto dataBits = ProcessorInterface::getDataBits();
+            Serial.print(F("\tPage Index: 0x")) ;
+            Serial.println(ProcessorInterface::getPageIndex(), HEX);
+            Serial.print(F("\tPage Offset: 0x")) ;
+            Serial.println(ProcessorInterface::getPageOffset(), HEX);
+            Serial.print(F("\tData To Write: 0x"));
+            Serial.println(dataBits.getWholeValue(), HEX);
+            T::write(ProcessorInterface::getPageIndex(),
+                     ProcessorInterface::getPageOffset(),
+                     ProcessorInterface::getStyle(),
+                     dataBits);
+        } else {
+            T::write(ProcessorInterface::getPageIndex(),
+                     ProcessorInterface::getPageOffset(),
+                     ProcessorInterface::getStyle(),
+                     ProcessorInterface::getDataBits());
+        }
+        if (informCPU()) {
+            break;
+        }
+        // be careful of querying i960 state at this point because the chipset runs at twice the frequency of the i960
+        // so you may still be reading the previous i960 cycle state!
+        ProcessorInterface::burstNext<IncrementAddress>();
+    }
+}
+template<bool inDebugMode, typename T>
 inline void handleExternalDeviceRequest() noexcept {
     if constexpr (inDebugMode) {
         displayRequestedAddress();
@@ -226,61 +286,9 @@ inline void handleExternalDeviceRequest() noexcept {
     // with burst transactions in the core chipset, we do not have access to a cache line to write into.
     // instead we need to do the old style infinite iteration design
     if (ProcessorInterface::isReadOperation()) {
-        ProcessorInterface::setupDataLinesForRead();
-        for(;;) {
-            waitForCycleUnlock();
-            if constexpr (inDebugMode && TargetBoard::compileInExtendedDebugInformation()) {
-                auto result = T::read(ProcessorInterface::getPageIndex(),
-                                      ProcessorInterface::getPageOffset(),
-                                      ProcessorInterface::getStyle());
-                Serial.print(F("\tPage Index: 0x")) ;
-                Serial.println(ProcessorInterface::getPageIndex(), HEX);
-                Serial.print(F("\tPage Offset: 0x")) ;
-                Serial.println(ProcessorInterface::getPageOffset(), HEX);
-                Serial.print(F("\tRead Value: 0x"));
-                Serial.println(result, HEX);
-                ProcessorInterface::setDataBits(result);
-            } else {
-                ProcessorInterface::setDataBits(
-                        T::read(ProcessorInterface::getPageIndex(),
-                                ProcessorInterface::getPageOffset(),
-                                ProcessorInterface::getStyle()));
-
-            }
-            if (informCPU()) {
-                break;
-            }
-            ProcessorInterface::burstNext<IncrementAddress>();
-        }
+        handleExternalDeviceRequestRead<inDebugMode, T>();
     } else {
-        ProcessorInterface::setupDataLinesForWrite();
-        for (;;) {
-            waitForCycleUnlock();
-            if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
-                auto dataBits = ProcessorInterface::getDataBits();
-                Serial.print(F("\tPage Index: 0x")) ;
-                Serial.println(ProcessorInterface::getPageIndex(), HEX);
-                Serial.print(F("\tPage Offset: 0x")) ;
-                Serial.println(ProcessorInterface::getPageOffset(), HEX);
-                Serial.print(F("\tData To Write: 0x"));
-                Serial.println(dataBits.getWholeValue(), HEX);
-                T::write(ProcessorInterface::getPageIndex(),
-                         ProcessorInterface::getPageOffset(),
-                         ProcessorInterface::getStyle(),
-                         dataBits);
-            } else {
-                T::write(ProcessorInterface::getPageIndex(),
-                         ProcessorInterface::getPageOffset(),
-                         ProcessorInterface::getStyle(),
-                         ProcessorInterface::getDataBits());
-            }
-            if (informCPU()) {
-                break;
-            }
-            // be careful of querying i960 state at this point because the chipset runs at twice the frequency of the i960
-            // so you may still be reading the previous i960 cycle state!
-            ProcessorInterface::burstNext<IncrementAddress>();
-        }
+        handleExternalDeviceRequestWrite<inDebugMode, T>();
     }
 }
 template<bool inDebugMode>
