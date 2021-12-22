@@ -204,7 +204,6 @@ inline void handleMemoryInterface() noexcept {
         }
     }
 }
-
 template<bool inDebugMode, typename T>
 inline void handleExternalDeviceRequest() noexcept {
     if constexpr (inDebugMode) {
@@ -216,18 +215,24 @@ inline void handleExternalDeviceRequest() noexcept {
         ProcessorInterface::setupDataLinesForRead();
         for(;;) {
             waitForCycleUnlock();
-            auto result = T::read(ProcessorInterface::getPageIndex(),
-                                  ProcessorInterface::getPageOffset(),
-                                  ProcessorInterface::getStyle());
-            if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
+            if constexpr (inDebugMode && TargetBoard::compileInExtendedDebugInformation()) {
+                auto result = T::read(ProcessorInterface::getPageIndex(),
+                                      ProcessorInterface::getPageOffset(),
+                                      ProcessorInterface::getStyle());
                 Serial.print(F("\tPage Index: 0x")) ;
                 Serial.println(ProcessorInterface::getPageIndex(), HEX);
                 Serial.print(F("\tPage Offset: 0x")) ;
                 Serial.println(ProcessorInterface::getPageOffset(), HEX);
                 Serial.print(F("\tRead Value: 0x"));
                 Serial.println(result, HEX);
+                ProcessorInterface::setDataBits(result);
+            } else {
+                ProcessorInterface::setDataBits(
+                        T::read(ProcessorInterface::getPageIndex(),
+                                ProcessorInterface::getPageOffset(),
+                                ProcessorInterface::getStyle()));
+
             }
-            ProcessorInterface::setDataBits(result);
             if (informCPU()) {
                 break;
             }
@@ -237,19 +242,24 @@ inline void handleExternalDeviceRequest() noexcept {
         ProcessorInterface::setupDataLinesForWrite();
         for (;;) {
             waitForCycleUnlock();
-            auto dataBits = ProcessorInterface::getDataBits();
             if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
+                auto dataBits = ProcessorInterface::getDataBits();
                 Serial.print(F("\tPage Index: 0x")) ;
                 Serial.println(ProcessorInterface::getPageIndex(), HEX);
                 Serial.print(F("\tPage Offset: 0x")) ;
                 Serial.println(ProcessorInterface::getPageOffset(), HEX);
                 Serial.print(F("\tData To Write: 0x"));
                 Serial.println(dataBits.getWholeValue(), HEX);
+                T::write(ProcessorInterface::getPageIndex(),
+                         ProcessorInterface::getPageOffset(),
+                         ProcessorInterface::getStyle(),
+                         dataBits);
+            } else {
+                T::write(ProcessorInterface::getPageIndex(),
+                         ProcessorInterface::getPageOffset(),
+                         ProcessorInterface::getStyle(),
+                         ProcessorInterface::getDataBits());
             }
-            T::write(ProcessorInterface::getPageIndex(),
-                     ProcessorInterface::getPageOffset(),
-                     ProcessorInterface::getStyle(),
-                     dataBits);
             if (informCPU()) {
                 break;
             }
