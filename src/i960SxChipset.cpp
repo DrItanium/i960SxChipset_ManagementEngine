@@ -227,6 +227,9 @@ inline void handleMemoryInterface() noexcept {
 }
 template<bool inDebugMode, typename T>
 inline void handleExternalDeviceRequestRead() noexcept {
+    if constexpr (inDebugMode) {
+        displayRequestedAddress();
+    }
     ProcessorInterface::setupDataLinesForRead();
     for(;;) {
         waitForCycleUnlock();
@@ -256,6 +259,9 @@ inline void handleExternalDeviceRequestRead() noexcept {
 }
 template<bool inDebugMode, typename T>
 inline void handleExternalDeviceRequestWrite() noexcept {
+    if constexpr (inDebugMode) {
+        displayRequestedAddress();
+    }
     ProcessorInterface::setupDataLinesForWrite();
     for (;;) {
         waitForCycleUnlock();
@@ -287,9 +293,6 @@ inline void handleExternalDeviceRequestWrite() noexcept {
 }
 template<bool inDebugMode, typename T>
 inline void handleExternalDeviceRequest() noexcept {
-    if constexpr (inDebugMode) {
-        displayRequestedAddress();
-    }
     // with burst transactions in the core chipset, we do not have access to a cache line to write into.
     // instead we need to do the old style infinite iteration design
     if (ProcessorInterface::isReadOperation()) {
