@@ -429,15 +429,20 @@ void setupDispatchTable() noexcept {
     lookupTable[TheRTCInterface::SectionID] = handleExternalDeviceRequest<false, TheRTCInterface>;
     lookupTableRead[TheRTCInterface::SectionID] = handleExternalDeviceRequestRead<false, TheRTCInterface>;
     lookupTableWrite[TheRTCInterface::SectionID] = handleExternalDeviceRequestWrite<false, TheRTCInterface>;
+
     lookupTable[TheDisplayInterface::SectionID] = handleExternalDeviceRequest<false, TheDisplayInterface>;
     lookupTableRead[TheDisplayInterface::SectionID] = handleExternalDeviceRequestRead<false, TheDisplayInterface>;
     lookupTableWrite[TheDisplayInterface::SectionID] = handleExternalDeviceRequestWrite<false, TheDisplayInterface>;
+
     lookupTable[TheSDInterface::SectionID] = handleExternalDeviceRequest<false, TheSDInterface>;
     lookupTableRead[TheSDInterface::SectionID] = handleExternalDeviceRequestRead<false, TheSDInterface>;
     lookupTableWrite[TheSDInterface::SectionID] = handleExternalDeviceRequestWrite<false, TheSDInterface>;
+
+
     lookupTable[TheConsoleInterface::SectionID] = handleExternalDeviceRequest<false, TheConsoleInterface>;
     lookupTableRead[TheConsoleInterface::SectionID] = handleExternalDeviceRequestRead<false, TheConsoleInterface>;
     lookupTableWrite[TheConsoleInterface::SectionID] = handleExternalDeviceRequestWrite<false, TheConsoleInterface>;
+
     lookupTable[ConfigurationSpace::SectionID] = handleExternalDeviceRequest<false, ConfigurationSpace>;
     lookupTableRead[ConfigurationSpace::SectionID] = handleExternalDeviceRequestRead<false, ConfigurationSpace>;
     lookupTableWrite[ConfigurationSpace::SectionID] = handleExternalDeviceRequestWrite<false, ConfigurationSpace>;
