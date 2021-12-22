@@ -407,7 +407,7 @@ void installBootImage() noexcept {
 }
 
 using DispatchTable = BodyFunction[256];
-using DualDispatchTable = std::tuple<BodyFunction, BodyFunction>[256];
+using DualDispatchTable = SplitBodyFunction[256];
 DispatchTable lookupTable;
 DualDispatchTable lookupTableSplit;
 DualDispatchTable lookupTableSplit_Debug;

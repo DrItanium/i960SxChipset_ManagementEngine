@@ -244,8 +244,7 @@ private:
     template<bool inDebugMode>
     inline static void updateTargetFunctions() noexcept {
         if constexpr (TargetBoard::separateReadWriteFunctionPointers()) {
-            if constexpr (auto a = getReadBody<inDebugMode>(address_.bytes[3]),
-                               b = getWriteBody<inDebugMode>(address_.bytes[3]); inDebugMode) {
+            if constexpr (auto [a, b] = getSplitBody<inDebugMode>(address_.bytes[3]); inDebugMode) {
                 lastReadDebug_ = a;
                 lastWriteDebug_ = b;
             } else {
