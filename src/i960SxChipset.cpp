@@ -282,6 +282,7 @@ inline void invocationBody() noexcept {
             X((8*6)):
             X((8*7)):
                 handleMemoryInterface<inDebugMode>();
+                break;
 #undef X
             case TheRTCInterface::SectionID: handleExternalDeviceRequest<inDebugMode, TheRTCInterface>(); break;
             case TheDisplayInterface::SectionID: handleExternalDeviceRequest<inDebugMode, TheDisplayInterface>(); break;
