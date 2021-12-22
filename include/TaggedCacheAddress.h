@@ -27,7 +27,7 @@ union TaggedAddress {
         result.lowest = 0;
         return result;
     }
-    [[nodiscard]] bool restEqual(TaggedAddress other) const noexcept { return getRest() == other.getRest(); }
+    [[nodiscard]] bool restEqual(const TaggedAddress& other) const noexcept { return getRest() == other.getRest(); }
 private:
     Address base;
     struct {

@@ -44,7 +44,7 @@ public:
     static constexpr OffsetType  InvalidCacheLineState = 0xFF;
     static constexpr OffsetType CleanCacheLineState = 0xFE;
 public:
-    void reset(TaggedAddress newTag) noexcept {
+    void reset(const TaggedAddress& newTag) noexcept {
         // no match so pull the data in from main memory
         if (isDirty()) {
             // we compute the overall range as we go through this stuff
@@ -74,9 +74,9 @@ public:
             a.wholeValue_ = 0;
         }
     }
-    [[nodiscard]] constexpr bool matches(TaggedAddress addr) const noexcept { return isValid() && (addr.getRest() == key_); }
+    [[nodiscard]] constexpr bool matches(const TaggedAddress& addr) const noexcept { return isValid() && (addr.getRest() == key_); }
     [[nodiscard]] constexpr auto get(OffsetType offset) const noexcept { return data[offset].getWholeValue(); }
-    inline void set(OffsetType offset, LoadStoreStyle style, SplitWord16 value) noexcept {
+    inline void set(OffsetType offset, LoadStoreStyle style, const SplitWord16& value) noexcept {
         // while unsafe, assume it is correct because we only get this from the ProcessorSerializer, perhaps directly grab it?
         if (auto &target = data[offset]; target.getWholeValue() != value.getWholeValue()) {
             // now hold onto the old value

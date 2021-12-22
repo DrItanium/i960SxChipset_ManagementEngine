@@ -50,7 +50,7 @@ public:
     static constexpr auto NumBytesCached = CacheEntry::NumBytesCached;
 public:
     //[[gnu::noinline]]
-    CacheEntry& getLine(TaggedAddress theAddress) noexcept {
+    CacheEntry& getLine(const TaggedAddress& theAddress) noexcept {
         byte targetIndex = 0xFF;
         for (byte i = 0; i < NumberOfWays; ++i) {
             if (ways_[i]->matches(theAddress)) {
