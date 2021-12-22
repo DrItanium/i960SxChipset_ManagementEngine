@@ -151,7 +151,7 @@ inline void handleMemoryInterface() noexcept {
     // okay we are dealing with the psram chips
     // now take the time to compute the cache offset entries
     auto start = ProcessorInterface::getCacheOffsetEntry<decltype(theCache)::CacheEntryMask>();
-    auto end = start + 16;
+    auto end = start + 8;
     if (auto& theEntry = theCache.getLine(); ProcessorInterface::isReadOperation()) {
         ProcessorInterface::setupDataLinesForRead();
         // when dealing with read operations, we can actually easily unroll the do while by starting at the cache offset entry and walking
