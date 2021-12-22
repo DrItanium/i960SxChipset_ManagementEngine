@@ -110,6 +110,12 @@ private:
                 {5, 4},
                 {7, 6},
         };
+        static constexpr byte maskLookup[4] {
+            0b0001,
+            0b0010,
+            0b0100,
+            0b1000,
+        };
         if (!initialized) {
             initialized = true;
             counter = 0;
@@ -118,7 +124,7 @@ private:
             }
         }
         auto theIndex = randomTable[counter++];
-        return secondLookupTable[theIndex][static_cast<byte>(bits_ >> theIndex) & 0b0001];
+        return secondLookupTable[theIndex][(bits_ & maskLookup[theIndex]) ? 1 : 0];
     }
 private:
     // This is RandPLRU Tree so we need to organize things correctly, I'm going to try four groups of two
