@@ -181,6 +181,7 @@ enum class ConfigurationOptions : byte {
     ValidateTransferDuringInstall,
     UseIOExpanderAddressLineInterrupts,
     UsePortReads,
+    SeparateReadAndWriteFunctionPointers,
 };
 enum class ConfigurationFlags : uint64_t {
     None = 0,
@@ -192,6 +193,7 @@ enum class ConfigurationFlags : uint64_t {
     X(ValidateTransferDuringInstall),
     X(UseIOExpanderAddressLineInterrupts),
     X(UsePortReads),
+    X(SeparateReadAndWriteFunctionPointers),
 #undef X
 };
 template<ConfigurationFlags ... flags>
@@ -224,6 +226,7 @@ public:
     [[nodiscard]] constexpr auto validateTransferDuringInstall() const noexcept { return flagSet<ConfigurationFlags::ValidateTransferDuringInstall>(); }
     [[nodiscard]] constexpr auto useIOExpanderAddressLineInterrupts() const noexcept { return flagSet<ConfigurationFlags::UseIOExpanderAddressLineInterrupts>(); }
     [[nodiscard]] constexpr auto usePortReads() const noexcept { return flagSet<ConfigurationFlags::UsePortReads>(); }
+    [[nodiscard]] constexpr auto separateReadAndWriteFunctionPointers() const noexcept { return flagSet<ConfigurationFlags::SeparateReadAndWriteFunctionPointers>(); }
 private:
     uint32_t sramAmount_;
     uint32_t ioExpanderPeripheralSpeed_;
@@ -284,6 +287,7 @@ public:
     [[nodiscard]] static constexpr auto validateTransferDuringInstall() noexcept { return BoardDescription<getMCUTarget()>.validateTransferDuringInstall(); }
     [[nodiscard]] static constexpr auto useIOExpanderAddressLineInterrupts() noexcept { return BoardDescription<getMCUTarget()>.useIOExpanderAddressLineInterrupts(); }
     [[nodiscard]] static constexpr auto usePortReads() noexcept { return BoardDescription<getMCUTarget()>.usePortReads(); }
+    [[nodiscard]] static constexpr auto separateReadWriteFunctionPointers() noexcept { return BoardDescription<getMCUTarget()>.separateReadAndWriteFunctionPointers(); }
 public:
     TargetBoard() = delete;
     ~TargetBoard() = delete;
