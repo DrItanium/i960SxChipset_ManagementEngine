@@ -15,5 +15,7 @@
    Reset960 = 17, // really waitboot960
    GPIOSelect = 53,
    SD_EN = SDCARD_CS,
+   TFT_CS = 10,
+   TFT_DC = 9,
    // these are all handled by the management engine in type 3 so they are disconnected, but give them unique fake pin numbers for compilation purposes
    Int0_ = Count, // not connected
