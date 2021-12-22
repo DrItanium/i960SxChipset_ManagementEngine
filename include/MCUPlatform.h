@@ -253,6 +253,7 @@ constexpr MCUConfiguration BoardDescription<TargetMCU::GrandCentralM4_Type3> = {
         128_KB,
         makeConfigFlags<ConfigurationFlags::UsePortReads,
                 ConfigurationFlags::UseIOExpanderAddressLineInterrupts,
+                ConfigurationFlags::SeparateReadAndWriteFunctionPointers,
                 ConfigurationFlags::ValidateTransferDuringInstall>()
 };
 
