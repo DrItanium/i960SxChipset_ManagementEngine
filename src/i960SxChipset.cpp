@@ -549,12 +549,21 @@ switchTableInvoke(byte index) noexcept {
     }
 
 }
+constexpr auto DoSwitchTableInvocation = false;
 void invokeNonDebugBody(byte index) noexcept {
-    lookupTable[index]();
+    if constexpr (DoSwitchTableInvocation) {
+        switchTableInvoke<false>(index);
+    } else {
+        lookupTable[index]();
+    }
 }
 void invokeDebugBody(byte index) noexcept {
     if constexpr (CompileInAddressDebuggingSupport) {
-        lookupTable_Debug[index]();
+        if constexpr (DoSwitchTableInvocation) {
+            switchTableInvoke<true>(index);
+        } else {
+            lookupTable_Debug[index]();
+        }
     } else {
         fallbackBody<true>();
     }
