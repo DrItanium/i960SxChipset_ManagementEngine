@@ -156,8 +156,8 @@ inline void handleMemoryInterface() noexcept {
         // forward until we either hit the end of the cache line or blast is asserted first (both are valid states)
         for (byte i = ProcessorInterface::getCacheOffsetEntry<decltype(theCache)::CacheEntryMask>(); i < MaximumNumberOfWordsTransferrableInASingleTransaction; ++i) {
             // start working on getting the given value way ahead of cycle unlock happening
-            auto outcome = theEntry.get(i);
             waitForCycleUnlock();
+            auto outcome = theEntry.get(i);
             if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
                 Serial.print(F("\tOffset: 0x")) ;
                 Serial.print(i << 1, HEX);
@@ -181,8 +181,8 @@ inline void handleMemoryInterface() noexcept {
 
         // Also the manual states that the processor cannot burst across 16-byte boundaries so :D.
         for (byte i = ProcessorInterface::getCacheOffsetEntry<decltype(theCache)::CacheEntryMask>(); i < MaximumNumberOfWordsTransferrableInASingleTransaction; ++i) {
-            auto bits = ProcessorInterface::getDataBits();
             waitForCycleUnlock();
+            auto bits = ProcessorInterface::getDataBits();
             if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
                 Serial.print(F("\tOffset: 0x")) ;
                 Serial.print(i << 1, HEX);
@@ -213,10 +213,10 @@ inline void handleExternalDeviceRequest() noexcept {
     if (ProcessorInterface::isReadOperation()) {
         ProcessorInterface::setupDataLinesForRead();
         for(;;) {
+            waitForCycleUnlock();
             auto result = T::read(ProcessorInterface::getPageIndex(),
                                   ProcessorInterface::getPageOffset(),
                                   ProcessorInterface::getStyle());
-            waitForCycleUnlock();
             if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
                 Serial.print(F("\tPage Index: 0x")) ;
                 Serial.println(ProcessorInterface::getPageIndex(), HEX);
@@ -234,8 +234,8 @@ inline void handleExternalDeviceRequest() noexcept {
     } else {
         ProcessorInterface::setupDataLinesForWrite();
         for (;;) {
-            auto dataBits = ProcessorInterface::getDataBits();
             waitForCycleUnlock();
+            auto dataBits = ProcessorInterface::getDataBits();
             if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
                 Serial.print(F("\tPage Index: 0x")) ;
                 Serial.println(ProcessorInterface::getPageIndex(), HEX);
