@@ -427,22 +427,46 @@ void setupDispatchTable() noexcept {
         lookupTableWrite[i] = handleMemoryInterfaceWrite<false>;
     }
     lookupTable[TheRTCInterface::SectionID] = handleExternalDeviceRequest<false, TheRTCInterface>;
+    lookupTableRead[TheRTCInterface::SectionID] = handleExternalDeviceRequestRead<false, TheRTCInterface>;
+    lookupTableWrite[TheRTCInterface::SectionID] = handleExternalDeviceRequestWrite<false, TheRTCInterface>;
     lookupTable[TheDisplayInterface::SectionID] = handleExternalDeviceRequest<false, TheDisplayInterface>;
+    lookupTableRead[TheDisplayInterface::SectionID] = handleExternalDeviceRequestRead<false, TheDisplayInterface>;
+    lookupTableWrite[TheDisplayInterface::SectionID] = handleExternalDeviceRequestWrite<false, TheDisplayInterface>;
     lookupTable[TheSDInterface::SectionID] = handleExternalDeviceRequest<false, TheSDInterface>;
+    lookupTableRead[TheSDInterface::SectionID] = handleExternalDeviceRequestRead<false, TheSDInterface>;
+    lookupTableWrite[TheSDInterface::SectionID] = handleExternalDeviceRequestWrite<false, TheSDInterface>;
     lookupTable[TheConsoleInterface::SectionID] = handleExternalDeviceRequest<false, TheConsoleInterface>;
+    lookupTableRead[TheConsoleInterface::SectionID] = handleExternalDeviceRequestRead<false, TheConsoleInterface>;
+    lookupTableWrite[TheConsoleInterface::SectionID] = handleExternalDeviceRequestWrite<false, TheConsoleInterface>;
     lookupTable[ConfigurationSpace::SectionID] = handleExternalDeviceRequest<false, ConfigurationSpace>;
+    lookupTableRead[ConfigurationSpace::SectionID] = handleExternalDeviceRequestRead<false, ConfigurationSpace>;
+    lookupTableWrite[ConfigurationSpace::SectionID] = handleExternalDeviceRequestWrite<false, ConfigurationSpace>;
     if constexpr (TargetBoard::compileInAddressDebuggingSupport()) {
-        for (auto &entry: lookupTable_Debug) {
-            entry = fallbackBody<true>;
+        for (int i = 0; i < 256; ++i) {
+            lookupTable_Debug[i] = fallbackBody<true>;
+            lookupTableRead_Debug[i] = fallbackBodyRead<true>;
+            lookupTableWrite_Debug[i] = fallbackBodyWrite<true>;
         }
         for (int i = 0; i < 64; ++i) {
-            lookupTable[i] = handleMemoryInterface<true>;
+            lookupTable_Debug[i] = handleMemoryInterface<true>;
+            lookupTableRead_Debug[i] = handleMemoryInterfaceRead<true>;
+            lookupTableWrite_Debug[i] = handleMemoryInterfaceWrite<true>;
         }
         lookupTable_Debug[TheRTCInterface::SectionID] = handleExternalDeviceRequest<true, TheRTCInterface>;
+        lookupTableRead_Debug[TheRTCInterface::SectionID] = handleExternalDeviceRequestRead<true, TheRTCInterface>;
+        lookupTableWrite_Debug[TheRTCInterface::SectionID] = handleExternalDeviceRequestWrite<true, TheRTCInterface>;
         lookupTable_Debug[TheDisplayInterface::SectionID] = handleExternalDeviceRequest<true, TheDisplayInterface>;
+        lookupTableRead_Debug[TheDisplayInterface::SectionID] = handleExternalDeviceRequestRead<true, TheDisplayInterface>;
+        lookupTableWrite_Debug[TheDisplayInterface::SectionID] = handleExternalDeviceRequestWrite<true, TheDisplayInterface>;
         lookupTable_Debug[TheSDInterface::SectionID] = handleExternalDeviceRequest<true, TheSDInterface>;
+        lookupTableRead_Debug[TheSDInterface::SectionID] = handleExternalDeviceRequestRead<true, TheSDInterface>;
+        lookupTableWrite_Debug[TheSDInterface::SectionID] = handleExternalDeviceRequestWrite<true, TheSDInterface>;
         lookupTable_Debug[TheConsoleInterface::SectionID] = handleExternalDeviceRequest<true, TheConsoleInterface>;
+        lookupTableRead_Debug[TheConsoleInterface::SectionID] = handleExternalDeviceRequestRead<true, TheConsoleInterface>;
+        lookupTableWrite_Debug[TheConsoleInterface::SectionID] = handleExternalDeviceRequestWrite<true, TheConsoleInterface>;
         lookupTable_Debug[ConfigurationSpace::SectionID] = handleExternalDeviceRequest<true, ConfigurationSpace>;
+        lookupTableRead_Debug[ConfigurationSpace::SectionID] = handleExternalDeviceRequestRead<true, ConfigurationSpace>;
+        lookupTableWrite_Debug[ConfigurationSpace::SectionID] = handleExternalDeviceRequestWrite<true, ConfigurationSpace>;
     }
 }
 
