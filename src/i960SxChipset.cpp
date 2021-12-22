@@ -150,11 +150,13 @@ inline void handleMemoryInterface() noexcept {
     }
     // okay we are dealing with the psram chips
     // now take the time to compute the cache offset entries
+    auto start = ProcessorInterface::getCacheOffsetEntry<decltype(theCache)::CacheEntryMask>();
+    auto end = start + 16;
     if (auto& theEntry = theCache.getLine(); ProcessorInterface::isReadOperation()) {
         ProcessorInterface::setupDataLinesForRead();
         // when dealing with read operations, we can actually easily unroll the do while by starting at the cache offset entry and walking
         // forward until we either hit the end of the cache line or blast is asserted first (both are valid states)
-        for (byte i = ProcessorInterface::getCacheOffsetEntry<decltype(theCache)::CacheEntryMask>(); i < MaximumNumberOfWordsTransferrableInASingleTransaction; ++i) {
+        for (auto i = start; i < end; ++i) {
             // start working on getting the given value way ahead of cycle unlock happening
             waitForCycleUnlock();
             auto outcome = theEntry.get(i);
@@ -180,7 +182,7 @@ inline void handleMemoryInterface() noexcept {
         // far as we can go with how the Sx works!
 
         // Also the manual states that the processor cannot burst across 16-byte boundaries so :D.
-        for (byte i = ProcessorInterface::getCacheOffsetEntry<decltype(theCache)::CacheEntryMask>(); i < MaximumNumberOfWordsTransferrableInASingleTransaction; ++i) {
+        for (auto i = start; i < end; ++i) {
             waitForCycleUnlock();
             auto bits = ProcessorInterface::getDataBits();
             if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
