@@ -185,7 +185,8 @@ public:
                                bool compileInExtendedDebug,
                                bool validateTransferDuringInstall,
                                bool useIOExpanderInterrupts,
-                               bool cacheHandlersWithFunctionPointers
+                               bool cacheHandlersWithFunctionPointers,
+                               bool usePortReads
     ) noexcept : sramAmount_(sramSize),
                  ioExpanderPeripheralSpeed_(ioExpanderSpeedCap > 10_MHz ? 10_MHz : ioExpanderSpeedCap),
                  numBitsPerCacheLine_(numBitsPerCacheLine),
@@ -196,7 +197,8 @@ public:
                  compileInExtendedDebugInformation_(compileInExtendedDebug),
                  validateTransferDuringInstall_(validateTransferDuringInstall),
                  useIOExpanderAddressLineInterrupts_(useIOExpanderInterrupts),
-                 cacheHandlersWithFunctionPointers_(cacheHandlersWithFunctionPointers)
+                 cacheHandlersWithFunctionPointers_(cacheHandlersWithFunctionPointers),
+                 usePortReads_(usePortReads)
                  {}
 
     [[nodiscard]] constexpr uint32_t getSramAmount() const noexcept { return sramAmount_; }
@@ -210,6 +212,7 @@ public:
     [[nodiscard]] constexpr auto validateTransferDuringInstall() const noexcept { return validateTransferDuringInstall_; }
     [[nodiscard]] constexpr auto useIOExpanderAddressLineInterrupts() const noexcept { return useIOExpanderAddressLineInterrupts_; }
     [[nodiscard]] constexpr auto cacheHandlersWithFunctionPointers() const noexcept { return cacheHandlersWithFunctionPointers_; }
+    [[nodiscard]] constexpr auto usePortReads() const noexcept { return usePortReads_; }
 private:
     uint32_t sramAmount_;
     uint32_t ioExpanderPeripheralSpeed_;
@@ -222,6 +225,7 @@ private:
     bool validateTransferDuringInstall_;
     bool useIOExpanderAddressLineInterrupts_;
     bool cacheHandlersWithFunctionPointers_;
+    bool usePortReads_;
 };
 template<TargetMCU mcu>
 constexpr MCUConfiguration BoardDescription = {
@@ -233,6 +237,7 @@ constexpr MCUConfiguration BoardDescription = {
         false,
         false,
         false,
+        true,
         true,
         true,
         true,
@@ -248,6 +253,7 @@ constexpr MCUConfiguration BoardDescription<TargetMCU::GrandCentralM4_Type3> = {
         false,
         false,
         false,
+        true,
         true,
         true,
         true,
@@ -284,6 +290,7 @@ public:
     [[nodiscard]] static constexpr auto validateTransferDuringInstall() noexcept { return BoardDescription<getMCUTarget()>.validateTransferDuringInstall(); }
     [[nodiscard]] static constexpr auto useIOExpanderAddressLineInterrupts() noexcept { return BoardDescription<getMCUTarget()>.useIOExpanderAddressLineInterrupts(); }
     [[nodiscard]] static constexpr auto cacheHandlersWithFunctionPointers() noexcept { return BoardDescription<getMCUTarget()>.cacheHandlersWithFunctionPointers(); }
+    [[nodiscard]] static constexpr auto usePortReads() noexcept { return BoardDescription<getMCUTarget()>.usePortReads(); }
 public:
     TargetBoard() = delete;
     ~TargetBoard() = delete;

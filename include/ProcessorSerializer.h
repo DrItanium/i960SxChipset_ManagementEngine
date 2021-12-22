@@ -194,9 +194,8 @@ public:
             writeGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>(latchedDataOutput.getWholeValue());
         }
     }
-    template<bool usePortReads = true>
-    [[nodiscard]] static auto getStyle() noexcept {
-        if constexpr (usePortReads) {
+    [[nodiscard]] static LoadStoreStyle getStyle() noexcept {
+        if constexpr (TargetBoard::usePortReads()) {
             // assume for now that BE0 and BE1 are the same port
             // in this case it is PA14 and PA15 so just shift right by 14 and mask
             auto portContents = DigitalPin<i960Pinout::BE0>::readPort();
@@ -223,29 +222,28 @@ public:
         }
     }
 private:
-    template<bool useInterrupts = true, bool usePortReads = true>
     static byte getUpdateKind() noexcept {
-        if constexpr (!useInterrupts) {
-            return 0;
+        if constexpr (TargetBoard::useIOExpanderAddressLineInterrupts()) {
+           if constexpr (TargetBoard::usePortReads()) {
+               static constexpr uint32_t PortMask = 0x00F0'0000;
+               // in this case I know that INT_EN[0,3] are lined up correctly so this is a very cheap operation
+               auto portContents = DigitalPin<i960Pinout::INT_EN0>::readPort();
+               return static_cast<byte>((PortMask & portContents) >> 20);
+           } else {
+               auto a = static_cast<byte>(DigitalPin<i960Pinout::INT_EN0>::read());
+               auto b = static_cast<byte>(DigitalPin<i960Pinout::INT_EN1>::read()) << 1;
+               auto c = static_cast<byte>(DigitalPin<i960Pinout::INT_EN2>::read()) << 2;
+               auto d = static_cast<byte>(DigitalPin<i960Pinout::INT_EN3>::read()) << 3;
+               return a | b | c | d;
+           }
         } else {
-            if constexpr (usePortReads) {
-                static constexpr uint32_t PortMask = 0x00F0'0000;
-                // in this case I know that INT_EN[0,3] are lined up correctly so this is a very cheap operation
-                auto portContents = DigitalPin<i960Pinout::INT_EN0>::readPort();
-                return static_cast<byte>((PortMask & portContents) >> 20);
-            } else {
-                auto a = static_cast<byte>(DigitalPin<i960Pinout::INT_EN0>::read());
-                auto b = static_cast<byte>(DigitalPin<i960Pinout::INT_EN1>::read()) << 1;
-                auto c = static_cast<byte>(DigitalPin<i960Pinout::INT_EN2>::read()) << 2;
-                auto d = static_cast<byte>(DigitalPin<i960Pinout::INT_EN3>::read()) << 3;
-                return a | b | c | d;
-            }
+            return 0;
         }
     }
 private:
-    template<bool inDebugMode, bool cacheFunctions>
+    template<bool inDebugMode>
     inline static void updateTargetFunctions() noexcept {
-        if constexpr (cacheFunctions) {
+        if constexpr (TargetBoard::cacheHandlersWithFunctionPointers()) {
             if constexpr (auto a = getBody<inDebugMode>(address_.bytes[3]); inDebugMode) {
                 lastDebug_ = a;
             } else {
@@ -254,13 +252,13 @@ private:
         }
     }
 public:
-    template<bool inDebugMode, bool cacheFunctions>
+    template<bool inDebugMode>
     static inline void full32BitUpdate() noexcept {
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
         address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
         address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
-        updateTargetFunctions<inDebugMode, cacheFunctions>();
+        updateTargetFunctions<inDebugMode>();
     }
     static inline void lower16Update() noexcept {
         // read only the lower half
@@ -268,17 +266,17 @@ public:
         // where we can insert operations to take place that would otherwise be waiting
         address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
     }
-    template<bool inDebugMode, bool cacheFunctions>
+    template<bool inDebugMode>
     static inline void upper16Update() noexcept {
         // only read the upper 16-bits
         address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
-        updateTargetFunctions<inDebugMode, cacheFunctions>();
+        updateTargetFunctions<inDebugMode>();
     }
-    template<bool inDebugMode, bool cacheFunctions>
+    template<bool inDebugMode>
     static inline void updateHighest8() noexcept {
         // only read the upper 8 bits
         address_.bytes[3] = read8<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPIOB>();
-        updateTargetFunctions<inDebugMode, cacheFunctions>();
+        updateTargetFunctions<inDebugMode>();
     }
     static inline void updateHigher8() noexcept {
         // only read the upper 8 bits
@@ -297,34 +295,34 @@ public:
         address_.bytes[1] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOB>();
     }
 public:
-    template<bool inDebugMode, bool cacheFunctions, bool useInterrupts>
+    template<bool inDebugMode>
     static inline void newDataCycle() noexcept {
-        switch (getUpdateKind<useInterrupts>()) {
+        switch (getUpdateKind()) {
             case 0b0001:
                 updateLower8();
-                upper16Update<inDebugMode, cacheFunctions>();
+                upper16Update<inDebugMode>();
                 break;
             case 0b0010:
                 updateLowest8();
-                upper16Update<inDebugMode, cacheFunctions>();
+                upper16Update<inDebugMode>();
                 break;
             case 0b0011:
-                upper16Update<inDebugMode, cacheFunctions>();
+                upper16Update<inDebugMode>();
                 break;
             case 0b0100:
                 lower16Update();
-                updateHighest8<inDebugMode, cacheFunctions>();
+                updateHighest8<inDebugMode>();
                 break;
             case 0b0101:
                 updateLower8();
-                updateHighest8<inDebugMode, cacheFunctions>();
+                updateHighest8<inDebugMode>();
                 break;
             case 0b0110:
                 updateLowest8();
-                updateHighest8<inDebugMode, cacheFunctions>();
+                updateHighest8<inDebugMode>();
                 break;
             case 0b0111:
-                updateHighest8<inDebugMode, cacheFunctions>();
+                updateHighest8<inDebugMode>();
                 break;
             case 0b1000:
                 lower16Update();
@@ -352,15 +350,15 @@ public:
                 break;
             case 0b1111: break;
             default:
-                full32BitUpdate<inDebugMode, cacheFunctions>();
+                full32BitUpdate<inDebugMode>();
                 break;
         }
-        if constexpr (cacheFunctions) {
-            if constexpr (inDebugMode) {
-                lastDebug_();
-            } else {
-                last_();
-            }
+        if constexpr (TargetBoard::cacheHandlersWithFunctionPointers()) {
+           if constexpr (inDebugMode) {
+               lastDebug_();
+           } else {
+               last_();
+           }
         } else {
             invokeBody<inDebugMode>(address_.bytes[3]);
         }
@@ -378,7 +376,6 @@ public:
      */
     [[nodiscard]] static auto getPageOffset() noexcept { return address_.bytes[0]; }
     [[nodiscard]] static auto getPageIndex() noexcept { return address_.bytes[1]; }
-    template<bool cacheFunctions>
     static void begin() noexcept {
         if (!initialized_) {
             initialized_ = true;
@@ -401,8 +398,8 @@ public:
             write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::INTCON, false>(0x0000);
             write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::INTCON, false>(0x0000);
             write16<IOExpanderAddress::DataLines, MCP23x17Registers::OLAT, false>(latchedDataOutput.getWholeValue());
-            updateTargetFunctions<true, cacheFunctions>();
-            updateTargetFunctions<false, cacheFunctions>();
+            updateTargetFunctions<true>();
+            updateTargetFunctions<false>();
             SPI.endTransaction();
         }
     }
