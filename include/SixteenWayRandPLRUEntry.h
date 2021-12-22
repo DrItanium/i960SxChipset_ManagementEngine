@@ -104,6 +104,16 @@ private:
                 {13, 12},
                 {15, 14},
         };
+        static constexpr byte maskLookup[8] {
+                0b00000001,
+                0b00000010,
+                0b00000100,
+                0b00001000,
+                0b00010000,
+                0b00100000,
+                0b01000000,
+                0b10000000,
+        };
         if (!initialized) {
             initialized = true;
             counter = 0;
@@ -111,7 +121,8 @@ private:
                 randomTable[i] = random(0, NumberOfGroups);
             }
         }
-        return secondLookupTable[randomTable[counter++]][bits_ & 0b00000001];
+        auto theIndex = randomTable[counter++];
+        return secondLookupTable[theIndex][(bits_ & maskLookup[theIndex]) ? 1 : 0];
     }
 public:
     [[nodiscard]] constexpr auto getWay(size_t index = 0) const noexcept { return ways_[index & WayMask]; }
