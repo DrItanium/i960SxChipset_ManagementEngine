@@ -28,10 +28,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef SXCHIPSET_I960SXCHIPSET_H
 #define SXCHIPSET_I960SXCHIPSET_H
-#ifdef __arm__
 #include <string>
-#endif
+#include <tuple>
 using BodyFunction = void (*)();
+using SplitBodyFunction = std::tuple<BodyFunction, BodyFunction>;
 BodyFunction getNonDebugBody(byte index) noexcept;
 BodyFunction getDebugBody(byte index) noexcept;
 
@@ -43,28 +43,15 @@ BodyFunction getBody(byte index) noexcept {
         return getNonDebugBody(index);
     }
 }
-
-BodyFunction getNonDebugReadBody(byte index) noexcept;
-BodyFunction getDebugReadBody(byte index) noexcept;
-BodyFunction getNonDebugWriteBody(byte index) noexcept;
-BodyFunction getDebugWriteBody(byte index) noexcept;
+SplitBodyFunction getSplitNonDebugBody(byte index) noexcept;
+SplitBodyFunction getSplitDebugBody(byte index) noexcept;
 
 template<bool inDebugMode>
-BodyFunction getReadBody(byte index) noexcept {
+SplitBodyFunction getSplitBody(byte index) noexcept {
     if constexpr (inDebugMode) {
-        return getDebugReadBody(index);
+        return getSplitDebugBody(index);
     } else {
-        return getNonDebugReadBody(index);
-    }
-}
-
-
-template<bool inDebugMode>
-BodyFunction getWriteBody(byte index) noexcept {
-    if constexpr (inDebugMode) {
-        return getDebugWriteBody(index);
-    } else {
-        return getNonDebugWriteBody(index);
+        return getSplitNonDebugBody(index);
     }
 }
 

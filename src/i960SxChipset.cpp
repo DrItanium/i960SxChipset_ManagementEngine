@@ -31,6 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /// Board Platform: MightyCore
 #include <SPI.h>
 #include <SdFat.h>
+#include <tuple>
 #include "Pinout.h"
 
 #include "CacheEntry.h"
@@ -406,72 +407,62 @@ void installBootImage() noexcept {
 }
 
 using DispatchTable = BodyFunction[256];
+using DualDispatchTable = std::tuple<BodyFunction, BodyFunction>[256];
 DispatchTable lookupTable;
-DispatchTable lookupTableRead;
-DispatchTable lookupTableWrite;
+DualDispatchTable lookupTableSplit;
+DualDispatchTable lookupTableSplit_Debug;
 DispatchTable lookupTable_Debug;
-DispatchTable lookupTableRead_Debug;
-DispatchTable lookupTableWrite_Debug;
 void setupDispatchTable() noexcept {
     Serial.println(F("Setting up the initial lookup table"));
     for (int i = 0; i < 256; ++i) {
         lookupTable[i] = fallbackBody<false>;
-        lookupTableRead[i] = fallbackBodyRead<false>;
-        lookupTableWrite[i] = fallbackBodyWrite<false>;
+        lookupTableSplit[i] = std::make_tuple(fallbackBodyRead<false>, fallbackBodyWrite<false>);
     }
     // since this uses SD card as memory, just increase the size of it to 1 gigabyte
     // 64 * 16 => 64 sixteen megabyte sections
     for (int i = 0; i < 64; ++i) {
         lookupTable[i] = handleMemoryInterface<false>;
-        lookupTableRead[i] = handleMemoryInterfaceRead<false>;
-        lookupTableWrite[i] = handleMemoryInterfaceWrite<false>;
+        lookupTableSplit[i] = std::make_tuple(handleMemoryInterfaceRead<false>, handleMemoryInterfaceWrite<false>);
     }
     lookupTable[TheRTCInterface::SectionID] = handleExternalDeviceRequest<false, TheRTCInterface>;
-    lookupTableRead[TheRTCInterface::SectionID] = handleExternalDeviceRequestRead<false, TheRTCInterface>;
-    lookupTableWrite[TheRTCInterface::SectionID] = handleExternalDeviceRequestWrite<false, TheRTCInterface>;
+    lookupTableSplit[TheRTCInterface::SectionID] = std::make_tuple(handleExternalDeviceRequestRead<false, TheRTCInterface>, handleExternalDeviceRequestWrite<false, TheRTCInterface>);
 
     lookupTable[TheDisplayInterface::SectionID] = handleExternalDeviceRequest<false, TheDisplayInterface>;
-    lookupTableRead[TheDisplayInterface::SectionID] = handleExternalDeviceRequestRead<false, TheDisplayInterface>;
-    lookupTableWrite[TheDisplayInterface::SectionID] = handleExternalDeviceRequestWrite<false, TheDisplayInterface>;
+    lookupTableSplit[TheDisplayInterface::SectionID] = std::make_tuple(handleExternalDeviceRequestRead<false, TheDisplayInterface>, handleExternalDeviceRequestWrite<false, TheDisplayInterface>);
 
     lookupTable[TheSDInterface::SectionID] = handleExternalDeviceRequest<false, TheSDInterface>;
-    lookupTableRead[TheSDInterface::SectionID] = handleExternalDeviceRequestRead<false, TheSDInterface>;
-    lookupTableWrite[TheSDInterface::SectionID] = handleExternalDeviceRequestWrite<false, TheSDInterface>;
-
+    lookupTableSplit[TheSDInterface::SectionID] = std::make_tuple(handleExternalDeviceRequestRead<false, TheSDInterface>, handleExternalDeviceRequestWrite<false, TheSDInterface>);
 
     lookupTable[TheConsoleInterface::SectionID] = handleExternalDeviceRequest<false, TheConsoleInterface>;
-    lookupTableRead[TheConsoleInterface::SectionID] = handleExternalDeviceRequestRead<false, TheConsoleInterface>;
-    lookupTableWrite[TheConsoleInterface::SectionID] = handleExternalDeviceRequestWrite<false, TheConsoleInterface>;
+    lookupTableSplit[TheConsoleInterface::SectionID] = std::make_tuple(handleExternalDeviceRequestRead<false, TheConsoleInterface>, handleExternalDeviceRequestWrite<false, TheConsoleInterface>);
 
     lookupTable[ConfigurationSpace::SectionID] = handleExternalDeviceRequest<false, ConfigurationSpace>;
-    lookupTableRead[ConfigurationSpace::SectionID] = handleExternalDeviceRequestRead<false, ConfigurationSpace>;
-    lookupTableWrite[ConfigurationSpace::SectionID] = handleExternalDeviceRequestWrite<false, ConfigurationSpace>;
+    lookupTableSplit[ConfigurationSpace::SectionID] = std::make_tuple(handleExternalDeviceRequestRead<false, ConfigurationSpace>, handleExternalDeviceRequestWrite<false, ConfigurationSpace>);
     if constexpr (TargetBoard::compileInAddressDebuggingSupport()) {
         for (int i = 0; i < 256; ++i) {
             lookupTable_Debug[i] = fallbackBody<true>;
-            lookupTableRead_Debug[i] = fallbackBodyRead<true>;
-            lookupTableWrite_Debug[i] = fallbackBodyWrite<true>;
+            lookupTableSplit_Debug[i] = std::make_tuple(fallbackBodyRead<true>, fallbackBodyWrite<true>);
         }
+        // since this uses SD card as memory, just increase the size of it to 1 gigabyte
+        // 64 * 16 => 64 sixteen megabyte sections
         for (int i = 0; i < 64; ++i) {
             lookupTable_Debug[i] = handleMemoryInterface<true>;
-            lookupTableRead_Debug[i] = handleMemoryInterfaceRead<true>;
-            lookupTableWrite_Debug[i] = handleMemoryInterfaceWrite<true>;
+            lookupTableSplit_Debug[i] = std::make_tuple(handleMemoryInterfaceRead<true>, handleMemoryInterfaceWrite<true>);
         }
         lookupTable_Debug[TheRTCInterface::SectionID] = handleExternalDeviceRequest<true, TheRTCInterface>;
-        lookupTableRead_Debug[TheRTCInterface::SectionID] = handleExternalDeviceRequestRead<true, TheRTCInterface>;
-        lookupTableWrite_Debug[TheRTCInterface::SectionID] = handleExternalDeviceRequestWrite<true, TheRTCInterface>;
+        lookupTableSplit_Debug[TheRTCInterface::SectionID] = std::make_tuple(handleExternalDeviceRequestRead<true, TheRTCInterface>, handleExternalDeviceRequestWrite<true, TheRTCInterface>);
+
         lookupTable_Debug[TheDisplayInterface::SectionID] = handleExternalDeviceRequest<true, TheDisplayInterface>;
-        lookupTableRead_Debug[TheDisplayInterface::SectionID] = handleExternalDeviceRequestRead<true, TheDisplayInterface>;
-        lookupTableWrite_Debug[TheDisplayInterface::SectionID] = handleExternalDeviceRequestWrite<true, TheDisplayInterface>;
+        lookupTableSplit_Debug[TheDisplayInterface::SectionID] = std::make_tuple(handleExternalDeviceRequestRead<true, TheDisplayInterface>, handleExternalDeviceRequestWrite<true, TheDisplayInterface>);
+
         lookupTable_Debug[TheSDInterface::SectionID] = handleExternalDeviceRequest<true, TheSDInterface>;
-        lookupTableRead_Debug[TheSDInterface::SectionID] = handleExternalDeviceRequestRead<true, TheSDInterface>;
-        lookupTableWrite_Debug[TheSDInterface::SectionID] = handleExternalDeviceRequestWrite<true, TheSDInterface>;
+        lookupTableSplit_Debug[TheSDInterface::SectionID] = std::make_tuple(handleExternalDeviceRequestRead<true, TheSDInterface>, handleExternalDeviceRequestWrite<true, TheSDInterface>);
+
         lookupTable_Debug[TheConsoleInterface::SectionID] = handleExternalDeviceRequest<true, TheConsoleInterface>;
-        lookupTableRead_Debug[TheConsoleInterface::SectionID] = handleExternalDeviceRequestRead<true, TheConsoleInterface>;
-        lookupTableWrite_Debug[TheConsoleInterface::SectionID] = handleExternalDeviceRequestWrite<true, TheConsoleInterface>;
+        lookupTableSplit_Debug[TheConsoleInterface::SectionID] = std::make_tuple(handleExternalDeviceRequestRead<true, TheConsoleInterface>, handleExternalDeviceRequestWrite<true, TheConsoleInterface>);
+
         lookupTable_Debug[ConfigurationSpace::SectionID] = handleExternalDeviceRequest<true, ConfigurationSpace>;
-        lookupTableRead_Debug[ConfigurationSpace::SectionID] = handleExternalDeviceRequestRead<true, ConfigurationSpace>;
-        lookupTableWrite_Debug[ConfigurationSpace::SectionID] = handleExternalDeviceRequestWrite<true, ConfigurationSpace>;
+        lookupTableSplit_Debug[ConfigurationSpace::SectionID] = std::make_tuple(handleExternalDeviceRequestRead<true, ConfigurationSpace>, handleExternalDeviceRequestWrite<true, ConfigurationSpace>);
     }
 }
 
@@ -616,26 +607,15 @@ BodyFunction getDebugBody(byte index) noexcept {
     }
 }
 
-BodyFunction getNonDebugReadBody(byte index) noexcept {
-    return lookupTableRead[index];
+SplitBodyFunction getSplitNonDebugBody(byte index) noexcept {
+    return lookupTableSplit[index];
 }
-BodyFunction getDebugReadBody(byte index) noexcept {
+SplitBodyFunction getSplitDebugBody(byte index) noexcept {
+    static constexpr SplitBodyFunction fallback(fallbackBodyRead<true>, fallbackBodyWrite<true>);
     if constexpr (CompileInAddressDebuggingSupport) {
-        return lookupTableRead_Debug[index];
+        return lookupTableSplit_Debug[index];
     } else {
-        return fallbackBodyRead<true>;
+        return fallback;
     }
-
-}
-BodyFunction getNonDebugWriteBody(byte index) noexcept {
-    return lookupTableWrite[index];
-}
-BodyFunction getDebugWriteBody(byte index) noexcept {
-    if constexpr (CompileInAddressDebuggingSupport) {
-        return lookupTableWrite_Debug[index];
-    } else {
-        return fallbackBodyWrite<true>;
-    }
-
 }
 SdFat SD;
