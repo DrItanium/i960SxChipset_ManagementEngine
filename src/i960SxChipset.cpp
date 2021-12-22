@@ -114,34 +114,45 @@ inline void displayRequestedAddress() noexcept {
 }
 
 template<bool inDebugMode>
-inline void fallbackBody() noexcept {
+inline void fallbackBodyRead() noexcept {
     if constexpr (inDebugMode) {
         displayRequestedAddress();
     }
+    ProcessorInterface::setupDataLinesForRead();
+    do {
+        // wait for
+        waitForCycleUnlock();
+        ProcessorInterface::setDataBits(0);
+        if (informCPU()) {
+            break;
+        }
+        ProcessorInterface::burstNext<LeaveAddressAlone>();
+    } while (true);
+}
+template<bool inDebugMode>
+inline void fallbackBodyWrite() noexcept {
+    if constexpr (inDebugMode) {
+        displayRequestedAddress();
+    }
+    ProcessorInterface::setupDataLinesForWrite();
+    do {
+        // wait for
+        waitForCycleUnlock();
+        // get the data bits but do nothing with it just to delay things
+        (void)ProcessorInterface::getDataBits();
+        if (informCPU()) {
+            break;
+        }
+        ProcessorInterface::burstNext<LeaveAddressAlone>();
+    } while (true);
+}
+template<bool inDebugMode>
+inline void fallbackBody() noexcept {
     // fallback, be consistent to make sure we don't run faster than the i960
     if (ProcessorInterface::isReadOperation()) {
-        ProcessorInterface::setupDataLinesForRead();
-        do {
-            // wait for
-            waitForCycleUnlock();
-            ProcessorInterface::setDataBits(0);
-            if (informCPU()) {
-                break;
-            }
-            ProcessorInterface::burstNext<LeaveAddressAlone>();
-        } while (true);
+        fallbackBodyRead<inDebugMode>();
     } else {
-        ProcessorInterface::setupDataLinesForWrite();
-        do {
-            // wait for
-            waitForCycleUnlock();
-            // get the data bits but do nothing with it just to delay things
-            (void)ProcessorInterface::getDataBits();
-            if (informCPU()) {
-                break;
-            }
-            ProcessorInterface::burstNext<LeaveAddressAlone>();
-        } while (true);
+        fallbackBodyWrite<inDebugMode>();
     }
 }
 template<bool inDebugMode>
@@ -396,16 +407,24 @@ void installBootImage() noexcept {
 
 using DispatchTable = BodyFunction[256];
 DispatchTable lookupTable;
+DispatchTable lookupTableRead;
+DispatchTable lookupTableWrite;
 DispatchTable lookupTable_Debug;
+DispatchTable lookupTableRead_Debug;
+DispatchTable lookupTableWrite_Debug;
 void setupDispatchTable() noexcept {
     Serial.println(F("Setting up the initial lookup table"));
-    for (auto &entry: lookupTable) {
-        entry = fallbackBody<false>;
+    for (int i = 0; i < 256; ++i) {
+        lookupTable[i] = fallbackBody<false>;
+        lookupTableRead[i] = fallbackBodyRead<false>;
+        lookupTableWrite[i] = fallbackBodyWrite<false>;
     }
     // since this uses SD card as memory, just increase the size of it to 1 gigabyte
     // 64 * 16 => 64 sixteen megabyte sections
     for (int i = 0; i < 64; ++i) {
         lookupTable[i] = handleMemoryInterface<false>;
+        lookupTableRead[i] = handleMemoryInterfaceRead<false>;
+        lookupTableWrite[i] = handleMemoryInterfaceWrite<false>;
     }
     lookupTable[TheRTCInterface::SectionID] = handleExternalDeviceRequest<false, TheRTCInterface>;
     lookupTable[TheDisplayInterface::SectionID] = handleExternalDeviceRequest<false, TheDisplayInterface>;
