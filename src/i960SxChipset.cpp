@@ -529,7 +529,7 @@ template<bool inDebugMode>
 void
 switchTableInvoke(byte index) noexcept {
     switch (index) {
-#define X(base) case (base + 0): case (base + 1): case (base + 2): case (base + 3): case (base + 4): case (base + 5): case (base+6): case (base+7)
+#define X(base) case ((base) + 0): case ((base) + 1): case ((base) + 2): case ((base) + 3): case ((base) + 4): case ((base) + 5): case ((base)+6): case ((base)+7)
         X((8*0)):
         X((8*1)):
         X((8*2)):
