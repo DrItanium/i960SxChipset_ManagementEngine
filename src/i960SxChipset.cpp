@@ -159,17 +159,19 @@ inline void handleMemoryInterface() noexcept {
         for (auto i = start; i < end; ++i) {
             // start working on getting the given value way ahead of cycle unlock happening
             waitForCycleUnlock();
-            auto outcome = theEntry.get(i);
             if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
+                auto outcome = theEntry.get(i);
                 Serial.print(F("\tOffset: 0x")) ;
                 Serial.print(i << 1, HEX);
                 Serial.print(F(" (")) ;
                 Serial.print(i);
                 Serial.print(F("),  Read the value: 0x"));
                 Serial.println(outcome, HEX);
+                ProcessorInterface::setDataBits(outcome);
+            } else {
+                ProcessorInterface::setDataBits(theEntry.get(i));
             }
             // Only pay for what we need even if it is slower
-            ProcessorInterface::setDataBits(outcome);
             if (informCPU()) {
                 break;
             }
@@ -184,16 +186,19 @@ inline void handleMemoryInterface() noexcept {
         // Also the manual states that the processor cannot burst across 16-byte boundaries so :D.
         for (auto i = start; i < end; ++i) {
             waitForCycleUnlock();
-            auto bits = ProcessorInterface::getDataBits();
             if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
+                auto bits = ProcessorInterface::getDataBits();
                 Serial.print(F("\tOffset: 0x")) ;
                 Serial.print(i << 1, HEX);
                 Serial.print(F(" (")) ;
                 Serial.print(i);
                 Serial.print(F("),  Writing the value: 0x"));
                 Serial.println(bits.getWholeValue(), HEX);
+                theEntry.set(i, ProcessorInterface::getStyle(), bits);
+            } else {
+
+                theEntry.set(i, ProcessorInterface::getStyle(), ProcessorInterface::getDataBits());
             }
-            theEntry.set(i, ProcessorInterface::getStyle(), bits);
             if (informCPU()) {
                 break;
             }
