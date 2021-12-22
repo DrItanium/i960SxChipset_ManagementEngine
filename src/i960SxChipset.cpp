@@ -414,9 +414,10 @@ DualDispatchTable lookupTableSplit_Debug;
 DispatchTable lookupTable_Debug;
 void setupDispatchTable() noexcept {
     Serial.println(F("Setting up the initial lookup table"));
+    auto defaultFallback = std::make_tuple(fallbackBodyRead<false>, fallbackBodyWrite<false>);
     for (int i = 0; i < 256; ++i) {
         lookupTable[i] = fallbackBody<false>;
-        lookupTableSplit[i] = std::make_tuple(fallbackBodyRead<false>, fallbackBodyWrite<false>);
+        lookupTableSplit[i] = defaultFallback;
     }
     // since this uses SD card as memory, just increase the size of it to 1 gigabyte
     // 64 * 16 => 64 sixteen megabyte sections
@@ -439,9 +440,10 @@ void setupDispatchTable() noexcept {
     lookupTable[ConfigurationSpace::SectionID] = handleExternalDeviceRequest<false, ConfigurationSpace>;
     lookupTableSplit[ConfigurationSpace::SectionID] = std::make_tuple(handleExternalDeviceRequestRead<false, ConfigurationSpace>, handleExternalDeviceRequestWrite<false, ConfigurationSpace>);
     if constexpr (TargetBoard::compileInAddressDebuggingSupport()) {
+        auto defaultFallback_Debug = std::make_tuple(fallbackBodyRead<true>, fallbackBodyWrite<true>);
         for (int i = 0; i < 256; ++i) {
             lookupTable_Debug[i] = fallbackBody<true>;
-            lookupTableSplit_Debug[i] = std::make_tuple(fallbackBodyRead<true>, fallbackBodyWrite<true>);
+            lookupTableSplit_Debug[i] = defaultFallback_Debug;
         }
         // since this uses SD card as memory, just increase the size of it to 1 gigabyte
         // 64 * 16 => 64 sixteen megabyte sections
