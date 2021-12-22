@@ -78,9 +78,21 @@ public:
 private:
     void updateFlags(byte index) noexcept {
         constexpr byte masks[8] {
-                0b1110, 0b0001, 0b1101, 0b0010,
-                0b1011, 0b0100, 0b0111, 0b1000,
+                0b1110,
+                0b0001,
+                0b1101,
+                0b0010,
+                0b1011,
+                0b0100,
+                0b0111,
+                0b1000,
         };
+        // Take the index provided and see if the least significant bit is zero or not
+        // if it is zero then and the tracking bits with the value stored in the masks table
+        // if we just used 0, then we do bits_ = bits_ & (0b1110) which will clear the least significant bit
+        // if the index is 1 then we do bits_ = bits | (0b0001) which will set the least significant bit
+        // when 2 => bits_ &= 0b1101 -> which will clear the next least significant bit
+        // and so on.
         if (auto rIndex = index & 0b111; (rIndex & 0b1) == 0) {
             bits_ &= masks[rIndex];
         } else {
