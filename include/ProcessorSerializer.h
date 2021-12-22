@@ -243,47 +243,47 @@ private:
         }
     }
 private:
-    template<bool inDebugMode>
+    template<bool inDebugMode, bool cacheFunctions>
     inline static void updateTargetFunctions() noexcept {
-        if constexpr (auto a = getBody<inDebugMode>(address_.bytes[3]); inDebugMode) {
-            lastDebug_ = a;
-        } else {
-            last_ = a;
+        if constexpr (cacheFunctions) {
+            if constexpr (auto a = getBody<inDebugMode>(address_.bytes[3]); inDebugMode) {
+                lastDebug_ = a;
+            } else {
+                last_ = a;
+            }
         }
     }
 public:
-    template<byte offsetMask, bool inDebugMode>
+    template<bool inDebugMode, bool cacheFunctions>
     static inline void full32BitUpdate() noexcept {
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
         address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
         address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
-        updateTargetFunctions<inDebugMode>();
+        updateTargetFunctions<inDebugMode, cacheFunctions>();
     }
-    template<byte offsetMask>
     static inline void lower16Update() noexcept {
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
         address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
     }
-    template<bool inDebugMode>
+    template<bool inDebugMode, bool cacheFunctions>
     static inline void upper16Update() noexcept {
         // only read the upper 16-bits
         address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
-        updateTargetFunctions<inDebugMode>();
+        updateTargetFunctions<inDebugMode, cacheFunctions>();
     }
-    template<bool inDebugMode>
+    template<bool inDebugMode, bool cacheFunctions>
     static inline void updateHighest8() noexcept {
         // only read the upper 8 bits
         address_.bytes[3] = read8<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPIOB>();
-        updateTargetFunctions<inDebugMode>();
+        updateTargetFunctions<inDebugMode, cacheFunctions>();
     }
     static inline void updateHigher8() noexcept {
         // only read the upper 8 bits
         address_.bytes[2] = read8<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPIOA>();
     }
-    template<byte offsetMask>
     static inline void updateLowest8() noexcept {
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
@@ -297,37 +297,37 @@ public:
         address_.bytes[1] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOB>();
     }
 public:
-    template<bool inDebugMode, byte offsetMask, bool useInterrupts = true, int debugLevel = 0>
+    template<bool inDebugMode, bool cacheFunctions, bool useInterrupts>
     static inline void newDataCycle() noexcept {
         switch (getUpdateKind<useInterrupts>()) {
             case 0b0001:
                 updateLower8();
-                upper16Update<inDebugMode>();
+                upper16Update<inDebugMode, cacheFunctions>();
                 break;
             case 0b0010:
-                updateLowest8<offsetMask>();
-                upper16Update<inDebugMode>();
+                updateLowest8();
+                upper16Update<inDebugMode, cacheFunctions>();
                 break;
             case 0b0011:
-                upper16Update<inDebugMode>();
+                upper16Update<inDebugMode, cacheFunctions>();
                 break;
             case 0b0100:
-                lower16Update<offsetMask>();
-                updateHighest8<inDebugMode>();
+                lower16Update();
+                updateHighest8<inDebugMode, cacheFunctions>();
                 break;
             case 0b0101:
                 updateLower8();
-                updateHighest8<inDebugMode>();
+                updateHighest8<inDebugMode, cacheFunctions>();
                 break;
             case 0b0110:
-                updateLowest8<offsetMask>();
-                updateHighest8<inDebugMode>();
+                updateLowest8();
+                updateHighest8<inDebugMode, cacheFunctions>();
                 break;
             case 0b0111:
-                updateHighest8<inDebugMode>();
+                updateHighest8<inDebugMode, cacheFunctions>();
                 break;
             case 0b1000:
-                lower16Update<offsetMask>();
+                lower16Update();
                 updateHigher8();
                 break;
             case 0b1001:
@@ -336,29 +336,33 @@ public:
                 break;
             case 0b1010:
                 updateHigher8();
-                updateLowest8<offsetMask>();
+                updateLowest8();
                 break;
             case 0b1011:
                 updateHigher8();
                 break;
             case 0b1100:
-                lower16Update<offsetMask>();
+                lower16Update();
                 break;
             case 0b1101:
                 updateLower8();
                 break;
             case 0b1110:
-                updateLowest8<offsetMask>();
+                updateLowest8();
                 break;
             case 0b1111: break;
             default:
-                full32BitUpdate<offsetMask, inDebugMode>();
+                full32BitUpdate<inDebugMode, cacheFunctions>();
                 break;
         }
-        if constexpr (inDebugMode) {
-            lastDebug_();
+        if constexpr (cacheFunctions) {
+            if constexpr (inDebugMode) {
+                lastDebug_();
+            } else {
+                last_();
+            }
         } else {
-            last_();
+            invokeBody<inDebugMode>(address_.bytes[3]);
         }
     }
     template<bool advanceAddress = true>
@@ -374,6 +378,7 @@ public:
      */
     [[nodiscard]] static auto getPageOffset() noexcept { return address_.bytes[0]; }
     [[nodiscard]] static auto getPageIndex() noexcept { return address_.bytes[1]; }
+    template<bool cacheFunctions>
     static void begin() noexcept {
         if (!initialized_) {
             initialized_ = true;
@@ -396,8 +401,8 @@ public:
             write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::INTCON, false>(0x0000);
             write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::INTCON, false>(0x0000);
             write16<IOExpanderAddress::DataLines, MCP23x17Registers::OLAT, false>(latchedDataOutput.getWholeValue());
-            updateTargetFunctions<true>();
-            updateTargetFunctions<false>();
+            updateTargetFunctions<true, cacheFunctions>();
+            updateTargetFunctions<false, cacheFunctions>();
             SPI.endTransaction();
         }
     }

@@ -67,6 +67,7 @@ constexpr auto ValidateTransferDuringInstall = true;
  * @brief When set to true, the interrupt lines the mcp23s17 provides are used to determine which bytes to read
  */
 constexpr auto UseIOExpanderAddressLineInterrupts = true;
+constexpr auto DoSwitchTableInvocation = false;
 using TheDisplayInterface = DisplayInterface<DisplayBaseAddress>;
 using TheSDInterface = SDCardInterface<MaximumNumberOfOpenFiles, SDBaseAddress>;
 using TheConsoleInterface = Serial0Interface<Serial0BaseAddress, CompileInAddressDebuggingSupport, AddressDebuggingEnabledOnStartup>;
@@ -268,7 +269,7 @@ inline void invocationBody() noexcept {
     // there are only two parts to this code, either we map into ram or chipset functions
     // we can just check if we are in ram, otherwise it is considered to be chipset. This means that everything not ram is chipset
     // and so we are actually continually mirroring the mapping for the sake of simplicity
-    ProcessorInterface::newDataCycle<inDebugMode, decltype(theCache)::CacheEntryMask, useInterrupts>();
+    ProcessorInterface::newDataCycle<inDebugMode, DoSwitchTableInvocation, useInterrupts>();
 }
 template<bool allowAddressDebuggingCodePath, bool useInterrupts>
 void doInvocationBody() noexcept {
@@ -436,7 +437,7 @@ void setup() {
     // purge the cache pages
     ConfigurationSpace::begin();
     Serial.println(F("i960Sx chipset bringup"));
-    ProcessorInterface::begin();
+    ProcessorInterface::begin<DoSwitchTableInvocation>();
     BackingMemoryStorage_t::begin();
     setupDispatchTable();
     installBootImage();
@@ -549,7 +550,6 @@ switchTableInvoke(byte index) noexcept {
     }
 
 }
-constexpr auto DoSwitchTableInvocation = false;
 void invokeNonDebugBody(byte index) noexcept {
     if constexpr (DoSwitchTableInvocation) {
         switchTableInvoke<false>(index);
