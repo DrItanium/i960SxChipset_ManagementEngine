@@ -117,7 +117,8 @@ private:
                 randomTable[i] = random(0, NumberOfGroups);
             }
         }
-        return secondLookupTable[randomTable[counter++]][bits_ & 0b0001];
+        auto theIndex = randomTable[counter++];
+        return secondLookupTable[theIndex][static_cast<byte>(bits_ >> theIndex) & 0b0001];
     }
 private:
     // This is RandPLRU Tree so we need to organize things correctly, I'm going to try four groups of two
