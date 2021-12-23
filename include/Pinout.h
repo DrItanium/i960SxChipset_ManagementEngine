@@ -400,19 +400,30 @@ struct DigitalPin2 {
         }
     }
     static inline void directionOutput() noexcept {
-        if constexpr (isBidirectionalPin()) {
-            if (!directionIsOutput_) {
-                directionIsOutput_ = true;
-                pinMode(getPin(), OUTPUT);
+        if constexpr (isSpecialized()) {
+            if constexpr (isBidirectionalPin()) {
+                if (!directionIsOutput_) {
+                    directionIsOutput_ = true;
+                    // do the work directly instead
+                    targetPort_->PINCFG[targetPin_->ulPin].reg = static_cast<uint8_t>(PORT_PINCFG_INEN);
+                    targetPort_->DIRSET.reg = readMask_;
+                }
             }
+        } else {
+            pinMode(getPin(), OUTPUT);
         }
     }
     static inline void directionInput() noexcept {
-        if constexpr (isBidirectionalPin()) {
-            if (directionIsOutput_) {
-                directionIsOutput_ = false;
-                pinMode(getPin(), INPUT);
+        if constexpr (isSpecialized()) {
+            if constexpr (isBidirectionalPin()) {
+                if (directionIsOutput_) {
+                    directionIsOutput_ = false;
+                    targetPort_->PINCFG[targetPin_->ulPin].reg = static_cast<uint8_t>(PORT_PINCFG_INEN);
+                    targetPort_->DIRCLR.reg = readMask_;
+                }
             }
+        } else {
+            pinMode(getPin(), INPUT);
         }
     }
 private:
