@@ -150,14 +150,28 @@ class ProcessorInterface {
         if constexpr (addr == IOExpanderAddress::Upper16Lines) {
             // in this case we want to do the parallel read instead
             auto portContents = DigitalPin<i960Pinout::Address16>::readPort();
-            Serial.print("PORT CONTENTS: 0x");
-            Serial.print(static_cast<byte>(portContents), HEX);
-            Serial.print(", and 0x");
-            Serial.print(static_cast<byte>(portContents >> 10), HEX);
-            Serial.print(", from 0x");
-            Serial.println(portContents, HEX);
+            SplitWord16 result{0};
+            result.bytes[0] = static_cast<byte>(portContents);
+            result.bytes[1] = static_cast<byte>(portContents >> 10);
+            auto other = read16<addr, MCP23x17Registers::GPIO, standalone>();
+            Serial.println("{");
+            Serial.print("\tP00 CONTENTS: 0b");
+            Serial.print(result.bytes[0], BIN);
+            Serial.print(", and 0b");
+            Serial.print(result.bytes[1], BIN);
+            Serial.print(", from 0b");
+            Serial.println(result.getWholeValue(), BIN);
+            Serial.print("\tSPI CONTENTS: 0b");
+            Serial.print(other.bytes[0], BIN);
+            Serial.print(", and 0b");
+            Serial.print(other.bytes[1], BIN);
+            Serial.print(", from 0b");
+            Serial.println(other.getWholeValue(), BIN);
+            Serial.println("}");
+            return other;
+        } else {
+            return read16<addr, MCP23x17Registers::GPIO, standalone>();
         }
-        return read16<addr, MCP23x17Registers::GPIO, standalone>();
     }
     template<IOExpanderAddress addr, bool standalone = true>
     static inline void writeGPIO16(uint16_t value) noexcept {
