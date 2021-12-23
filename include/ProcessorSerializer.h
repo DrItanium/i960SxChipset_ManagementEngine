@@ -213,10 +213,12 @@ public:
         SplitWord16 split{value};
         auto portUpdate = (static_cast<uint32_t>(split.bytes[0]) | (static_cast<uint32_t>(split.bytes[1]) << 10)) & normalMask;
         Serial.println("{");
-        Serial.print("portContents: 0x");
-        Serial.print(portContents, HEX);
-        Serial.print(", portUpdate: 0x");
+        Serial.print("\tportContents: 0x");
+        Serial.println(portContents, HEX);
+        Serial.print("\tportUpdate: 0x");
         Serial.println(portUpdate, HEX);
+        Serial.print("\tValue to install: 0x");
+        Serial.println(split.getWholeValue(), HEX);
         Serial.println("}");
         DigitalPin<i960Pinout::Data0>::writePort(portUpdate | portContents);
     };
