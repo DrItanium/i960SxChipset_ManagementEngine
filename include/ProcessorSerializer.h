@@ -84,6 +84,16 @@ class ProcessorInterface {
     }
     template<IOExpanderAddress addr, MCP23x17Registers opcode, bool standalone = true>
     static inline SplitWord16 read16() noexcept {
+        if constexpr (addr == IOExpanderAddress::Lower16Lines) {
+            if constexpr (opcode == MCP23x17Registers::GPIO) {
+                // in this case we want to do the parallel read instead
+                auto portContents = DigitalPin<i960Pinout::Address0>::readPort();
+                SplitWord16 result{0};
+                result.bytes[0] = static_cast<byte>(portContents);
+                result.bytes[1] = static_cast<byte>(portContents >> 10);
+                return result;
+            }
+        }
         if constexpr (standalone) {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
@@ -101,8 +111,8 @@ class ProcessorInterface {
     }
     template<IOExpanderAddress addr, MCP23x17Registers opcode, bool standalone = true>
     static inline uint8_t read8() noexcept {
-        if constexpr (addr == IOExpanderAddress::Upper16Lines) {
-           if constexpr (auto portContents = DigitalPin<i960Pinout::Address16>::readPort(); opcode == MCP23x17Registers::GPIOA) {
+        if constexpr (addr == IOExpanderAddress::Lower16Lines) {
+           if constexpr (auto portContents = DigitalPin<i960Pinout::Address0>::readPort(); opcode == MCP23x17Registers::GPIOA) {
                return static_cast<byte>(portContents);
            } else if constexpr (opcode == MCP23x17Registers::GPIOB) {
                return static_cast<byte>(portContents >> 10);
@@ -155,16 +165,7 @@ class ProcessorInterface {
     }
     template<IOExpanderAddress addr, bool standalone = true>
     static inline SplitWord16 readGPIO16() noexcept {
-        if constexpr (addr == IOExpanderAddress::Upper16Lines) {
-            // in this case we want to do the parallel read instead
-            auto portContents = DigitalPin<i960Pinout::Address0>::readPort();
-            SplitWord16 result{0};
-            result.bytes[0] = static_cast<byte>(portContents);
-            result.bytes[1] = static_cast<byte>(portContents >> 10);
-            return result;
-        } else {
-            return read16<addr, MCP23x17Registers::GPIO, standalone>();
-        }
+        return read16<addr, MCP23x17Registers::GPIO, standalone>();
     }
     template<IOExpanderAddress addr, bool standalone = true>
     static inline void writeGPIO16(uint16_t value) noexcept {
