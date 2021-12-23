@@ -17,5 +17,22 @@
    SD_EN = SDCARD_CS,
    TFT_CS = 10,
    TFT_DC = 9,
+   // parallel input setup
+   Address16 = PORT_C00,
+   Address17 = PORT_C01,
+   Address18 = PORT_C02,
+   Address19 = PORT_C03,
+   Address20 = PORT_C04,
+   Address21 = PORT_C05,
+   Address22 = PORT_C06,
+   Address23 = PORT_C07,
+   Address24 = PORT_C10,
+   Address25 = PORT_C11,
+   Address26 = PORT_C12,
+   Address27 = PORT_C13,
+   Address28 = PORT_C14,
+   Address29 = PORT_C15,
+   Address30 = PORT_C16,
+   Address31 = PORT_C17,
    // these are all handled by the management engine in type 3 so they are disconnected, but give them unique fake pin numbers for compilation purposes
    Int0_ = Count, // not connected
