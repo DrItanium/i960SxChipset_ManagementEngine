@@ -375,16 +375,28 @@ struct DigitalPin2 {
             ::pulse<getPin(), getAssertionState()>();
         }
     }
-    static inline uint32_t readPort() noexcept {
+    static inline uint32_t readInPort() noexcept {
         if constexpr (isSpecialized()) {
             return targetPort_->IN.reg;
         } else {
             return 0;
         }
     }
-    static inline void writePort(uint32_t value) noexcept {
+    static inline void writeInPort(uint32_t value) noexcept {
+        if constexpr (isSpecialized()) {
+            targetPort_->IN.reg = value;
+        }
+    }
+    static inline void writeOutPort(uint32_t value) noexcept {
         if constexpr (isSpecialized()) {
             targetPort_->OUT.reg = value;
+        }
+    }
+    static inline uint32_t readOutPort() noexcept {
+        if constexpr (isSpecialized()) {
+            return targetPort_->OUT.reg;
+        } else {
+            return 0;
         }
     }
     static inline void directionOutput() noexcept {

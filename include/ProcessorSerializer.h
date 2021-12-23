@@ -182,7 +182,7 @@ public:
 public:
     [[nodiscard]] static constexpr Address getAddress() noexcept { return address_.getWholeValue(); }
     [[nodiscard]] static SplitWord16 getDataBits() noexcept {
-        auto portContents = DigitalPin<i960Pinout::Data0>::readPort();
+        auto portContents = DigitalPin<i960Pinout::Data0>::readInPort();
         SplitWord16 result{0};
         result.bytes[0] = static_cast<byte>(portContents);
         result.bytes[1] = static_cast<byte>(portContents >> 10);
@@ -208,7 +208,7 @@ public:
 #endif
         constexpr auto normalMask = ((static_cast<uint32_t>(0xFF) << 10) | (static_cast<uint32_t>(0xFF)));
         constexpr auto invertMask = ~normalMask;
-        auto portContents = DigitalPin<i960Pinout::Data0>::readPort();
+        auto portContents = DigitalPin<i960Pinout::Data0>::readOutPort();
         portContents &= invertMask;
         SplitWord16 split{value};
         auto portUpdate = (static_cast<uint32_t>(split.bytes[0]) | (static_cast<uint32_t>(split.bytes[1]) << 10)) & normalMask;
@@ -219,14 +219,16 @@ public:
         Serial.println(portUpdate, HEX);
         Serial.print("\tValue to install: 0x");
         Serial.println(split.getWholeValue(), HEX);
+        Serial.print("\tcombined parts: 0x");
+        Serial.println(portUpdate | portContents, HEX);
         Serial.println("}");
-        DigitalPin<i960Pinout::Data0>::writePort(portUpdate | portContents);
+        DigitalPin<i960Pinout::Data0>::writeOutPort(portUpdate | portContents);
     };
     [[nodiscard]] static LoadStoreStyle getStyle() noexcept {
         if constexpr (TargetBoard::usePortReads()) {
             // assume for now that BE0 and BE1 are the same port
             // in this case it is PA14 and PA15 so just shift right by 14 and mask
-            auto portContents = DigitalPin<i960Pinout::BE0>::readPort();
+            auto portContents = DigitalPin<i960Pinout::BE0>::readInPort();
             return static_cast<LoadStoreStyle>((portContents >> 14) & 0b11);
         } else {
             auto lower = static_cast<byte>(DigitalPin<i960Pinout::BE0>::read());
@@ -290,7 +292,7 @@ private:
         if constexpr (TargetBoard::useIOExpanderAddressLineInterrupts()) {
            if constexpr (TargetBoard::usePortReads()) {
                // in this case I know that INT_EN[0,3] are lined up correctly so this is a very cheap operation
-               auto portContents = DigitalPin<i960Pinout::INT_EN0>::readPort();
+               auto portContents = DigitalPin<i960Pinout::INT_EN0>::readInPort();
                // force the upper two bits low in all cases
                return static_cast<byte>((portContents >> 20) & 0b1111);
            } else {
