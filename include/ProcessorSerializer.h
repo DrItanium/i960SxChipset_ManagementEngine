@@ -246,7 +246,7 @@ private:
                // in this case I know that INT_EN[0,3] are lined up correctly so this is a very cheap operation
                auto portContents = DigitalPin<i960Pinout::INT_EN0>::readPort();
                // force the upper two bits low in all cases
-               return static_cast<byte>((portContents >> 20) & 0b1100);
+               return static_cast<byte>((portContents >> 22) & 0b11);
            } else {
                auto a = static_cast<byte>(DigitalPin<i960Pinout::INT_EN0>::read());
                auto b = static_cast<byte>(DigitalPin<i960Pinout::INT_EN1>::read()) << 1;
@@ -328,60 +328,18 @@ public:
     }
     template<bool inDebugMode>
     static inline void newDataCycle() noexcept {
+        lower16Update();
         switch (getUpdateKind()) {
-            case 0b0001:
-                updateLower8();
+            case 0b11:
+                break;
+            case 0b01:
+                updateHighest8<inDebugMode>();
+                break;
+            case 0b00:
                 upper16Update<inDebugMode>();
                 break;
-            case 0b0010:
-                updateLowest8();
-                upper16Update<inDebugMode>();
-                break;
-            case 0b0011:
-                upper16Update<inDebugMode>();
-                break;
-            case 0b0100:
-                lower16Update();
-                updateHighest8<inDebugMode>();
-                break;
-            case 0b0101:
-                updateLower8();
-                updateHighest8<inDebugMode>();
-                break;
-            case 0b0110:
-                updateLowest8();
-                updateHighest8<inDebugMode>();
-                break;
-            case 0b0111:
-                updateHighest8<inDebugMode>();
-                break;
-            case 0b1000:
-                lower16Update();
+            case 0b10:
                 updateHigher8();
-                break;
-            case 0b1001:
-                updateHigher8();
-                updateLower8();
-                break;
-            case 0b1010:
-                updateHigher8();
-                updateLowest8();
-                break;
-            case 0b1011:
-                updateHigher8();
-                break;
-            case 0b1100:
-                lower16Update();
-                break;
-            case 0b1101:
-                updateLower8();
-                break;
-            case 0b1110:
-                updateLowest8();
-                break;
-            case 0b1111: break;
-            default:
-                full32BitUpdate<inDebugMode>();
                 break;
         }
         if constexpr (TargetBoard::separateReadWriteFunctionPointers()) {
