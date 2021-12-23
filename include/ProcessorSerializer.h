@@ -97,15 +97,10 @@ class ProcessorInterface {
         if constexpr (standalone) {
             SPI.endTransaction();
         }
-        if constexpr (addr == IOExpanderAddress::DataLines) {
-            if constexpr (opcode == MCP23x17Registers::GPIO) {
-            }
-        }
         return output;
     }
     template<IOExpanderAddress addr, MCP23x17Registers opcode, bool standalone = true>
     static inline uint8_t read8() noexcept {
-            // otherwise fall through
         if constexpr (standalone) {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
@@ -217,6 +212,12 @@ public:
         portContents &= invertMask;
         SplitWord16 split{value};
         auto portUpdate = (static_cast<uint32_t>(split.bytes[0]) | (static_cast<uint32_t>(split.bytes[1]) << 10)) & normalMask;
+        Serial.println("{");
+        Serial.print("portContents: 0x");
+        Serial.print(portContents, HEX);
+        Serial.print(", portUpdate: 0x");
+        Serial.println(portUpdate, HEX);
+        Serial.println("}");
         DigitalPin<i960Pinout::Data0>::writePort(portUpdate | portContents);
     };
     [[nodiscard]] static LoadStoreStyle getStyle() noexcept {
@@ -334,9 +335,6 @@ public:
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
         address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
-        //auto portContents = DigitalPin<i960Pinout::Address0>::readPort();
-        //address_.bytes[0] = static_cast<byte>(portContents);
-        //address_.bytes[1] = static_cast<byte>(portContents >> 10);
     }
     template<bool inDebugMode>
     static inline void upper16Update() noexcept {
@@ -358,7 +356,6 @@ public:
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
-        //address_.bytes[0] = static_cast<byte>(DigitalPin<i960Pinout::Address0>::readPort());
         address_.bytes[0] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOA>();
     }
     static inline void updateLower8() noexcept {
@@ -366,8 +363,6 @@ public:
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
         address_.bytes[1] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOB>();
-        //auto portContents = DigitalPin<i960Pinout::Address0>::readPort();
-        //address_.bytes[1] = static_cast<byte>(portContents >> 10);
     }
     template<bool inDebugMode>
     static inline void newDataCycle() noexcept {
