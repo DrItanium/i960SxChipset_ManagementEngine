@@ -147,7 +147,16 @@ class ProcessorInterface {
     }
     template<IOExpanderAddress addr, bool standalone = true>
     static inline SplitWord16 readGPIO16() noexcept {
-        return read16<addr, MCP23x17Registers::GPIO, standalone>();
+        if constexpr (addr == IOExpanderAddress::Upper16Lines) {
+            // in this case we want to do the parallel read instead
+            auto portContents = DigitalPin<i960Pinout::Address16>::readPort();
+            SplitWord16 result{0};
+            result.bytes[0] = static_cast<byte>(portContents);
+            result.bytes[1] = static_cast<byte>(portContents >> 10);
+            return result;
+        } else {
+            return read16<addr, MCP23x17Registers::GPIO, standalone>();
+        }
     }
     template<IOExpanderAddress addr, bool standalone = true>
     static inline void writeGPIO16(uint16_t value) noexcept {
@@ -225,10 +234,10 @@ private:
     static byte getUpdateKind() noexcept {
         if constexpr (TargetBoard::useIOExpanderAddressLineInterrupts()) {
            if constexpr (TargetBoard::usePortReads()) {
-               static constexpr uint32_t PortMask = 0x00F0'0000;
                // in this case I know that INT_EN[0,3] are lined up correctly so this is a very cheap operation
                auto portContents = DigitalPin<i960Pinout::INT_EN0>::readPort();
-               return static_cast<byte>((PortMask & portContents) >> 20);
+               // force the upper two bits low in all cases
+               return static_cast<byte>((portContents >> 20) & 0b0011);
            } else {
                auto a = static_cast<byte>(DigitalPin<i960Pinout::INT_EN0>::read());
                auto b = static_cast<byte>(DigitalPin<i960Pinout::INT_EN1>::read()) << 1;
