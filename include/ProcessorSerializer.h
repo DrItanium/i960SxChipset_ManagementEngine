@@ -246,7 +246,7 @@ private:
                // in this case I know that INT_EN[0,3] are lined up correctly so this is a very cheap operation
                auto portContents = DigitalPin<i960Pinout::INT_EN0>::readPort();
                // force the upper two bits low in all cases
-               return static_cast<byte>((portContents >> 20) & 0b0011);
+               return static_cast<byte>((portContents >> 20) & 0b1100);
            } else {
                auto a = static_cast<byte>(DigitalPin<i960Pinout::INT_EN0>::read());
                auto b = static_cast<byte>(DigitalPin<i960Pinout::INT_EN1>::read()) << 1;
