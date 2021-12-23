@@ -509,7 +509,24 @@ void setup() {
             i960Pinout::INT_EN3,
             i960Pinout::InTransaction,
             i960Pinout::DoCycle,
-            i960Pinout::BurstNext>();
+            i960Pinout::BurstNext,
+            i960Pinout::Address16,
+            i960Pinout::Address17,
+            i960Pinout::Address18,
+            i960Pinout::Address19,
+            i960Pinout::Address20,
+            i960Pinout::Address21,
+            i960Pinout::Address22,
+            i960Pinout::Address23,
+            i960Pinout::Address24,
+            i960Pinout::Address25,
+            i960Pinout::Address26,
+            i960Pinout::Address27,
+            i960Pinout::Address28,
+            i960Pinout::Address29,
+            i960Pinout::Address30,
+            i960Pinout::Address31
+            >();
     // all of these pins need to be pulled high
     DigitalPin<i960Pinout::SD_EN>::deassertPin();
     DigitalPin<i960Pinout::Ready>::deassertPin();

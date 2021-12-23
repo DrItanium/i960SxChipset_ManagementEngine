@@ -170,6 +170,22 @@ DefInputPin2(i960Pinout::INT_EN3, LOW, HIGH);
 DefInputPin2(i960Pinout::DoCycle, LOW, HIGH);
 DefInputPin2(i960Pinout::BurstNext, LOW, HIGH);
 DefInputPin2(i960Pinout::InTransaction, LOW, HIGH);
+DefInputPin2(i960Pinout::Address16, LOW, HIGH);
+DefInputPin2(i960Pinout::Address17, LOW, HIGH);
+DefInputPin2(i960Pinout::Address18, LOW, HIGH);
+DefInputPin2(i960Pinout::Address19, LOW, HIGH);
+DefInputPin2(i960Pinout::Address20, LOW, HIGH);
+DefInputPin2(i960Pinout::Address21, LOW, HIGH);
+DefInputPin2(i960Pinout::Address22, LOW, HIGH);
+DefInputPin2(i960Pinout::Address23, LOW, HIGH);
+DefInputPin2(i960Pinout::Address24, LOW, HIGH);
+DefInputPin2(i960Pinout::Address25, LOW, HIGH);
+DefInputPin2(i960Pinout::Address26, LOW, HIGH);
+DefInputPin2(i960Pinout::Address27, LOW, HIGH);
+DefInputPin2(i960Pinout::Address28, LOW, HIGH);
+DefInputPin2(i960Pinout::Address29, LOW, HIGH);
+DefInputPin2(i960Pinout::Address30, LOW, HIGH);
+DefInputPin2(i960Pinout::Address31, LOW, HIGH);
 #undef DefOutputPin2
 #undef DefInputPin2
 #undef DefInputPullupPin2
