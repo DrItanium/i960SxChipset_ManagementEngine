@@ -199,29 +199,12 @@ public:
         // the latch is preserved in between data line changes
         // okay we are still pointing as output values
         // check the latch and see if the output value is the same as what is latched
-#if 0
-        if (latchedDataOutput.getWholeValue() != value) {
-            // it is a mixed difference
-            latchedDataOutput.wholeValue_ = value;
-            writeGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>(latchedDataOutput.getWholeValue());
-        }
-#endif
         constexpr auto normalMask = ((static_cast<uint32_t>(0xFF) << 10) | (static_cast<uint32_t>(0xFF)));
         constexpr auto invertMask = ~normalMask;
         auto portContents = DigitalPin<i960Pinout::Data0>::readOutPort();
         portContents &= invertMask;
         SplitWord16 split{value};
         auto portUpdate = (static_cast<uint32_t>(split.bytes[0]) | (static_cast<uint32_t>(split.bytes[1]) << 10)) & normalMask;
-        Serial.println("{");
-        Serial.print("\tportContents: 0x");
-        Serial.println(portContents, HEX);
-        Serial.print("\tportUpdate: 0x");
-        Serial.println(portUpdate, HEX);
-        Serial.print("\tValue to install: 0x");
-        Serial.println(split.getWholeValue(), HEX);
-        Serial.print("\tcombined parts: 0x");
-        Serial.println(portUpdate | portContents, HEX);
-        Serial.println("}");
         DigitalPin<i960Pinout::Data0>::writeOutPort(portUpdate | portContents);
     };
     [[nodiscard]] static LoadStoreStyle getStyle() noexcept {
