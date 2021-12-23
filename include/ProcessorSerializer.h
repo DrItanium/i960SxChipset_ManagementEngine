@@ -226,28 +226,25 @@ public:
     template<byte offsetMask>
     [[nodiscard]] static auto getCacheOffsetEntry() noexcept { return (address_.bytes[0] >> 1) & offsetMask; }
     inline static void setupDataLinesForWrite() noexcept {
-#if 0
         if (!dataLinesDirection_) {
             dataLinesDirection_ = ~dataLinesDirection_;
-            writeDirection<ProcessorInterface::IOExpanderAddress::DataLines>(0xFFFF);
+            DigitalPin<i960Pinout::Data0>::directionInput();
+            DigitalPin<i960Pinout::Data1>::directionInput();
+            DigitalPin<i960Pinout::Data2>::directionInput();
+            DigitalPin<i960Pinout::Data3>::directionInput();
+            DigitalPin<i960Pinout::Data4>::directionInput();
+            DigitalPin<i960Pinout::Data5>::directionInput();
+            DigitalPin<i960Pinout::Data6>::directionInput();
+            DigitalPin<i960Pinout::Data7>::directionInput();
+            DigitalPin<i960Pinout::Data8>::directionInput();
+            DigitalPin<i960Pinout::Data9>::directionInput();
+            DigitalPin<i960Pinout::Data10>::directionInput();
+            DigitalPin<i960Pinout::Data11>::directionInput();
+            DigitalPin<i960Pinout::Data12>::directionInput();
+            DigitalPin<i960Pinout::Data13>::directionInput();
+            DigitalPin<i960Pinout::Data14>::directionInput();
+            DigitalPin<i960Pinout::Data15>::directionInput();
         }
-#endif
-        DigitalPin<i960Pinout::Data0>::directionInput();
-        DigitalPin<i960Pinout::Data1>::directionInput();
-        DigitalPin<i960Pinout::Data2>::directionInput();
-        DigitalPin<i960Pinout::Data3>::directionInput();
-        DigitalPin<i960Pinout::Data4>::directionInput();
-        DigitalPin<i960Pinout::Data5>::directionInput();
-        DigitalPin<i960Pinout::Data6>::directionInput();
-        DigitalPin<i960Pinout::Data7>::directionInput();
-        DigitalPin<i960Pinout::Data8>::directionInput();
-        DigitalPin<i960Pinout::Data9>::directionInput();
-        DigitalPin<i960Pinout::Data10>::directionInput();
-        DigitalPin<i960Pinout::Data11>::directionInput();
-        DigitalPin<i960Pinout::Data12>::directionInput();
-        DigitalPin<i960Pinout::Data13>::directionInput();
-        DigitalPin<i960Pinout::Data14>::directionInput();
-        DigitalPin<i960Pinout::Data15>::directionInput();
     }
     inline static void setupDataLinesForRead() noexcept {
 #if 0
@@ -256,22 +253,25 @@ public:
             writeDirection<ProcessorInterface::IOExpanderAddress::DataLines>(0);
         }
 #endif
-        DigitalPin<i960Pinout::Data0>::directionOutput();
-        DigitalPin<i960Pinout::Data1>::directionOutput();
-        DigitalPin<i960Pinout::Data2>::directionOutput();
-        DigitalPin<i960Pinout::Data3>::directionOutput();
-        DigitalPin<i960Pinout::Data4>::directionOutput();
-        DigitalPin<i960Pinout::Data5>::directionOutput();
-        DigitalPin<i960Pinout::Data6>::directionOutput();
-        DigitalPin<i960Pinout::Data7>::directionOutput();
-        DigitalPin<i960Pinout::Data8>::directionOutput();
-        DigitalPin<i960Pinout::Data9>::directionOutput();
-        DigitalPin<i960Pinout::Data10>::directionOutput();
-        DigitalPin<i960Pinout::Data11>::directionOutput();
-        DigitalPin<i960Pinout::Data12>::directionOutput();
-        DigitalPin<i960Pinout::Data13>::directionOutput();
-        DigitalPin<i960Pinout::Data14>::directionOutput();
-        DigitalPin<i960Pinout::Data15>::directionOutput();
+        if (dataLinesDirection_) {
+            dataLinesDirection_ = ~dataLinesDirection_;
+            DigitalPin<i960Pinout::Data0>::directionOutput();
+            DigitalPin<i960Pinout::Data1>::directionOutput();
+            DigitalPin<i960Pinout::Data2>::directionOutput();
+            DigitalPin<i960Pinout::Data3>::directionOutput();
+            DigitalPin<i960Pinout::Data4>::directionOutput();
+            DigitalPin<i960Pinout::Data5>::directionOutput();
+            DigitalPin<i960Pinout::Data6>::directionOutput();
+            DigitalPin<i960Pinout::Data7>::directionOutput();
+            DigitalPin<i960Pinout::Data8>::directionOutput();
+            DigitalPin<i960Pinout::Data9>::directionOutput();
+            DigitalPin<i960Pinout::Data10>::directionOutput();
+            DigitalPin<i960Pinout::Data11>::directionOutput();
+            DigitalPin<i960Pinout::Data12>::directionOutput();
+            DigitalPin<i960Pinout::Data13>::directionOutput();
+            DigitalPin<i960Pinout::Data14>::directionOutput();
+            DigitalPin<i960Pinout::Data15>::directionOutput();
+        }
     }
 private:
     static byte getUpdateKind() noexcept {
