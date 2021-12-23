@@ -186,6 +186,7 @@ public:
         SplitWord16 result{0};
         result.bytes[0] = static_cast<byte>(portContents);
         result.bytes[1] = static_cast<byte>(portContents >> 10);
+#if 0
         Serial.println("{");
         Serial.print("\tP00 Result: 0x");
         Serial.println(result.getWholeValue(), HEX);
@@ -194,6 +195,8 @@ public:
         Serial.println(spiResult.getWholeValue(), HEX);
         Serial.println("}");
         return spiResult;
+#endif
+        return result;
     }
     static void setDataBits(uint16_t value) noexcept {
         // the latch is preserved in between data line changes
