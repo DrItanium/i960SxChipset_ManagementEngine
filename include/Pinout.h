@@ -51,7 +51,7 @@ inline void digitalWrite(i960Pinout ip, decltype(HIGH) value) {
 
 [[gnu::always_inline]]
 inline void pinMode(i960Pinout ip, decltype(INPUT) value) {
-    pinMode(static_cast<int>(ip), value);
+    pinMode(static_cast<uint32_t>(ip), value);
 }
 [[gnu::always_inline]]
 inline auto digitalRead(i960Pinout ip) {
@@ -84,7 +84,8 @@ struct DigitalPinConfiguration {
     static constexpr bool isInputPin() noexcept { return false; }
     static constexpr bool isOutputPin() noexcept { return false; }
     static constexpr auto isInputPullupPin() noexcept { return false; }
-    static constexpr auto getDirection() noexcept { return INPUT; }
+    static constexpr auto isInputPulldownPin() noexcept { return false; }
+    static constexpr int getDirection() noexcept { return INPUT; }
     static constexpr auto getPin() noexcept { return pin; }
     static constexpr auto valid() noexcept { return isValidPin960_v<pin>; }
     static constexpr auto getAssertionState() noexcept { return LOW; }
@@ -104,6 +105,7 @@ struct DigitalPinConfiguration<pin> { \
     static constexpr bool isInputPin() noexcept { return true; } \
     static constexpr bool isOutputPin() noexcept { return false; } \
     static constexpr auto isInputPullupPin() noexcept { return false; } \
+    static constexpr auto isInputPulldownPin() noexcept { return false; } \
     static constexpr auto getDirection() noexcept { return INPUT; } \
     static constexpr auto getPin() noexcept { return pin; } \
     static constexpr auto valid() noexcept { return isValidPin960_v<pin>; } \
@@ -124,6 +126,7 @@ struct DigitalPinConfiguration<pin> { \
     static constexpr bool isInputPin() noexcept { return false; } \
     static constexpr bool isOutputPin() noexcept { return true; } \
     static constexpr auto isInputPullupPin() noexcept { return false; } \
+    static constexpr auto isInputPulldownPin() noexcept { return false; } \
     static constexpr auto getDirection() noexcept { return OUTPUT; } \
     static constexpr auto getPin() noexcept { return pin; } \
     static constexpr auto valid() noexcept { return isValidPin960_v<pin>; } \
@@ -144,7 +147,48 @@ struct DigitalPinConfiguration<pin> { \
     static constexpr bool isInputPin() noexcept { return false; } \
     static constexpr bool isOutputPin() noexcept { return false; } \
     static constexpr auto isInputPullupPin() noexcept { return true; } \
+    static constexpr auto isInputPulldownPin() noexcept { return false; } \
     static constexpr auto getDirection() noexcept { return INPUT_PULLUP; } \
+    static constexpr auto getPin() noexcept { return pin; } \
+    static constexpr auto valid() noexcept { return isValidPin960_v<pin>; } \
+    static constexpr auto getAssertionState() noexcept { return assert; } \
+    static constexpr auto getDeassertionState() noexcept { return deassert; } \
+}
+#define DefInputPulldownPin2(pin, assert, deassert) \
+template<> \
+struct DigitalPinConfiguration<pin> { \
+    DigitalPinConfiguration() = delete; \
+    ~DigitalPinConfiguration() = delete; \
+    DigitalPinConfiguration(const DigitalPinConfiguration&) = delete; \
+    DigitalPinConfiguration(DigitalPinConfiguration&&) = delete; \
+    DigitalPinConfiguration& operator=(const DigitalPinConfiguration&) = delete; \
+    DigitalPinConfiguration& operator=(DigitalPinConfiguration&&) = delete; \
+    static constexpr bool isSpecialized() noexcept { return true; } \
+    static constexpr bool isInputPin() noexcept { return false; } \
+    static constexpr bool isOutputPin() noexcept { return false; } \
+    static constexpr auto isInputPullupPin() noexcept { return false; } \
+    static constexpr auto isInputPulldownPin() noexcept { return true; } \
+    static constexpr auto getDirection() noexcept { return INPUT_PULLDOWN; } \
+    static constexpr auto getPin() noexcept { return pin; } \
+    static constexpr auto valid() noexcept { return isValidPin960_v<pin>; } \
+    static constexpr auto getAssertionState() noexcept { return assert; } \
+    static constexpr auto getDeassertionState() noexcept { return deassert; } \
+}
+#define DefBidirectionalPin2(pin, assert, deassert) \
+template<> \
+struct DigitalPinConfiguration<pin> { \
+    DigitalPinConfiguration() = delete; \
+    ~DigitalPinConfiguration() = delete; \
+    DigitalPinConfiguration(const DigitalPinConfiguration&) = delete; \
+    DigitalPinConfiguration(DigitalPinConfiguration&&) = delete; \
+    DigitalPinConfiguration& operator=(const DigitalPinConfiguration&) = delete; \
+    DigitalPinConfiguration& operator=(DigitalPinConfiguration&&) = delete; \
+    static constexpr bool isSpecialized() noexcept { return true; } \
+    static constexpr bool isInputPin() noexcept { return true; } \
+    static constexpr bool isOutputPin() noexcept { return true; } \
+    static constexpr auto isInputPullupPin() noexcept { return false; } \
+    static constexpr auto isInputPulldownPin() noexcept { return false; } \
+    static constexpr auto getDirection() noexcept { return INPUT; } \
     static constexpr auto getPin() noexcept { return pin; } \
     static constexpr auto valid() noexcept { return isValidPin960_v<pin>; } \
     static constexpr auto getAssertionState() noexcept { return assert; } \
@@ -170,25 +214,27 @@ DefInputPin2(i960Pinout::INT_EN3, LOW, HIGH);
 DefInputPin2(i960Pinout::DoCycle, LOW, HIGH);
 DefInputPin2(i960Pinout::BurstNext, LOW, HIGH);
 DefInputPin2(i960Pinout::InTransaction, LOW, HIGH);
-DefInputPin2(i960Pinout::Address0, LOW, HIGH);
-DefInputPin2(i960Pinout::Address1, LOW, HIGH);
-DefInputPin2(i960Pinout::Address2, LOW, HIGH);
-DefInputPin2(i960Pinout::Address3, LOW, HIGH);
-DefInputPin2(i960Pinout::Address4, LOW, HIGH);
-DefInputPin2(i960Pinout::Address5, LOW, HIGH);
-DefInputPin2(i960Pinout::Address6, LOW, HIGH);
-DefInputPin2(i960Pinout::Address7, LOW, HIGH);
-DefInputPin2(i960Pinout::Address8, LOW, HIGH);
-DefInputPin2(i960Pinout::Address9, LOW, HIGH);
-DefInputPin2(i960Pinout::Address10, LOW, HIGH);
-DefInputPin2(i960Pinout::Address11, LOW, HIGH);
-DefInputPin2(i960Pinout::Address12, LOW, HIGH);
-DefInputPin2(i960Pinout::Address13, LOW, HIGH);
-DefInputPin2(i960Pinout::Address14, LOW, HIGH);
-DefInputPin2(i960Pinout::Address15, LOW, HIGH);
+DefBidirectionalPin2(i960Pinout::Data0, LOW, HIGH);
+DefBidirectionalPin2(i960Pinout::Data1, LOW, HIGH);
+DefBidirectionalPin2(i960Pinout::Data2, LOW, HIGH);
+DefBidirectionalPin2(i960Pinout::Data3, LOW, HIGH);
+DefBidirectionalPin2(i960Pinout::Data4, LOW, HIGH);
+DefBidirectionalPin2(i960Pinout::Data5, LOW, HIGH);
+DefBidirectionalPin2(i960Pinout::Data6, LOW, HIGH);
+DefBidirectionalPin2(i960Pinout::Data7, LOW, HIGH);
+DefBidirectionalPin2(i960Pinout::Data8, LOW, HIGH);
+DefBidirectionalPin2(i960Pinout::Data9, LOW, HIGH);
+DefBidirectionalPin2(i960Pinout::Data10, LOW, HIGH);
+DefBidirectionalPin2(i960Pinout::Data11, LOW, HIGH);
+DefBidirectionalPin2(i960Pinout::Data12, LOW, HIGH);
+DefBidirectionalPin2(i960Pinout::Data13, LOW, HIGH);
+DefBidirectionalPin2(i960Pinout::Data14, LOW, HIGH);
+DefBidirectionalPin2(i960Pinout::Data15, LOW, HIGH);
 #undef DefOutputPin2
 #undef DefInputPin2
 #undef DefInputPullupPin2
+#undef DefInputPulldownPin2
+#undef DefBidirectionalPin2
 
 template<i960Pinout pin>
 struct DigitalPin2 {
@@ -202,7 +248,15 @@ struct DigitalPin2 {
     static constexpr bool isInputPin() noexcept { return Configuration::isInputPin(); }
     static constexpr bool isOutputPin() noexcept { return Configuration::isOutputPin(); }
     static constexpr bool isInputPullupPin() noexcept { return Configuration::isInputPullupPin(); }
-    static constexpr auto getDirection() noexcept { return Configuration::getDirection(); }
+    static constexpr bool isInputPulldownPin() noexcept { return Configuration::isInputPulldownPin(); }
+    static constexpr bool isBidirectionalPin() noexcept { return isInputPin() && isOutputPin(); }
+    static constexpr auto getDirection() noexcept {
+        if constexpr (isBidirectionalPin()) {
+           return directionIsOutput_ ? OUTPUT : INPUT;
+        } else {
+            return Configuration::getDirection();
+        }
+    }
     static constexpr auto getPin() noexcept { return Configuration::getPin(); }
     static constexpr auto valid() noexcept { return Configuration::valid(); }
     static constexpr auto isSpecialized() noexcept { return Configuration::isSpecialized(); }
@@ -224,7 +278,7 @@ struct DigitalPin2 {
     [[gnu::always_inline]]
     static inline auto read() noexcept {
         if constexpr (isSpecialized()) {
-            if constexpr (isInputPin() || isInputPullupPin()) {
+            if constexpr (isInputPin() || isInputPullupPin() || isInputPulldownPin()) {
                 return (targetPort_->IN.reg & readMask_) != 0 ? HIGH : LOW;
             } else {
                 // if this is specialized but an output pin then return low every time
@@ -237,10 +291,10 @@ struct DigitalPin2 {
     [[gnu::always_inline]]
     static inline auto isDeasserted() noexcept {
         if constexpr (isSpecialized()) {
-            if constexpr (isOutputPin()) {
-                return false;
-            } else {
+            if constexpr (isInputPin() || isInputPulldownPin() || isInputPullupPin()) {
                 return read() == getDeassertionState();
+            } else {
+                return false;
             }
         } else {
             return false;
@@ -249,10 +303,10 @@ struct DigitalPin2 {
     [[gnu::always_inline]]
     static inline auto isAsserted() noexcept {
         if constexpr (isSpecialized()) {
-            if constexpr (isOutputPin()) {
-                return false;
-            } else {
+            if constexpr (isInputPin() || isInputPulldownPin() || isInputPullupPin()) {
                 return read() == getAssertionState();
+            } else {
+                return false;
             }
         } else {
             return false;
@@ -333,11 +387,28 @@ struct DigitalPin2 {
             return targetPort_->OUT.reg = value;
         }
     }
+    static inline void directionOutput() noexcept {
+        if constexpr (isBidirectionalPin()) {
+            if (!directionIsOutput_) {
+                directionIsOutput_ = true;
+                pinMode(getPin(), OUTPUT);
+            }
+        }
+    }
+    static inline void directionInput() noexcept {
+        if constexpr (isBidirectionalPin()) {
+            if (directionIsOutput_) {
+                directionIsOutput_ = false;
+                pinMode(getPin(), INPUT);
+            }
+        }
+    }
 private:
     static inline PortGroup* targetPort_ = nullptr;
     static inline const PinDescription* targetPin_ = nullptr;
     static inline uint32_t readMask_ = 0xFFFF'FFFF;
     static inline bool configured_ = false;
+    static inline bool directionIsOutput_ = false;
 };
 #if 0
 template<i960Pinout pin>

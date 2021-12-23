@@ -84,10 +84,10 @@ class ProcessorInterface {
     }
     template<IOExpanderAddress addr, MCP23x17Registers opcode, bool standalone = true>
     static inline SplitWord16 read16() noexcept {
-        if constexpr (addr == IOExpanderAddress::Lower16Lines) {
+        if constexpr (addr == IOExpanderAddress::DataLines) {
             if constexpr (opcode == MCP23x17Registers::GPIO) {
                 // in this case we want to do the parallel read instead
-                auto portContents = DigitalPin<i960Pinout::Address0>::readPort();
+                auto portContents = DigitalPin<i960Pinout::Data0>::readPort();
                 SplitWord16 result{0};
                 result.bytes[0] = static_cast<byte>(portContents);
                 result.bytes[1] = static_cast<byte>(portContents >> 10);
@@ -111,8 +111,8 @@ class ProcessorInterface {
     }
     template<IOExpanderAddress addr, MCP23x17Registers opcode, bool standalone = true>
     static inline uint8_t read8() noexcept {
-        if constexpr (addr == IOExpanderAddress::Lower16Lines) {
-           if constexpr (auto portContents = DigitalPin<i960Pinout::Address0>::readPort(); opcode == MCP23x17Registers::GPIOA) {
+        if constexpr (addr == IOExpanderAddress::DataLines) {
+           if constexpr (auto portContents = DigitalPin<i960Pinout::Data0>::readPort(); opcode == MCP23x17Registers::GPIOA) {
                return static_cast<byte>(portContents);
            } else if constexpr (opcode == MCP23x17Registers::GPIOB) {
                return static_cast<byte>(portContents >> 10);
@@ -228,16 +228,52 @@ public:
     template<byte offsetMask>
     [[nodiscard]] static auto getCacheOffsetEntry() noexcept { return (address_.bytes[0] >> 1) & offsetMask; }
     inline static void setupDataLinesForWrite() noexcept {
+#if 0
         if (!dataLinesDirection_) {
             dataLinesDirection_ = ~dataLinesDirection_;
             writeDirection<ProcessorInterface::IOExpanderAddress::DataLines>(0xFFFF);
         }
+#endif
+        DigitalPin<i960Pinout::Data0>::directionInput();
+        DigitalPin<i960Pinout::Data1>::directionInput();
+        DigitalPin<i960Pinout::Data2>::directionInput();
+        DigitalPin<i960Pinout::Data3>::directionInput();
+        DigitalPin<i960Pinout::Data4>::directionInput();
+        DigitalPin<i960Pinout::Data5>::directionInput();
+        DigitalPin<i960Pinout::Data6>::directionInput();
+        DigitalPin<i960Pinout::Data7>::directionInput();
+        DigitalPin<i960Pinout::Data8>::directionInput();
+        DigitalPin<i960Pinout::Data9>::directionInput();
+        DigitalPin<i960Pinout::Data10>::directionInput();
+        DigitalPin<i960Pinout::Data11>::directionInput();
+        DigitalPin<i960Pinout::Data12>::directionInput();
+        DigitalPin<i960Pinout::Data13>::directionInput();
+        DigitalPin<i960Pinout::Data14>::directionInput();
+        DigitalPin<i960Pinout::Data15>::directionInput();
     }
     inline static void setupDataLinesForRead() noexcept {
+#if 0
         if (dataLinesDirection_) {
             dataLinesDirection_ = ~dataLinesDirection_;
             writeDirection<ProcessorInterface::IOExpanderAddress::DataLines>(0);
         }
+#endif
+        DigitalPin<i960Pinout::Data0>::directionOutput();
+        DigitalPin<i960Pinout::Data1>::directionOutput();
+        DigitalPin<i960Pinout::Data2>::directionOutput();
+        DigitalPin<i960Pinout::Data3>::directionOutput();
+        DigitalPin<i960Pinout::Data4>::directionOutput();
+        DigitalPin<i960Pinout::Data5>::directionOutput();
+        DigitalPin<i960Pinout::Data6>::directionOutput();
+        DigitalPin<i960Pinout::Data7>::directionOutput();
+        DigitalPin<i960Pinout::Data8>::directionOutput();
+        DigitalPin<i960Pinout::Data9>::directionOutput();
+        DigitalPin<i960Pinout::Data10>::directionOutput();
+        DigitalPin<i960Pinout::Data11>::directionOutput();
+        DigitalPin<i960Pinout::Data12>::directionOutput();
+        DigitalPin<i960Pinout::Data13>::directionOutput();
+        DigitalPin<i960Pinout::Data14>::directionOutput();
+        DigitalPin<i960Pinout::Data15>::directionOutput();
     }
 private:
     static byte getUpdateKind() noexcept {
