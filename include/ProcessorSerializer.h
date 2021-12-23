@@ -84,16 +84,6 @@ class ProcessorInterface {
     }
     template<IOExpanderAddress addr, MCP23x17Registers opcode, bool standalone = true>
     static inline SplitWord16 read16() noexcept {
-        if constexpr (addr == IOExpanderAddress::DataLines) {
-            if constexpr (opcode == MCP23x17Registers::GPIO) {
-                // in this case we want to do the parallel read instead
-                auto portContents = DigitalPin<i960Pinout::Data0>::readPort();
-                SplitWord16 result{0};
-                result.bytes[0] = static_cast<byte>(portContents);
-                result.bytes[1] = static_cast<byte>(portContents >> 10);
-                return result;
-            }
-        }
         if constexpr (standalone) {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
@@ -107,18 +97,15 @@ class ProcessorInterface {
         if constexpr (standalone) {
             SPI.endTransaction();
         }
+        if constexpr (addr == IOExpanderAddress::DataLines) {
+            if constexpr (opcode == MCP23x17Registers::GPIO) {
+            }
+        }
         return output;
     }
     template<IOExpanderAddress addr, MCP23x17Registers opcode, bool standalone = true>
     static inline uint8_t read8() noexcept {
-        if constexpr (addr == IOExpanderAddress::DataLines) {
-           if constexpr (auto portContents = DigitalPin<i960Pinout::Data0>::readPort(); opcode == MCP23x17Registers::GPIOA) {
-               return static_cast<byte>(portContents);
-           } else if constexpr (opcode == MCP23x17Registers::GPIOB) {
-               return static_cast<byte>(portContents >> 10);
-           }
             // otherwise fall through
-        }
         if constexpr (standalone) {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
@@ -200,18 +187,38 @@ public:
 public:
     [[nodiscard]] static constexpr Address getAddress() noexcept { return address_.getWholeValue(); }
     [[nodiscard]] static SplitWord16 getDataBits() noexcept {
-        return readGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>();
+        auto portContents = DigitalPin<i960Pinout::Data0>::readPort();
+        SplitWord16 result{0};
+        result.bytes[0] = static_cast<byte>(portContents);
+        result.bytes[1] = static_cast<byte>(portContents >> 10);
+        Serial.println("{");
+        Serial.print("\tP00 Result: 0x");
+        Serial.println(result.getWholeValue(), HEX);
+        auto spiResult = readGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>();
+        Serial.print("\tSPI Result: 0x");
+        Serial.println(spiResult.getWholeValue(), HEX);
+        Serial.println("}");
+        return spiResult;
     }
     static void setDataBits(uint16_t value) noexcept {
         // the latch is preserved in between data line changes
         // okay we are still pointing as output values
         // check the latch and see if the output value is the same as what is latched
+#if 0
         if (latchedDataOutput.getWholeValue() != value) {
             // it is a mixed difference
             latchedDataOutput.wholeValue_ = value;
             writeGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>(latchedDataOutput.getWholeValue());
         }
-    }
+#endif
+        constexpr auto normalMask = ((static_cast<uint32_t>(0xFF) << 10) | (static_cast<uint32_t>(0xFF)));
+        constexpr auto invertMask = ~normalMask;
+        auto portContents = DigitalPin<i960Pinout::Data0>::readPort();
+        portContents &= invertMask;
+        SplitWord16 split{value};
+        auto portUpdate = (static_cast<uint32_t>(split.bytes[0]) | (static_cast<uint32_t>(split.bytes[1]) << 10)) & normalMask;
+        DigitalPin<i960Pinout::Data0>::writePort(portUpdate | portContents);
+    };
     [[nodiscard]] static LoadStoreStyle getStyle() noexcept {
         if constexpr (TargetBoard::usePortReads()) {
             // assume for now that BE0 and BE1 are the same port
