@@ -101,6 +101,14 @@ class ProcessorInterface {
     }
     template<IOExpanderAddress addr, MCP23x17Registers opcode, bool standalone = true>
     static inline uint8_t read8() noexcept {
+        if constexpr (addr == IOExpanderAddress::Upper16Lines) {
+           if constexpr (auto portContents = DigitalPin<i960Pinout::Address16>::readPort(); opcode == MCP23x17Registers::GPIOA) {
+               return static_cast<byte>(portContents);
+           } else if constexpr (opcode == MCP23x17Registers::GPIOB) {
+               return static_cast<byte>(portContents >> 10);
+           }
+            // otherwise fall through
+        }
         if constexpr (standalone) {
             SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
         }
@@ -112,7 +120,7 @@ class ProcessorInterface {
         if constexpr (standalone) {
             SPI.endTransaction();
         }
-      return outcome;
+        return outcome;
     }
 
     template<IOExpanderAddress addr, MCP23x17Registers opcode, bool standalone = true>
@@ -153,22 +161,7 @@ class ProcessorInterface {
             SplitWord16 result{0};
             result.bytes[0] = static_cast<byte>(portContents);
             result.bytes[1] = static_cast<byte>(portContents >> 10);
-            auto other = read16<addr, MCP23x17Registers::GPIO, standalone>();
-            Serial.println("{");
-            Serial.print("\tP00 CONTENTS: 0b");
-            Serial.print(result.bytes[0], BIN);
-            Serial.print(", and 0b");
-            Serial.print(result.bytes[1], BIN);
-            Serial.print(", from 0b");
-            Serial.println(result.getWholeValue(), BIN);
-            Serial.print("\tSPI CONTENTS: 0b");
-            Serial.print(other.bytes[0], BIN);
-            Serial.print(", and 0b");
-            Serial.print(other.bytes[1], BIN);
-            Serial.print(", from 0b");
-            Serial.println(other.getWholeValue(), BIN);
-            Serial.println("}");
-            return other;
+            return result;
         } else {
             return read16<addr, MCP23x17Registers::GPIO, standalone>();
         }
