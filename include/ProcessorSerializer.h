@@ -246,7 +246,7 @@ private:
                // in this case I know that INT_EN[0,3] are lined up correctly so this is a very cheap operation
                auto portContents = DigitalPin<i960Pinout::INT_EN0>::readPort();
                // force the upper two bits low in all cases
-               return static_cast<byte>((portContents >> 22) & 0b11);
+               return static_cast<byte>((portContents >> 20) & 0b1111);
            } else {
                auto a = static_cast<byte>(DigitalPin<i960Pinout::INT_EN0>::read());
                auto b = static_cast<byte>(DigitalPin<i960Pinout::INT_EN1>::read()) << 1;
@@ -290,10 +290,10 @@ public:
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
-        //address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
-        auto portContents = DigitalPin<i960Pinout::Address0>::readPort();
-        address_.bytes[0] = static_cast<byte>(portContents);
-        address_.bytes[1] = static_cast<byte>(portContents >> 10);
+        address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
+        //auto portContents = DigitalPin<i960Pinout::Address0>::readPort();
+        //address_.bytes[0] = static_cast<byte>(portContents);
+        //address_.bytes[1] = static_cast<byte>(portContents >> 10);
     }
     template<bool inDebugMode>
     static inline void upper16Update() noexcept {
@@ -315,31 +315,73 @@ public:
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
-        address_.bytes[0] = static_cast<byte>(DigitalPin<i960Pinout::Address0>::readPort());
-        //address_.bytes[0] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOA>();
+        //address_.bytes[0] = static_cast<byte>(DigitalPin<i960Pinout::Address0>::readPort());
+        address_.bytes[0] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOA>();
     }
     static inline void updateLower8() noexcept {
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
-        //address_.bytes[1] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOB>();
-        auto portContents = DigitalPin<i960Pinout::Address0>::readPort();
-        address_.bytes[1] = static_cast<byte>(portContents >> 10);
+        address_.bytes[1] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOB>();
+        //auto portContents = DigitalPin<i960Pinout::Address0>::readPort();
+        //address_.bytes[1] = static_cast<byte>(portContents >> 10);
     }
     template<bool inDebugMode>
     static inline void newDataCycle() noexcept {
-        lower16Update();
         switch (getUpdateKind()) {
-            case 0b11:
+            case 0b0001:
+                upper16Update<inDebugMode>();
+                updateLower8();
                 break;
-            case 0b01:
-                updateHighest8<inDebugMode>();
+            case 0b0010:
+                upper16Update<inDebugMode>();
+                updateLowest8();
                 break;
-            case 0b00:
+            case 0b0011:
                 upper16Update<inDebugMode>();
                 break;
-            case 0b10:
+            case 0b0100:
+                updateHighest8<inDebugMode>();
+                lower16Update();
+                break;
+            case 0b0101:
+                updateHighest8<inDebugMode>();
+                updateLower8();
+                break;
+            case 0b0110:
+                updateHighest8<inDebugMode>();
+                updateLowest8();
+                break;
+            case 0b0111:
+                updateHighest8<inDebugMode>();
+                break;
+            case 0b1000:
                 updateHigher8();
+                lower16Update();
+                break;
+            case 0b1001:
+                updateLower8();
+                updateHigher8();
+                break;
+            case 0b1010:
+                updateHigher8();
+                updateLowest8();
+                break;
+            case 0b1011:
+                updateHigher8();
+                break;
+            case 0b1100:
+                lower16Update();
+                break;
+            case 0b1101:
+                updateLower8();
+                break;
+            case 0b1110:
+                updateLowest8();
+                break;
+            case 0b1111: break;
+            default:
+                full32BitUpdate<inDebugMode>();
                 break;
         }
         if constexpr (TargetBoard::separateReadWriteFunctionPointers()) {
