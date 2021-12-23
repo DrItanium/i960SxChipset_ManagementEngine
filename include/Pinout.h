@@ -384,7 +384,7 @@ struct DigitalPin2 {
     }
     static inline void writePort(uint32_t value) noexcept {
         if constexpr (isSpecialized()) {
-            return targetPort_->OUT.reg = value;
+            targetPort_->OUT.reg = value;
         }
     }
     static inline void directionOutput() noexcept {
