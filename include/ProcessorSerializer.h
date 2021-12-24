@@ -204,11 +204,12 @@ public:
         // check the latch and see if the output value is the same as what is latched
         constexpr auto normalMask = ((static_cast<uint32_t>(0xFF) << 10) | (static_cast<uint32_t>(0xFF)));
         constexpr auto invertMask = ~normalMask;
-        auto portContents = DigitalPin<i960Pinout::Data0>::readOutPort();
-        portContents &= invertMask;
-        SplitWord16 split{value};
-        auto portUpdate = (static_cast<uint32_t>(split.bytes[0]) | (static_cast<uint32_t>(split.bytes[1]) << 10)) & normalMask;
-        DigitalPin<i960Pinout::Data0>::writeOutPort(portUpdate | portContents);
+        if (latchedDataOutput.getWholeValue() != value) {
+            latchedDataOutput.wholeValue_ = value;
+            latchedPortContents = (static_cast<uint32_t>(latchedDataOutput.bytes[0]) | (static_cast<uint32_t>(latchedDataOutput.bytes[1]) << 10)) & normalMask;
+        }
+        auto portContents = DigitalPin<i960Pinout::Data0>::readOutPort() & invertMask;
+        DigitalPin<i960Pinout::Data0>::writeOutPort(latchedPortContents | portContents);
     };
     [[nodiscard]] static LoadStoreStyle getStyle() noexcept {
         if constexpr (TargetBoard::usePortReads()) {
@@ -493,6 +494,7 @@ public:
 private:
     static inline SplitWord32 address_{0};
     static inline SplitWord16 latchedDataOutput {0};
+    static inline uint32_t latchedPortContents = 0;
     static inline byte dataLinesDirection_ = 0xFF;
     static inline bool initialized_ = false;
     static inline BodyFunction last_ = nullptr;
