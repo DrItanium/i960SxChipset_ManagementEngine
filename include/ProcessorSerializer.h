@@ -365,9 +365,9 @@ public:
     static inline uint16_t readLowerHalfParallel() noexcept {
         SplitWord16 value{0};
         DigitalPin<i960Pinout::MUXSel0>::assertPin();
-        value.bytes[0] = static_cast<byte>(DigitalPin<i960Pinout::MUXADR0>::readInPort());
+        value.bytes[1] = static_cast<byte>(~DigitalPin<i960Pinout::MUXADR0>::readInPort());
         DigitalPin<i960Pinout::MUXSel0>::deassertPin();
-        value.bytes[1] = static_cast<byte>(DigitalPin<i960Pinout::MUXADR0>::readInPort());
+        value.bytes[0] = static_cast<byte>(~DigitalPin<i960Pinout::MUXADR0>::readInPort());
         return value.getWholeValue();
     }
     static inline uint32_t readAddressParallel() noexcept {
@@ -443,6 +443,8 @@ public:
         Serial.println("{");
         Serial.print("\tLower Half Address: 0x");
         Serial.println(result, HEX);
+        Serial.print("\tLower Half Address (inverted): 0x");
+        Serial.println(static_cast<uint16_t>(~result), HEX);
         Serial.print("\tSPI address: 0x");
         Serial.println(address_.getLowerHalf(), HEX);
         Serial.println("}");
