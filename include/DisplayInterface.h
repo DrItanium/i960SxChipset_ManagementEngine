@@ -119,14 +119,14 @@ public:
     DisplayInterface() = delete;
     ~DisplayInterface() = delete;
     static void begin() noexcept {
-        DigitalPin<i960Pinout::SD_EN>::configure();
-        DigitalPin<i960Pinout::SD_EN>::deassertPin();
-        tft.begin();
-        tft.fillScreen(ILI9341_BLACK);
-        if (!touchController_.begin(40)) {
-            signalHaltState("Couldn't start FT6206 touchscreen controller");
-        } else {
-            Serial.println(F("FT6206 touchscreen initialized"));
+        if constexpr (TargetBoard::enableDisplayDriver()) {
+            tft.begin();
+            tft.fillScreen(ILI9341_BLACK);
+            if (!touchController_.begin(40)) {
+                signalHaltState("Couldn't start FT6206 touchscreen controller");
+            } else {
+                Serial.println(F("FT6206 touchscreen initialized"));
+            }
         }
     }
 private:
@@ -135,25 +135,31 @@ private:
     }
 public:
     static uint16_t read(uint8_t targetPage, uint8_t offset, LoadStoreStyle lss) noexcept {
-        switch (targetPage) {
-            case SeesawPage:
-                return handleSeesawReads(offset, lss);
-            case DisplayPage:
-                return handleDisplayRead(offset, lss);
-            default:
-                return 0;
+        if constexpr (TargetBoard::enableDisplayDriver()) {
+            switch (targetPage) {
+                case SeesawPage:
+                    return handleSeesawReads(offset, lss);
+                case DisplayPage:
+                    return handleDisplayRead(offset, lss);
+                default:
+                    return 0;
+            }
+        } else {
+            return 0;
         }
     }
     static void write(uint8_t targetPage, uint8_t offset, LoadStoreStyle lss, SplitWord16 value) noexcept {
-        switch (targetPage) {
-            case SeesawPage:
-                handleSeesawWrite(offset, lss, value);
-                break;
-            case DisplayPage:
-                handleDisplayWrite(offset, lss, value);
-                break;
-            default:
-                break;
+        if constexpr (TargetBoard::enableDisplayDriver()) {
+            switch (targetPage) {
+                case SeesawPage:
+                    handleSeesawWrite(offset, lss, value);
+                    break;
+                case DisplayPage:
+                    handleDisplayWrite(offset, lss, value);
+                    break;
+                default:
+                    break;
+            }
         }
     }
 private:
@@ -226,6 +232,7 @@ private:
             }
     }
     static uint16_t handleDisplayRead(uint8_t offset, LoadStoreStyle) noexcept {
+        if constexpr (TargetBoard::enableDisplayDriver()) {
             switch (static_cast<DisplayInterfaceRegisters>(offset)) {
                 case DisplayInterfaceRegisters::InstructionField00:
                 case DisplayInterfaceRegisters::InstructionField01:
@@ -239,8 +246,12 @@ private:
                 default:
                     return 0;
             }
+        } else {
+            return 0;
+        }
     }
     static void handleDisplayWrite(uint8_t offset, LoadStoreStyle lss, SplitWord16 value) noexcept {
+        if constexpr (TargetBoard::enableDisplayDriver()) {
             switch (static_cast<DisplayInterfaceRegisters>(offset)) {
                 case DisplayInterfaceRegisters::InstructionField00:
                 case DisplayInterfaceRegisters::InstructionField01:
@@ -258,22 +269,29 @@ private:
                 default:
                     break;
             }
+        }
     }
     static void handleSeesawWrite(uint8_t offset, LoadStoreStyle, SplitWord16 value) noexcept {
-        switch (static_cast<SeesawRegisters>(offset)) {
-            case SeesawRegisters::Backlight:
-                setBacklightIntensity(value.getWholeValue());
-                break;
-            default:
-                break;
+        if constexpr (TargetBoard::enableDisplayDriver()) {
+            switch (static_cast<SeesawRegisters>(offset)) {
+                case SeesawRegisters::Backlight:
+                    setBacklightIntensity(value.getWholeValue());
+                    break;
+                default:
+                    break;
+            }
         }
     }
     static uint16_t handleSeesawReads(uint8_t offset, LoadStoreStyle) noexcept {
-        switch (static_cast<SeesawRegisters>(offset)) {
-            case SeesawRegisters::Backlight:
-                return backlightIntensity_;
-            default:
-                return 0;
+        if constexpr (TargetBoard::enableDisplayDriver()) {
+            switch (static_cast<SeesawRegisters>(offset)) {
+                case SeesawRegisters::Backlight:
+                    return backlightIntensity_;
+                default:
+                    return 0;
+            }
+        } else {
+            return 0;
         }
     }
 private:
