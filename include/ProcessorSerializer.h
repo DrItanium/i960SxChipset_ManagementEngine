@@ -362,6 +362,14 @@ public:
             return temp;
         }
     };
+    static inline uint16_t readLowerHalfParallel() noexcept {
+        SplitWord16 value{0};
+        DigitalPin<i960Pinout::MUXSel0>::assertPin();
+        value.bytes[0] = static_cast<byte>(DigitalPin<i960Pinout::MUXADR0>::readInPort());
+        DigitalPin<i960Pinout::MUXSel0>::deassertPin();
+        value.bytes[1] = static_cast<byte>(DigitalPin<i960Pinout::MUXADR0>::readInPort());
+        return value.getWholeValue();
+    }
     static inline uint32_t readAddressParallel() noexcept {
         DigitalPin<i960Pinout::MUXSel0>::assertPin();
         PortDecomposition lowerHalf, upperHalf;
@@ -431,6 +439,9 @@ public:
                 full32BitUpdate<inDebugMode>();
                 break;
         }
+        auto result = readLowerHalfParallel();
+        Serial.print("Lower Half Address: 0x");
+        Serial.println(result, HEX);
         /// @todo implement parallel read support
         if constexpr (TargetBoard::separateReadWriteFunctionPointers()) {
             if (ProcessorInterface::isReadOperation()) {
