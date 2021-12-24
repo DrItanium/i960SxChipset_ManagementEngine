@@ -304,11 +304,20 @@ private:
         }
     }
 public:
+    static inline uint16_t readLowerHalfParallel() noexcept {
+        SplitWord16 value{0};
+        DigitalPin<i960Pinout::MUXSel0>::assertPin();
+        value.bytes[1] = static_cast<byte>(~DigitalPin<i960Pinout::MUXADR0>::readInPort());
+        DigitalPin<i960Pinout::MUXSel0>::deassertPin();
+        value.bytes[0] = static_cast<byte>(~DigitalPin<i960Pinout::MUXADR0>::readInPort());
+        return value.getWholeValue();
+    }
     template<bool inDebugMode>
     static inline void full32BitUpdate() noexcept {
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
-        address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
+        //address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
+        address_.setLowerHalf(SplitWord16{readLowerHalfParallel()});
         address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
         updateTargetFunctions<inDebugMode>();
     }
@@ -316,7 +325,8 @@ public:
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
-        address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
+        //address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
+        address_.setLowerHalf(SplitWord16{readLowerHalfParallel()});
     }
     template<bool inDebugMode>
     static inline void upper16Update() noexcept {
@@ -338,13 +348,15 @@ public:
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
-        address_.bytes[0] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOA>();
+        //address_.bytes[0] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOA>();
+        lower16Update();
     }
     static inline void updateLower8() noexcept {
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
-        address_.bytes[1] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOB>();
+        //address_.bytes[1] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOB>();
+        lower16Update();
     }
     union PortDecomposition {
         uint32_t raw;
@@ -362,14 +374,6 @@ public:
             return temp;
         }
     };
-    static inline uint16_t readLowerHalfParallel() noexcept {
-        SplitWord16 value{0};
-        DigitalPin<i960Pinout::MUXSel0>::assertPin();
-        value.bytes[1] = static_cast<byte>(~DigitalPin<i960Pinout::MUXADR0>::readInPort());
-        DigitalPin<i960Pinout::MUXSel0>::deassertPin();
-        value.bytes[0] = static_cast<byte>(~DigitalPin<i960Pinout::MUXADR0>::readInPort());
-        return value.getWholeValue();
-    }
     static inline uint32_t readAddressParallel() noexcept {
         DigitalPin<i960Pinout::MUXSel0>::assertPin();
         PortDecomposition lowerHalf, upperHalf;
@@ -384,7 +388,6 @@ public:
     template<bool inDebugMode>
     static inline void newDataCycle() noexcept {
         switch (getUpdateKind()) {
-#if 0
             case 0b0001:
                 upper16Update<inDebugMode>();
                 updateLower8();
@@ -393,18 +396,10 @@ public:
                 upper16Update<inDebugMode>();
                 updateLowest8();
                 break;
-#else
-            case 0b0001:
-            case 0b0010:
-                upper16Update<inDebugMode>();
-                address_.setLowerHalf(SplitWord16{readLowerHalfParallel()});
-                break;
-#endif
             case 0b0011:
                 upper16Update<inDebugMode>();
                 break;
 
-#if 0
             case 0b0100:
                 updateHighest8<inDebugMode>();
                 lower16Update();
@@ -417,18 +412,9 @@ public:
                 updateHighest8<inDebugMode>();
                 updateLowest8();
                 break;
-#else
-            case 0b0100:
-            case 0b0101:
-            case 0b0110:
-                updateHighest8<inDebugMode>();
-                address_.setLowerHalf(SplitWord16{readLowerHalfParallel()});
-                break;
-#endif
             case 0b0111:
                 updateHighest8<inDebugMode>();
                 break;
-#if 0
                 case 0b1000:
                 updateHigher8();
                 lower16Update();
@@ -441,19 +427,9 @@ public:
                 updateHigher8();
                 updateLowest8();
                 break;
-#else
-            case 0b1000:
-            case 0b1001:
-            case 0b1010:
-                updateHigher8();
-                address_.setLowerHalf(SplitWord16{readLowerHalfParallel()});
-                break;
-#endif
-
             case 0b1011:
                 updateHigher8();
                 break;
-#if 0
             case 0b1100:
                 lower16Update();
                 break;
@@ -463,21 +439,9 @@ public:
             case 0b1110:
                 updateLowest8();
                 break;
-#else
-            case 0b1100:
-            case 0b1101:
-            case 0b1110:
-                address_.setLowerHalf(SplitWord16{readLowerHalfParallel()});
-                break;
-#endif
             case 0b1111: break;
             default:
-#if 0
                 full32BitUpdate<inDebugMode>();
-#else
-                upper16Update<inDebugMode>();
-                address_.setLowerHalf(SplitWord16{readLowerHalfParallel()});
-#endif
                 break;
         }
         /// @todo implement parallel read support
