@@ -440,8 +440,12 @@ public:
                 break;
         }
         auto result = readLowerHalfParallel();
-        Serial.print("Lower Half Address: 0x");
+        Serial.println("{");
+        Serial.print("\tLower Half Address: 0x");
         Serial.println(result, HEX);
+        Serial.print("\tSPI address: 0x");
+        Serial.println(address_.getLowerHalf(), HEX);
+        Serial.println("}");
         /// @todo implement parallel read support
         if constexpr (TargetBoard::separateReadWriteFunctionPointers()) {
             if (ProcessorInterface::isReadOperation()) {
