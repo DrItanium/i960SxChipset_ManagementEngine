@@ -387,6 +387,7 @@ public:
     }
     template<bool inDebugMode>
     static inline void newDataCycle() noexcept {
+#if 0
         switch (getUpdateKind()) {
             case 0b0001:
                 upper16Update<inDebugMode>();
@@ -444,6 +445,10 @@ public:
                 full32BitUpdate<inDebugMode>();
                 break;
         }
+#endif
+        upper16Update<inDebugMode>();
+        address_.setLowerHalf(SplitWord16{readLowerHalfParallel()});
+        updateTargetFunctions<inDebugMode>();
         /// @todo implement parallel read support
         if constexpr (TargetBoard::separateReadWriteFunctionPointers()) {
             if (ProcessorInterface::isReadOperation()) {
