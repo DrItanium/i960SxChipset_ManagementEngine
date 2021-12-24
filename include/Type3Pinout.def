@@ -10,9 +10,10 @@
    INT_EN1 = 32,
    INT_EN2 = 31,
    INT_EN3 = 30,
-   Reset4809 = 5,
-   Ready = 16,
-   Reset960 = 17, // really waitboot960
+   Reset4809 = 22,
+   Ready = 6,
+   WaitBoot960 = 7,
+   Reset960 = WaitBoot960, // really waitboot960
    GPIOSelect = 53,
    SD_EN = SDCARD_CS,
    TFT_CS = 10,
