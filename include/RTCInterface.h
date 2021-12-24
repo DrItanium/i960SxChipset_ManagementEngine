@@ -100,33 +100,35 @@ public:
         return targetPage >= StartPage && targetPage < EndPage;
     }
     static void begin() noexcept {
-        rtcUp_ = rtc_.begin();
-        if (!rtcUp_) {
-            Serial.println(F("NO RTC FOUND...DISABLING"));
-        } else {
-            Serial.println(F("RTC FOUND... CHECKING"));
-            if (!rtc_.initialized() || rtc_.lostPower()) {
-                Serial.println(F("RTC is NOT initialized, setting time from sketch compile"));
-                // not the most accurate but good enough
-                rtc_.adjust(DateTime(F(__DATE__), F(__TIME__)));
-            }
-            // make sure that all timers are shutoff on startup
-            rtc_.deconfigureAllTimers();
-            DateTime now = rtc_.now();
-            Serial.print(now.year(), DEC);
-            Serial.print(F("/"));
-            Serial.print(now.month(), DEC);
-            Serial.print(F("/"));
-            Serial.print(now.day(), DEC);
-            Serial.print(F(" "));
-            Serial.print(now.hour(), DEC);
-            Serial.print(F(":"));
-            Serial.print(now.minute(), DEC);
-            Serial.print(F(":"));
-            Serial.print(now.second(), DEC);
-            Serial.println();
+        if constexpr (TargetBoard::enableRTCInterface()) {
+            rtcUp_ = rtc_.begin();
+            if (!rtcUp_) {
+                Serial.println(F("NO RTC FOUND...DISABLING"));
+            } else {
+                Serial.println(F("RTC FOUND... CHECKING"));
+                if (!rtc_.initialized() || rtc_.lostPower()) {
+                    Serial.println(F("RTC is NOT initialized, setting time from sketch compile"));
+                    // not the most accurate but good enough
+                    rtc_.adjust(DateTime(F(__DATE__), F(__TIME__)));
+                }
+                // make sure that all timers are shutoff on startup
+                rtc_.deconfigureAllTimers();
+                DateTime now = rtc_.now();
+                Serial.print(now.year(), DEC);
+                Serial.print(F("/"));
+                Serial.print(now.month(), DEC);
+                Serial.print(F("/"));
+                Serial.print(now.day(), DEC);
+                Serial.print(F(" "));
+                Serial.print(now.hour(), DEC);
+                Serial.print(F(":"));
+                Serial.print(now.minute(), DEC);
+                Serial.print(F(":"));
+                Serial.print(now.second(), DEC);
+                Serial.println();
 
-            rtc_.start();
+                rtc_.start();
+            }
         }
     }
     static uint16_t read(uint8_t, uint8_t offset, LoadStoreStyle) noexcept {
