@@ -211,12 +211,30 @@ public:
         auto portContents = DigitalPin<i960Pinout::Data0>::readOutPort() & invertMask;
         DigitalPin<i960Pinout::Data0>::writeOutPort(latchedPortContents | portContents);
     };
+    union PortAInput {
+        uint32_t raw = 0;
+        struct {
+            // 8 bits
+            Address : 4;
+            Address successfulBoot : 1;
+            Address writeRead : 1;
+            Address byteEnable : 2;
+            // 11 bits
+            Address : 4;
+            Address doCycle : 1;
+            Address inTransaction : 1;
+            Address burstNext : 1;
+            Address lineInterrupt : 4;
+            Address : 13;
+        };
+    } ;
     [[nodiscard]] static LoadStoreStyle getStyle() noexcept {
         if constexpr (TargetBoard::usePortReads()) {
+            PortAInput tmp;
             // assume for now that BE0 and BE1 are the same port
             // in this case it is PA14 and PA15 so just shift right by 14 and mask
-            auto portContents = DigitalPin<i960Pinout::BE0>::readInPort();
-            return static_cast<LoadStoreStyle>((portContents >> 14) & 0b11);
+            tmp.raw = DigitalPin<i960Pinout::BE0>::readInPort();
+            return static_cast<LoadStoreStyle>(tmp.byteEnable);
         } else {
             auto lower = static_cast<byte>(DigitalPin<i960Pinout::BE0>::read());
             auto upper = static_cast<byte>(DigitalPin<i960Pinout::BE1>::read()) << 1;
@@ -234,33 +252,9 @@ public:
             auto portDirection = DigitalPin<i960Pinout::Data0>::readPortDir();
             portDirection &= InvertPortDirectionMask;
             DigitalPin<i960Pinout::Data0>::writePortDir(portDirection);
-#if 0
-            DigitalPin<i960Pinout::Data0>::directionInput();
-            DigitalPin<i960Pinout::Data1>::directionInput();
-            DigitalPin<i960Pinout::Data2>::directionInput();
-            DigitalPin<i960Pinout::Data3>::directionInput();
-            DigitalPin<i960Pinout::Data4>::directionInput();
-            DigitalPin<i960Pinout::Data5>::directionInput();
-            DigitalPin<i960Pinout::Data6>::directionInput();
-            DigitalPin<i960Pinout::Data7>::directionInput();
-            DigitalPin<i960Pinout::Data8>::directionInput();
-            DigitalPin<i960Pinout::Data9>::directionInput();
-            DigitalPin<i960Pinout::Data10>::directionInput();
-            DigitalPin<i960Pinout::Data11>::directionInput();
-            DigitalPin<i960Pinout::Data12>::directionInput();
-            DigitalPin<i960Pinout::Data13>::directionInput();
-            DigitalPin<i960Pinout::Data14>::directionInput();
-            DigitalPin<i960Pinout::Data15>::directionInput();
-#endif
         }
     }
     inline static void setupDataLinesForRead() noexcept {
-#if 0
-        if (dataLinesDirection_) {
-            dataLinesDirection_ = ~dataLinesDirection_;
-            writeDirection<ProcessorInterface::IOExpanderAddress::DataLines>(0);
-        }
-#endif
         if (dataLinesDirection_) {
             dataLinesDirection_ = ~dataLinesDirection_;
             static constexpr uint32_t PortDirectionMask = 0x0003FCFF;
@@ -268,24 +262,6 @@ public:
             auto portDirection = DigitalPin<i960Pinout::Data0>::readPortDir();
             portDirection &= InvertPortDirectionMask;
             DigitalPin<i960Pinout::Data0>::writePortDir(portDirection | PortDirectionMask);
-#if 0
-            DigitalPin<i960Pinout::Data0>::directionOutput();
-            DigitalPin<i960Pinout::Data1>::directionOutput();
-            DigitalPin<i960Pinout::Data2>::directionOutput();
-            DigitalPin<i960Pinout::Data3>::directionOutput();
-            DigitalPin<i960Pinout::Data4>::directionOutput();
-            DigitalPin<i960Pinout::Data5>::directionOutput();
-            DigitalPin<i960Pinout::Data6>::directionOutput();
-            DigitalPin<i960Pinout::Data7>::directionOutput();
-            DigitalPin<i960Pinout::Data8>::directionOutput();
-            DigitalPin<i960Pinout::Data9>::directionOutput();
-            DigitalPin<i960Pinout::Data10>::directionOutput();
-            DigitalPin<i960Pinout::Data11>::directionOutput();
-            DigitalPin<i960Pinout::Data12>::directionOutput();
-            DigitalPin<i960Pinout::Data13>::directionOutput();
-            DigitalPin<i960Pinout::Data14>::directionOutput();
-            DigitalPin<i960Pinout::Data15>::directionOutput();
-#endif
         }
     }
 private:
@@ -293,9 +269,10 @@ private:
         if constexpr (TargetBoard::useIOExpanderAddressLineInterrupts()) {
            if constexpr (TargetBoard::usePortReads()) {
                // in this case I know that INT_EN[0,3] are lined up correctly so this is a very cheap operation
-               auto portContents = DigitalPin<i960Pinout::INT_EN0>::readInPort();
+               PortAInput tmp;
+               tmp.raw = DigitalPin<i960Pinout::INT_EN0>::readInPort();
                // force the upper two bits low in all cases
-               return static_cast<byte>((portContents >> 20) & 0b1111);
+               return static_cast<byte>(tmp.lineInterrupt);
            } else {
                auto a = static_cast<byte>(DigitalPin<i960Pinout::INT_EN0>::read());
                auto b = static_cast<byte>(DigitalPin<i960Pinout::INT_EN1>::read()) << 1;
@@ -372,9 +349,9 @@ public:
     union PortDecomposition {
         uint32_t raw;
         struct {
-            uint8_t lowerHalf : 8;
-            uint8_t upperHalf_Lower2 : 2;
-            uint8_t upper: 8; // lowest two bits will be ignored
+            uint32_t lowerHalf : 8;
+            uint32_t upperHalf_Lower2 : 2;
+            uint32_t upper: 8; // lowest two bits will be ignored
         };
         inline constexpr SplitWord16 extractAddress() const noexcept {
             SplitWord16 temp{0};
