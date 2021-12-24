@@ -230,6 +230,23 @@ DefBidirectionalPin2(i960Pinout::Data12, LOW, HIGH);
 DefBidirectionalPin2(i960Pinout::Data13, LOW, HIGH);
 DefBidirectionalPin2(i960Pinout::Data14, LOW, HIGH);
 DefBidirectionalPin2(i960Pinout::Data15, LOW, HIGH);
+DefInputPin2(i960Pinout::MUXADR0, LOW, HIGH);
+DefInputPin2(i960Pinout::MUXADR1, LOW, HIGH);
+DefInputPin2(i960Pinout::MUXADR2, LOW, HIGH);
+DefInputPin2(i960Pinout::MUXADR3, LOW, HIGH);
+DefInputPin2(i960Pinout::MUXADR4, LOW, HIGH);
+DefInputPin2(i960Pinout::MUXADR5, LOW, HIGH);
+DefInputPin2(i960Pinout::MUXADR6, LOW, HIGH);
+DefInputPin2(i960Pinout::MUXADR7, LOW, HIGH);
+DefInputPin2(i960Pinout::MUXADR8, LOW, HIGH);
+DefInputPin2(i960Pinout::MUXADR9, LOW, HIGH);
+DefInputPin2(i960Pinout::MUXADR10, LOW, HIGH);
+DefInputPin2(i960Pinout::MUXADR11, LOW, HIGH);
+DefInputPin2(i960Pinout::MUXADR12, LOW, HIGH);
+DefInputPin2(i960Pinout::MUXADR13, LOW, HIGH);
+DefInputPin2(i960Pinout::MUXADR14, LOW, HIGH);
+DefInputPin2(i960Pinout::MUXADR15, LOW, HIGH);
+DefOutputPin2(i960Pinout::MUXSEL0, LOW, HIGH);
 #undef DefOutputPin2
 #undef DefInputPin2
 #undef DefInputPullupPin2
