@@ -183,6 +183,7 @@ enum class ConfigurationOptions : byte {
     UsePortReads,
     SeparateReadAndWriteFunctionPointers,
     EnableDisplayDriver,
+    EnableRTCInterface,
 };
 enum class ConfigurationFlags : uint64_t {
     None = 0,
@@ -196,6 +197,7 @@ enum class ConfigurationFlags : uint64_t {
     X(UsePortReads),
     X(SeparateReadAndWriteFunctionPointers),
     X(EnableDisplayDriver),
+    X(EnableRTCInterface),
 #undef X
 };
 template<ConfigurationFlags ... flags>
@@ -230,6 +232,7 @@ public:
     [[nodiscard]] constexpr auto usePortReads() const noexcept { return flagSet<ConfigurationFlags::UsePortReads>(); }
     [[nodiscard]] constexpr auto separateReadAndWriteFunctionPointers() const noexcept { return flagSet<ConfigurationFlags::SeparateReadAndWriteFunctionPointers>(); }
     [[nodiscard]] constexpr auto enableDisplayDriver() const noexcept { return flagSet<ConfigurationFlags::EnableDisplayDriver>(); }
+    [[nodiscard]] constexpr auto enableRTCInterface() const noexcept { return flagSet<ConfigurationFlags::EnableRTCInterface>(); }
 private:
     uint32_t sramAmount_;
     uint32_t ioExpanderPeripheralSpeed_;
@@ -293,6 +296,7 @@ public:
     [[nodiscard]] static constexpr auto usePortReads() noexcept { return BoardDescription<getMCUTarget()>.usePortReads(); }
     [[nodiscard]] static constexpr auto separateReadWriteFunctionPointers() noexcept { return BoardDescription<getMCUTarget()>.separateReadAndWriteFunctionPointers(); }
     [[nodiscard]] static constexpr auto enableDisplayDriver() noexcept { return BoardDescription<getMCUTarget()>.enableDisplayDriver(); }
+    [[nodiscard]] static constexpr auto enableRTCInterface() noexcept { return BoardDescription<getMCUTarget()>.enableRTCInterface(); }
 public:
     TargetBoard() = delete;
     ~TargetBoard() = delete;
