@@ -316,8 +316,7 @@ public:
     static inline void full32BitUpdate() noexcept {
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
-        //address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
-        address_.setLowerHalf(SplitWord16{readLowerHalfParallel()});
+        address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
         address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
         updateTargetFunctions<inDebugMode>();
     }
@@ -325,8 +324,7 @@ public:
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
-        //address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
-        address_.setLowerHalf(SplitWord16{readLowerHalfParallel()});
+        address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
     }
     template<bool inDebugMode>
     static inline void upper16Update() noexcept {
@@ -348,16 +346,15 @@ public:
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
-        //address_.bytes[0] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOA>();
-        lower16Update();
+        address_.bytes[0] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOA>();
     }
     static inline void updateLower8() noexcept {
         // read only the lower half
         // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
         // where we can insert operations to take place that would otherwise be waiting
-        //address_.bytes[1] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOB>();
-        lower16Update();
+        address_.bytes[1] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOB>();
     }
+
     union PortDecomposition {
         uint32_t raw;
         struct {
@@ -387,7 +384,6 @@ public:
     }
     template<bool inDebugMode>
     static inline void newDataCycle() noexcept {
-#if 0
         switch (getUpdateKind()) {
             case 0b0001:
                 upper16Update<inDebugMode>();
@@ -400,7 +396,6 @@ public:
             case 0b0011:
                 upper16Update<inDebugMode>();
                 break;
-
             case 0b0100:
                 updateHighest8<inDebugMode>();
                 lower16Update();
@@ -416,7 +411,7 @@ public:
             case 0b0111:
                 updateHighest8<inDebugMode>();
                 break;
-                case 0b1000:
+            case 0b1000:
                 updateHigher8();
                 lower16Update();
                 break;
@@ -445,10 +440,6 @@ public:
                 full32BitUpdate<inDebugMode>();
                 break;
         }
-#endif
-        upper16Update<inDebugMode>();
-        address_.setLowerHalf(SplitWord16{readLowerHalfParallel()});
-        updateTargetFunctions<inDebugMode>();
         /// @todo implement parallel read support
         if constexpr (TargetBoard::separateReadWriteFunctionPointers()) {
             if (ProcessorInterface::isReadOperation()) {
