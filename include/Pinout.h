@@ -399,6 +399,18 @@ struct DigitalPin2 {
             return 0;
         }
     }
+    static inline uint32_t readPortDir() noexcept {
+        if constexpr (isSpecialized()) {
+            return targetPort_->DIR.reg;
+        } else {
+            return 0;
+        }
+    }
+    static inline void writePortDir(uint32_t value) noexcept {
+        if constexpr (isSpecialized()) {
+            targetPort_->DIR.reg = value;
+        }
+    }
     static inline void directionOutput() noexcept {
         if constexpr (isSpecialized()) {
             if constexpr (isBidirectionalPin()) {
