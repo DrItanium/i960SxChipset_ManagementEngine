@@ -369,6 +369,33 @@ public:
         // where we can insert operations to take place that would otherwise be waiting
         address_.bytes[1] = read8<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPIOB>();
     }
+    union PortDecomposition {
+        uint32_t raw;
+        struct {
+            uint8_t lowerHalf : 8;
+            uint8_t upperHalf_Lower2 : 2;
+            uint8_t upper: 8; // lowest two bits will be ignored
+        };
+        inline constexpr SplitWord16 extractAddress() const noexcept {
+            SplitWord16 temp{0};
+            temp.bytes[0] = lowerHalf;
+            uint8_t fractional = upper & 0b1111'1100;
+            fractional |= upperHalf_Lower2;
+            temp.bytes[1] = fractional;
+            return temp;
+        }
+    };
+    static inline uint32_t readAddressParallel() noexcept {
+        DigitalPin<i960Pinout::MUXSel0>::assertPin();
+        PortDecomposition lowerHalf, upperHalf;
+        lowerHalf.raw = DigitalPin<i960Pinout::MUXADR0>::readInPort();
+        DigitalPin<i960Pinout::MUXSel0>::deassertPin();
+        upperHalf.raw = DigitalPin<i960Pinout::MUXADR0>::readInPort();
+        SplitWord32 composition{0};
+        composition.setLowerHalf(lowerHalf.extractAddress());
+        composition.setUpperHalf(upperHalf.extractAddress());
+        return composition.getWholeValue();
+    }
     template<bool inDebugMode>
     static inline void newDataCycle() noexcept {
         switch (getUpdateKind()) {
@@ -427,16 +454,7 @@ public:
                 full32BitUpdate<inDebugMode>();
                 break;
         }
-        DigitalPin<i960Pinout::MUXSel0>::assertPin();
-        auto lowerHalf = ~static_cast<uint16_t>(DigitalPin<i960Pinout::MUXADR0>::readInPort());
-        DigitalPin<i960Pinout::MUXSel0>::deassertPin();
-        auto upperHalf = ~static_cast<uint16_t>(DigitalPin<i960Pinout::MUXADR0>::readInPort());
-        Serial.print("SPI ADDRESS: 0x");
-        Serial.println(address_.getWholeValue(), HEX);
-        Serial.print("P00 ADDR: 0x");
-        Serial.println(lowerHalf, HEX);
-        Serial.print("P01 ADDR: 0x");
-        Serial.println(upperHalf, HEX);
+        /// @todo implement parallel read support
         if constexpr (TargetBoard::separateReadWriteFunctionPointers()) {
             if (ProcessorInterface::isReadOperation()) {
                 setupDataLinesForRead();
