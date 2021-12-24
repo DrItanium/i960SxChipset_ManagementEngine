@@ -228,6 +228,12 @@ public:
     inline static void setupDataLinesForWrite() noexcept {
         if (!dataLinesDirection_) {
             dataLinesDirection_ = ~dataLinesDirection_;
+            static constexpr uint32_t PortDirectionMask = 0x0003FCFF;
+            static constexpr uint32_t InvertPortDirectionMask = ~PortDirectionMask;
+            auto portDirection = DigitalPin<i960Pinout::Data0>::readPortDir();
+            portDirection &= InvertPortDirectionMask;
+            DigitalPin<i960Pinout::Data0>::writePortDir(portDirection);
+#if 0
             DigitalPin<i960Pinout::Data0>::directionInput();
             DigitalPin<i960Pinout::Data1>::directionInput();
             DigitalPin<i960Pinout::Data2>::directionInput();
@@ -244,6 +250,7 @@ public:
             DigitalPin<i960Pinout::Data13>::directionInput();
             DigitalPin<i960Pinout::Data14>::directionInput();
             DigitalPin<i960Pinout::Data15>::directionInput();
+#endif
         }
     }
     inline static void setupDataLinesForRead() noexcept {
@@ -255,6 +262,12 @@ public:
 #endif
         if (dataLinesDirection_) {
             dataLinesDirection_ = ~dataLinesDirection_;
+            static constexpr uint32_t PortDirectionMask = 0x0003FCFF;
+            static constexpr uint32_t InvertPortDirectionMask = ~PortDirectionMask;
+            auto portDirection = DigitalPin<i960Pinout::Data0>::readPortDir();
+            portDirection &= InvertPortDirectionMask;
+            DigitalPin<i960Pinout::Data0>::writePortDir(portDirection | PortDirectionMask);
+#if 0
             DigitalPin<i960Pinout::Data0>::directionOutput();
             DigitalPin<i960Pinout::Data1>::directionOutput();
             DigitalPin<i960Pinout::Data2>::directionOutput();
@@ -271,6 +284,7 @@ public:
             DigitalPin<i960Pinout::Data13>::directionOutput();
             DigitalPin<i960Pinout::Data14>::directionOutput();
             DigitalPin<i960Pinout::Data15>::directionOutput();
+#endif
         }
     }
 private:
