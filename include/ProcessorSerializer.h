@@ -384,6 +384,7 @@ public:
     template<bool inDebugMode>
     static inline void newDataCycle() noexcept {
         switch (getUpdateKind()) {
+#if 0
             case 0b0001:
                 upper16Update<inDebugMode>();
                 updateLower8();
@@ -392,9 +393,18 @@ public:
                 upper16Update<inDebugMode>();
                 updateLowest8();
                 break;
+#else
+            case 0b0001:
+            case 0b0010:
+                upper16Update<inDebugMode>();
+                address_.setLowerHalf(SplitWord16{readLowerHalfParallel()});
+                break;
+#endif
             case 0b0011:
                 upper16Update<inDebugMode>();
                 break;
+
+#if 0
             case 0b0100:
                 updateHighest8<inDebugMode>();
                 lower16Update();
@@ -407,24 +417,43 @@ public:
                 updateHighest8<inDebugMode>();
                 updateLowest8();
                 break;
+#else
+            case 0b0100:
+            case 0b0101:
+            case 0b0110:
+                updateHighest8<inDebugMode>();
+                address_.setLowerHalf(SplitWord16{readLowerHalfParallel()});
+                break;
+#endif
             case 0b0111:
                 updateHighest8<inDebugMode>();
                 break;
-            case 0b1000:
+#if 0
+                case 0b1000:
                 updateHigher8();
                 lower16Update();
                 break;
             case 0b1001:
-                updateLower8();
                 updateHigher8();
+                updateLower8();
                 break;
             case 0b1010:
                 updateHigher8();
                 updateLowest8();
                 break;
+#else
+            case 0b1000:
+            case 0b1001:
+            case 0b1010:
+                updateHigher8();
+                address_.setLowerHalf(SplitWord16{readLowerHalfParallel()});
+                break;
+#endif
+
             case 0b1011:
                 updateHigher8();
                 break;
+#if 0
             case 0b1100:
                 lower16Update();
                 break;
@@ -434,9 +463,21 @@ public:
             case 0b1110:
                 updateLowest8();
                 break;
+#else
+            case 0b1100:
+            case 0b1101:
+            case 0b1110:
+                address_.setLowerHalf(SplitWord16{readLowerHalfParallel()});
+                break;
+#endif
             case 0b1111: break;
             default:
+#if 0
                 full32BitUpdate<inDebugMode>();
+#else
+                upper16Update<inDebugMode>();
+                address_.setLowerHalf(SplitWord16{readLowerHalfParallel()});
+#endif
                 break;
         }
         auto result = readLowerHalfParallel();
