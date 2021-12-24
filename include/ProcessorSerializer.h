@@ -427,6 +427,16 @@ public:
                 full32BitUpdate<inDebugMode>();
                 break;
         }
+        DigitalPin<i960Pinout::MUXSel0>::assertPin();
+        auto lowerHalf = ~static_cast<uint16_t>(DigitalPin<i960Pinout::MUXADR0>::readInPort());
+        DigitalPin<i960Pinout::MUXSel0>::deassertPin();
+        auto upperHalf = ~static_cast<uint16_t>(DigitalPin<i960Pinout::MUXADR0>::readInPort());
+        Serial.print("SPI ADDRESS: 0x");
+        Serial.println(address_.getWholeValue(), HEX);
+        Serial.print("P00 ADDR: 0x");
+        Serial.println(lowerHalf, HEX);
+        Serial.print("P01 ADDR: 0x");
+        Serial.println(upperHalf, HEX);
         if constexpr (TargetBoard::separateReadWriteFunctionPointers()) {
             if (ProcessorInterface::isReadOperation()) {
                 setupDataLinesForRead();
