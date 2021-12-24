@@ -525,12 +525,30 @@ void setup() {
             i960Pinout::Data12,
             i960Pinout::Data13,
             i960Pinout::Data14,
-            i960Pinout::Data15
+            i960Pinout::Data15,
+            i960Pinout::MUXADR0,
+            i960Pinout::MUXADR1,
+            i960Pinout::MUXADR2,
+            i960Pinout::MUXADR3,
+            i960Pinout::MUXADR4,
+            i960Pinout::MUXADR5,
+            i960Pinout::MUXADR6,
+            i960Pinout::MUXADR7,
+            i960Pinout::MUXADR8,
+            i960Pinout::MUXADR9,
+            i960Pinout::MUXADR10,
+            i960Pinout::MUXADR11,
+            i960Pinout::MUXADR12,
+            i960Pinout::MUXADR13,
+            i960Pinout::MUXADR14,
+            i960Pinout::MUXADR15,
+            i960Pinout::MUXSel0
             >();
     // all of these pins need to be pulled high
     DigitalPin<i960Pinout::SD_EN>::deassertPin();
     DigitalPin<i960Pinout::Ready>::deassertPin();
     DigitalPin<i960Pinout::GPIOSelect>::deassertPin();
+    DigitalPin<i960Pinout::MUXSel0>::deassertPin();
     // setup the pins that could be attached to an io expander separately
     theCache.begin();
     // purge the cache pages
