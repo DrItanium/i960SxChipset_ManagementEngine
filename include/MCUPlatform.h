@@ -266,7 +266,9 @@ constexpr MCUConfiguration BoardDescription<TargetMCU::GrandCentralM4_Type3> = {
                 ConfigurationFlags::UseIOExpanderAddressLineInterrupts,
                 ConfigurationFlags::SeparateReadAndWriteFunctionPointers,
                 ConfigurationFlags::ValidateTransferDuringInstall,
-                ConfigurationFlags::CaptureAddressWithParallelLines>()
+                ConfigurationFlags::CaptureAddressWithParallelLines,
+                ConfigurationFlags::CompileInAddressDebuggingSupport,
+                ConfigurationFlags::AddressDebuggingSupportEnabledOnStartup>()
 };
 
 class TargetBoard {

@@ -473,6 +473,7 @@ void waitForBootSignal() noexcept {
     attachInterrupt(i960Pinout::SuccessfulBoot,
                     []() { signalHaltState("CHECKSUM FAILURE"); },
                     LOW);
+    Serial.println(F("GOT BOOT SIGNAL!"));
 }
 // the setup routine runs once when you press reset:
 void setup() {

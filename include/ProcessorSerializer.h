@@ -323,7 +323,8 @@ public:
         constexpr uint32_t UpperPortion =  0b0000000000000011'1111000000000000;
         auto lowerPart = LowerPortion & value;
         auto upperPart = (UpperPortion & value) >> 2;
-        return SplitWord16(static_cast<uint16_t>(lowerPart | upperPart));
+        // The AHD158 inverts the output
+        return SplitWord16(~static_cast<uint16_t>(lowerPart | upperPart));
     }
 
     template<bool inDebugMode>
