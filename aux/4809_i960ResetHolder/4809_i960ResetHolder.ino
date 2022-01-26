@@ -10,28 +10,31 @@
 // The objective of this program is to eliminate pins
 constexpr auto EnableExternalClockSource = false;
 constexpr auto EnableClockOutputPort = true;
-constexpr auto Reset960 = PIN_PF0;
-constexpr auto LOCK960 = PIN_PF1;
-constexpr auto HLDA960 = PIN_PF2;
-constexpr auto HOLD960 = PIN_PF3;
-constexpr auto WAITBOOT960 = PIN_PF4;
-constexpr auto FAIL960 = PIN_PF5;
 
-constexpr auto DO_CYCLE = PIN_PC0;
-constexpr auto IN_TRANSACTION = PIN_PC1;
-constexpr auto BURST_NEXT = PIN_PC2;
+constexpr auto HLDA960 = PIN_PA0;
+constexpr auto HOLD960 = PIN_PA1;
+constexpr auto INT0_960 = PIN_PA2;
+constexpr auto INT1_960 = PIN_PA3;
+constexpr auto INT2_960 = PIN_PA4;
+constexpr auto INT3_960 = PIN_PA5;
+constexpr auto Reset960 = PIN_PA6;
+constexpr auto CLK960 = PIN_PA7;
 
-constexpr auto MCU_READY = PIN_PD2;
-constexpr auto READY960 = PIN_PD3;
-constexpr auto BLAST = PIN_PD4;
-constexpr auto AS = PIN_PD5;
-constexpr auto DEN = PIN_PD6;
-constexpr auto SYSTEMBOOT = PIN_PD7;
-// this pin is responsible for allowing the 
-constexpr auto INT0_960 = PIN_PE0;
-constexpr auto INT1_960 = PIN_PE1;
-constexpr auto INT2_960 = PIN_PE2;
-constexpr auto INT3_960 = PIN_PE3;
+constexpr auto FAIL960 = PIN_PD6;
+constexpr auto MCU_READY = PIN_PD7;
+
+constexpr auto DO_CYCLE = PIN_PE0;
+constexpr auto IN_TRANSACTION = PIN_PE1;
+constexpr auto SYSTEMBOOT = PIN_PE2;
+constexpr auto BURST_NEXT = PIN_PE3;
+
+constexpr auto WAITBOOT960 = PIN_PF0;
+constexpr auto READY960 = PIN_PF1;
+constexpr auto AS = PIN_PF2;
+constexpr auto LOCK960 = PIN_PF3;
+constexpr auto BLAST = PIN_PF4;
+constexpr auto DEN = PIN_PF5;
+
 
 // unused pins
 constexpr auto Unused0 = PIN_PC0;
