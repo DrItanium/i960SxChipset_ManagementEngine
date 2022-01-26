@@ -199,7 +199,6 @@ struct DigitalPinConfiguration<pin> { \
 
 DefSPICSPin2(i960Pinout::GPIOSelect);
 DefSPICSPin2(i960Pinout::SD_EN);
-
 DefOutputPin2(i960Pinout::Reset960, LOW, HIGH);
 DefOutputPin2(i960Pinout::Ready, LOW, HIGH);
 DefOutputPin2(i960Pinout::Reset4809, LOW, HIGH);
