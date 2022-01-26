@@ -184,6 +184,7 @@ enum class ConfigurationOptions : byte {
     SeparateReadAndWriteFunctionPointers,
     EnableDisplayDriver,
     EnableRTCInterface,
+    CaptureAddressWithParallelLines,
 };
 enum class ConfigurationFlags : uint64_t {
     None = 0,
@@ -198,6 +199,7 @@ enum class ConfigurationFlags : uint64_t {
     X(SeparateReadAndWriteFunctionPointers),
     X(EnableDisplayDriver),
     X(EnableRTCInterface),
+    X(CaptureAddressWithParallelLines),
 #undef X
 };
 template<ConfigurationFlags ... flags>
@@ -223,6 +225,7 @@ public:
     [[nodiscard]] constexpr auto getNumBitsPerCacheLine() const noexcept { return numBitsPerCacheLine_; }
     [[nodiscard]] constexpr auto getCacheSizeInBytes() const noexcept { return cacheSizeInBytes_; }
     template<ConfigurationFlags flag> [[nodiscard]] constexpr auto flagSet() const noexcept { return (static_cast<uint64_t>(flags_) & static_cast<uint64_t>(flag)) != 0; }
+    template<ConfigurationFlags flag> [[nodiscard]] constexpr auto flagClear() const noexcept { return !flagSet<flag>(); }
     [[nodiscard]] constexpr auto compileInAddressDebuggingSupport() const noexcept { return flagSet<ConfigurationFlags::CompileInAddressDebuggingSupport>(); }
     [[nodiscard]] constexpr auto addressDebuggingEnabledOnStartup() const noexcept { return flagSet<ConfigurationFlags::AddressDebuggingSupportEnabledOnStartup>(); }
     [[nodiscard]] constexpr auto compileInCacheSystemDebuggingSupport() const noexcept { return flagSet<ConfigurationFlags::CompileInCacheSystemDebuggingSupport>(); }
@@ -233,6 +236,8 @@ public:
     [[nodiscard]] constexpr auto separateReadAndWriteFunctionPointers() const noexcept { return flagSet<ConfigurationFlags::SeparateReadAndWriteFunctionPointers>(); }
     [[nodiscard]] constexpr auto enableDisplayDriver() const noexcept { return flagSet<ConfigurationFlags::EnableDisplayDriver>(); }
     [[nodiscard]] constexpr auto enableRTCInterface() const noexcept { return flagSet<ConfigurationFlags::EnableRTCInterface>(); }
+    [[nodiscard]] constexpr auto captureAddressWithSPI() const noexcept { return flagClear<ConfigurationFlags::CaptureAddressWithParallelLines>(); }
+    [[nodiscard]] constexpr auto captureAddressWithParallel() const noexcept { return flagSet<ConfigurationFlags::CaptureAddressWithParallelLines>(); }
 private:
     uint32_t sramAmount_;
     uint32_t ioExpanderPeripheralSpeed_;
@@ -260,7 +265,8 @@ constexpr MCUConfiguration BoardDescription<TargetMCU::GrandCentralM4_Type3> = {
         makeConfigFlags<ConfigurationFlags::UsePortReads,
                 ConfigurationFlags::UseIOExpanderAddressLineInterrupts,
                 ConfigurationFlags::SeparateReadAndWriteFunctionPointers,
-                ConfigurationFlags::ValidateTransferDuringInstall>()
+                ConfigurationFlags::ValidateTransferDuringInstall,
+                ConfigurationFlags::CaptureAddressWithParallelLines>()
 };
 
 class TargetBoard {
