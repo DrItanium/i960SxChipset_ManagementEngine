@@ -303,6 +303,8 @@ public:
     [[nodiscard]] static constexpr auto separateReadWriteFunctionPointers() noexcept { return BoardDescription<getMCUTarget()>.separateReadAndWriteFunctionPointers(); }
     [[nodiscard]] static constexpr auto enableDisplayDriver() noexcept { return BoardDescription<getMCUTarget()>.enableDisplayDriver(); }
     [[nodiscard]] static constexpr auto enableRTCInterface() noexcept { return BoardDescription<getMCUTarget()>.enableRTCInterface(); }
+    [[nodiscard]] static constexpr auto addressViaSPI() noexcept { return BoardDescription<getMCUTarget()>.captureAddressWithSPI(); }
+    [[nodiscard]] static constexpr auto addressViaParallel() noexcept { return BoardDescription<getMCUTarget()>.captureAddressWithParallel(); }
 public:
     TargetBoard() = delete;
     ~TargetBoard() = delete;
