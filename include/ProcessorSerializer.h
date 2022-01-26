@@ -317,17 +317,15 @@ public:
         value.bytes[0] = static_cast<byte>(~DigitalPin<i960Pinout::MUXADR0>::readInPort());
         return value.getWholeValue();
     }
-    static inline uint32_t readAddressParallel() noexcept {
-        DigitalPin<i960Pinout::MUXSel0>::assertPin();
-        PortDecomposition lowerHalf, upperHalf;
-        lowerHalf.raw = DigitalPin<i960Pinout::MUXADR0>::readInPort();
-        DigitalPin<i960Pinout::MUXSel0>::deassertPin();
-        upperHalf.raw = DigitalPin<i960Pinout::MUXADR0>::readInPort();
-        SplitWord32 composition{0};
-        composition.setLowerHalf(lowerHalf.extractAddress());
-        composition.setUpperHalf(upperHalf.extractAddress());
-        return composition.getWholeValue();
+    static constexpr SplitWord16 extractAddress(uint32_t value) noexcept {
+        // okay first step is to get the part of the value that we actually care about
+        constexpr uint32_t LowerPortion =  0b0000000000000000'0000001111111111;
+        constexpr uint32_t UpperPortion =  0b0000000000000011'1111000000000000;
+        auto lowerPart = LowerPortion & value;
+        auto upperPart = (UpperPortion & value) >> 2;
+        return SplitWord16(static_cast<uint16_t>(lowerPart | upperPart));
     }
+
     template<bool inDebugMode>
     static inline void full32BitUpdate() noexcept {
         if constexpr (TargetBoard::addressViaSPI()) {
@@ -336,7 +334,12 @@ public:
             address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
             address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
         } else {
-            address_.wholeValue_ = readAddressParallel();
+            DigitalPin<i960Pinout::MUXSel0>::assertPin();
+            auto lowerHalf = DigitalPin<i960Pinout::MUXADR0>::readInPort();
+            DigitalPin<i960Pinout::MUXSel0>::deassertPin();
+            auto upperHalf = DigitalPin<i960Pinout::MUXADR0>::readInPort();
+            address_.setLowerHalf(extractAddress(lowerHalf));
+            address_.setUpperHalf(extractAddress(upperHalf));
         }
         updateTargetFunctions<inDebugMode>();
     }
