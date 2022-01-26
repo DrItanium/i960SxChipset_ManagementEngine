@@ -481,10 +481,9 @@ void setup() {
     DigitalPin<i960Pinout::Reset4809>::assertPin();
     DigitalPin<i960Pinout::Reset960>::configure();
     DigitalPin<i960Pinout::Reset960>::deassertPin();
-    DigitalPin<i960Pinout::Reset4809>::assertPin();
     // always do this first to make sure that we put the i960 into reset regardless of target
     // make sure that the 4809 has enough time and also make sure that the i960 has enough time to undegrade itself!
-    delay(3000);
+    delay(100);
     DigitalPin<i960Pinout::Reset960>::assertPin();
     DigitalPin<i960Pinout::Reset4809>::deassertPin();
     Serial.begin(115200);
@@ -564,6 +563,17 @@ void setup() {
     delay(100);
     Serial.println(F("i960Sx chipset brought up fully!"));
     DigitalPin<i960Pinout::Reset960>::deassertPin();
+    while (true) {
+        Serial.println(F("Asserting Pin!"));
+        //DigitalPin<i960Pinout::Reset960>::assertPin();
+        DigitalPin<i960Pinout::Ready>::assertPin();
+        delay(1000);
+        Serial.println(F("Deasserting Pin!"));
+        //DigitalPin<i960Pinout::Reset960>::deassertPin();
+        DigitalPin<i960Pinout::Ready>::deassertPin();
+        delay(1000);
+        Serial.println(F("--------------"));
+    }
     waitForBootSignal();
 }
 // ----------------------------------------------------------------
