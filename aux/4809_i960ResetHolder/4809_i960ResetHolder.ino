@@ -33,6 +33,18 @@ constexpr auto INT1_960 = PIN_PE1;
 constexpr auto INT2_960 = PIN_PE2;
 constexpr auto INT3_960 = PIN_PE3;
 
+// unused pins
+constexpr auto Unused0 = PIN_PC0;
+constexpr auto Unused1 = PIN_PC1;
+constexpr auto Unused2 = PIN_PC2;
+constexpr auto Unused3 = PIN_PC3;
+constexpr auto Unused4 = PIN_PD0;
+constexpr auto Unused5 = PIN_PD1;
+constexpr auto Unused6 = PIN_PD2;
+constexpr auto Unused7 = PIN_PD3;
+constexpr auto Unused8 = PIN_PD4;
+constexpr auto Unused9 = PIN_PD5;
+
 
 template<decltype(WAITBOOT960) pin>
 struct DigitalPin {
