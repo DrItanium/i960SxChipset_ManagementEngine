@@ -496,6 +496,7 @@ void setup() {
     // duration of the setup function
     // get SPI setup ahead of time
     SPI.begin();
+    Wire.begin();
     configurePins<
             i960Pinout::SD_EN,
             i960Pinout::Ready,
