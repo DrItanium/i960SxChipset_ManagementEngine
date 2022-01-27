@@ -182,10 +182,13 @@ public:
 public:
     [[nodiscard]] static constexpr Address getAddress() noexcept { return address_.getWholeValue(); }
     [[nodiscard]] static SplitWord16 getDataBits() noexcept {
+        Serial.println(F("Getting Data Bits...."));
         auto portContents = DigitalPin<i960Pinout::Data0>::readInPort();
         SplitWord16 result{0};
         result.bytes[0] = static_cast<byte>(portContents);
         result.bytes[1] = static_cast<byte>(portContents >> 10);
+        Serial.print(F("\t0x"));
+        Serial.println(result.wholeValue_, HEX);
 #if 0
         Serial.println("{");
         Serial.print("\tP00 Result: 0x");
@@ -202,13 +205,20 @@ public:
         // the latch is preserved in between data line changes
         // okay we are still pointing as output values
         // check the latch and see if the output value is the same as what is latched
-        constexpr auto normalMask = ((static_cast<uint32_t>(0xFF) << 10) | (static_cast<uint32_t>(0xFF)));
-        constexpr auto invertMask = ~normalMask;
+        Serial.println(F("Setting Data Bits...."));
+        constexpr uint32_t normalMask = 0x0003FCFF;
+        constexpr uint32_t invertMask = ~normalMask;
         if (latchedDataOutput.getWholeValue() != value) {
             latchedDataOutput.wholeValue_ = value;
             latchedPortContents = (static_cast<uint32_t>(latchedDataOutput.bytes[0]) | (static_cast<uint32_t>(latchedDataOutput.bytes[1]) << 10)) & normalMask;
         }
         auto portContents = DigitalPin<i960Pinout::Data0>::readOutPort() & invertMask;
+        Serial.print(F("\tLatched Data: 0x"));
+        Serial.println(latchedDataOutput.wholeValue_, HEX);
+        Serial.print(F("\tLatched Port: 0x"));
+        Serial.println(latchedPortContents, HEX);
+        Serial.print(F("\tCombination: 0x"));
+        Serial.println((latchedPortContents | portContents), HEX);
         DigitalPin<i960Pinout::Data0>::writeOutPort(latchedPortContents | portContents);
     };
     union PortAInput {
@@ -245,24 +255,18 @@ public:
     template<byte offsetMask>
     [[nodiscard]] static auto getCacheOffsetEntry() noexcept { return (address_.bytes[0] >> 1) & offsetMask; }
     inline static void setupDataLinesForWrite() noexcept {
-        if (!dataLinesDirection_) {
-            dataLinesDirection_ = ~dataLinesDirection_;
-            static constexpr uint32_t PortDirectionMask = 0x0003FCFF;
-            static constexpr uint32_t InvertPortDirectionMask = ~PortDirectionMask;
-            auto portDirection = DigitalPin<i960Pinout::Data0>::readPortDir();
-            portDirection &= InvertPortDirectionMask;
-            DigitalPin<i960Pinout::Data0>::writePortDir(portDirection);
-        }
+        static constexpr uint32_t PortDirectionMask = 0x0003FCFF;
+        static constexpr uint32_t InvertPortDirectionMask = ~PortDirectionMask;
+        auto portDirection = DigitalPin<i960Pinout::Data0>::readPortDir();
+        portDirection &= InvertPortDirectionMask;
+        DigitalPin<i960Pinout::Data0>::writePortDir(portDirection);
     }
     inline static void setupDataLinesForRead() noexcept {
-        if (dataLinesDirection_) {
-            dataLinesDirection_ = ~dataLinesDirection_;
-            static constexpr uint32_t PortDirectionMask = 0x0003FCFF;
-            static constexpr uint32_t InvertPortDirectionMask = ~PortDirectionMask;
-            auto portDirection = DigitalPin<i960Pinout::Data0>::readPortDir();
-            portDirection &= InvertPortDirectionMask;
-            DigitalPin<i960Pinout::Data0>::writePortDir(portDirection | PortDirectionMask);
-        }
+        static constexpr uint32_t PortDirectionMask = 0x0003FCFF;
+        static constexpr uint32_t InvertPortDirectionMask = ~PortDirectionMask;
+        auto portDirection = DigitalPin<i960Pinout::Data0>::readPortDir();
+        portDirection &= InvertPortDirectionMask;
+        DigitalPin<i960Pinout::Data0>::writePortDir(portDirection | PortDirectionMask);
     }
 private:
     static byte getUpdateKind() noexcept {
