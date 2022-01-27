@@ -101,7 +101,6 @@ inline void waitForCycleUnlock() noexcept {
     // make sure that we just wait for the gating signal before continuing
     while (DigitalPin<i960Pinout::InTransaction>::isAsserted() && DigitalPin<i960Pinout::BurstNext>::isDeasserted());
     bool outcome = DigitalPin<i960Pinout::InTransaction>::isDeasserted();
-    delay(10000);
     DigitalPin<i960Pinout::Ready>::deassertPin();
     return outcome;
 }
@@ -564,6 +563,18 @@ void setup() {
     delay(100);
     Serial.println(F("i960Sx chipset brought up fully!"));
     DigitalPin<i960Pinout::Reset960>::deassertPin();
+    ProcessorInterface::setupDataLinesForRead();
+#if 0
+    delay(10000);
+    while (true) {
+        constexpr uint16_t DataBits0 = 0x5555;
+        constexpr uint16_t DataBits1 = ~DataBits0;
+        ProcessorInterface::setDataBits(DataBits0);
+        delay(10000);
+        ProcessorInterface::setDataBits(DataBits1);
+        delay(10000);
+    }
+#endif
     waitForBootSignal();
 }
 // ----------------------------------------------------------------
