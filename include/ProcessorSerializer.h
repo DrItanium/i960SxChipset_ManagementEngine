@@ -201,15 +201,17 @@ public:
 #endif
         return result;
     }
+    template<bool useFixedValue = false>
     static void setDataBits(uint16_t value) noexcept {
         // the latch is preserved in between data line changes
         // okay we are still pointing as output values
         // check the latch and see if the output value is the same as what is latched
+        uint16_t theValue = useFixedValue ? 0x5555 : value;
         Serial.println(F("Setting Data Bits...."));
         constexpr uint32_t normalMask = 0x0003FCFF;
         constexpr uint32_t invertMask = ~normalMask;
-        if (latchedDataOutput.getWholeValue() != value) {
-            latchedDataOutput.wholeValue_ = value;
+        if (latchedDataOutput.getWholeValue() != theValue) {
+            latchedDataOutput.wholeValue_ = theValue;
             latchedPortContents = (static_cast<uint32_t>(latchedDataOutput.bytes[0]) | (static_cast<uint32_t>(latchedDataOutput.bytes[1]) << 10)) & normalMask;
         }
         auto portContents = DigitalPin<i960Pinout::Data0>::readOutPort() & invertMask;

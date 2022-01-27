@@ -101,6 +101,7 @@ inline void waitForCycleUnlock() noexcept {
     // make sure that we just wait for the gating signal before continuing
     while (DigitalPin<i960Pinout::InTransaction>::isAsserted() && DigitalPin<i960Pinout::BurstNext>::isDeasserted());
     bool outcome = DigitalPin<i960Pinout::InTransaction>::isDeasserted();
+    delay(10000);
     DigitalPin<i960Pinout::Ready>::deassertPin();
     return outcome;
 }
