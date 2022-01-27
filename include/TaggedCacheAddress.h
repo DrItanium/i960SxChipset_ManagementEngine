@@ -22,11 +22,7 @@ union TaggedAddress {
     [[nodiscard]] constexpr auto getLowest() const noexcept { return lowest; }
     [[nodiscard]] constexpr auto getOffset() const noexcept { return lowest; }
     [[nodiscard]] constexpr auto getRest() const noexcept { return rest; }
-    [[nodiscard]] constexpr TaggedAddress aligned() const noexcept {
-        TaggedAddress result(base);
-        result.lowest = 0;
-        return result;
-    }
+    [[nodiscard]] constexpr TaggedAddress aligned() const noexcept { return {rest, tagIndex, 0}; }
     [[nodiscard]] bool restEqual(const TaggedAddress& other) const noexcept { return getRest() == other.getRest(); }
 private:
     Address base;
