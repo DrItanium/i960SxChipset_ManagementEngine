@@ -314,8 +314,14 @@ public:
         return SplitWord16(~static_cast<uint16_t>(lowerPart | upperPart));
     }
 
+private:
+    static SplitWord16 getHalfAddress() noexcept {
+        auto channelA = DigitalPin<i960Pinout::MUXADR0>::readInPort();
+        return extractAddress(channelA);
+    }
+public:
     template<bool inDebugMode>
-    static inline void full32BitUpdate() noexcept {
+    static void full32BitUpdate() noexcept {
         if constexpr (TargetBoard::addressViaSPI()) {
             // we want to overlay actions as much as possible during spi transfers, there are blocks of waiting for a transfer to take place
             // where we can insert operations to take place that would otherwise be waiting
@@ -327,21 +333,17 @@ public:
             // when low: 8-15, 24-31
             // They are laid out 13/02 so it is necessary to unpack them and assign them as needed
             digitalWrite<i960Pinout::MUXSel0, LOW>();
-            auto channelA = DigitalPin<i960Pinout::MUXADR0>::readInPort();
-            auto addressA = extractAddress(channelA);
-            auto lowest = addressA.getLowerHalf();
-            auto higher = addressA.getUpperHalf();
-            {
-                digitalWrite<i960Pinout::MUXSel0, HIGH>();
-                auto channelB = DigitalPin<i960Pinout::MUXADR0>::readInPort();
-                auto addressB = extractAddress(channelB);
-                auto lower = addressB.getLowerHalf();
-                auto highest = addressB.getUpperHalf();
-                address_.bytes[0] = lowest;
-                address_.bytes[1] = lower;
-                address_.bytes[2] = higher;
-                address_.bytes[3] = highest;
-            }
+            auto addressA = getHalfAddress();
+            digitalWrite<i960Pinout::MUXSel0, HIGH>();
+            auto addressB = getHalfAddress();
+            auto lower = addressA.getLowerHalf();
+            auto highest = addressA.getUpperHalf();
+            auto lowest = addressB.getLowerHalf();
+            auto higher = addressB.getUpperHalf();
+            address_.bytes[0] = lowest;
+            address_.bytes[1] = lower;
+            address_.bytes[2] = higher;
+            address_.bytes[3] = highest;
         }
         updateTargetFunctions<inDebugMode>();
     }
