@@ -498,28 +498,28 @@ public:
     static void begin() noexcept {
         if (!initialized_) {
             initialized_ = true;
-            SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
-            DigitalPin<i960Pinout::GPIOSelect>::configure();
-            DigitalPin<i960Pinout::GPIOSelect>::deassertPin();
-            // at bootup, the IOExpanders all respond to 0b000 because IOCON.HAEN is
-            // disabled. We can send out a single IOCON.HAEN enable message and all
-            // should receive it.
-            // so do a begin operation on all chips (0b000)
-            // set IOCON.HAEN on all chips
-            write8<ProcessorInterface::IOExpanderAddress::DataLines, MCP23x17Registers::IOCON, false>(0b0000'1000);
-            write8<ProcessorInterface::IOExpanderAddress::Upper16Lines, MCP23x17Registers::IOCON, false>(0b0000'1000);
-            write8<ProcessorInterface::IOExpanderAddress::Lower16Lines, MCP23x17Registers::IOCON, false>(0b0000'1000);
-            writeDirection<IOExpanderAddress::Lower16Lines, false>(0xFFFF);
-            writeDirection<IOExpanderAddress::Upper16Lines, false>(0xFFFF);
-            writeDirection<IOExpanderAddress::DataLines, false>(0xFFFF);
-            write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF);
-            write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF);
-            write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::INTCON, false>(0x0000);
-            write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::INTCON, false>(0x0000);
-            write16<IOExpanderAddress::DataLines, MCP23x17Registers::OLAT, false>(latchedDataOutput.getWholeValue());
+            //SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
+            //DigitalPin<i960Pinout::GPIOSelect>::configure();
+            //DigitalPin<i960Pinout::GPIOSelect>::deassertPin();
+            //// at bootup, the IOExpanders all respond to 0b000 because IOCON.HAEN is
+            //// disabled. We can send out a single IOCON.HAEN enable message and all
+            //// should receive it.
+            //// so do a begin operation on all chips (0b000)
+            //// set IOCON.HAEN on all chips
+            //write8<ProcessorInterface::IOExpanderAddress::DataLines, MCP23x17Registers::IOCON, false>(0b0000'1000);
+            //write8<ProcessorInterface::IOExpanderAddress::Upper16Lines, MCP23x17Registers::IOCON, false>(0b0000'1000);
+            //write8<ProcessorInterface::IOExpanderAddress::Lower16Lines, MCP23x17Registers::IOCON, false>(0b0000'1000);
+            //writeDirection<IOExpanderAddress::Lower16Lines, false>(0xFFFF);
+            //writeDirection<IOExpanderAddress::Upper16Lines, false>(0xFFFF);
+            //writeDirection<IOExpanderAddress::DataLines, false>(0xFFFF);
+            //write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF);
+            //write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF);
+            //write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::INTCON, false>(0x0000);
+            //write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::INTCON, false>(0x0000);
+            //write16<IOExpanderAddress::DataLines, MCP23x17Registers::OLAT, false>(latchedDataOutput.getWholeValue());
             updateTargetFunctions<true>();
             updateTargetFunctions<false>();
-            SPI.endTransaction();
+            //SPI.endTransaction();
         }
     }
 private:
