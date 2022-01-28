@@ -134,22 +134,23 @@ public:
     template<bool inDebugMode>
     static void newDataCycle() noexcept {
         full32BitUpdate<inDebugMode>();
+        delayMicroseconds(10); // this gets rid of a chipset halt problem that I'm not sure where is coming from
         //Serial.print(F("Address 0x")); Serial.println(address_.getWholeValue(), HEX);
-            if (ProcessorInterface::isReadOperation()) {
-                setupDataLinesForRead();
-                if constexpr (inDebugMode) {
-                    lastReadDebug_();
-                } else {
-                    lastRead_();
-                }
+        if (ProcessorInterface::isReadOperation()) {
+            setupDataLinesForRead();
+            if constexpr (inDebugMode) {
+                lastReadDebug_();
             } else {
-                setupDataLinesForWrite();
-                if constexpr (inDebugMode) {
-                    lastWriteDebug_();
-                } else {
-                    lastWrite_();
-                }
+                lastRead_();
             }
+        } else {
+            setupDataLinesForWrite();
+            if constexpr (inDebugMode) {
+                lastWriteDebug_();
+            } else {
+                lastWrite_();
+            }
+        }
     }
     template<bool advanceAddress = true>
     static void burstNext() noexcept {
