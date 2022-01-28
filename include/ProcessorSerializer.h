@@ -331,15 +331,17 @@ public:
             auto addressA = extractAddress(channelA);
             auto lowest = addressA.getLowerHalf();
             auto higher = addressA.getUpperHalf();
-            digitalWrite<i960Pinout::MUXSel0, HIGH>();
-            auto channelB = DigitalPin<i960Pinout::MUXADR0>::readInPort();
-            auto addressB = extractAddress(channelB);
-            auto lower = addressB.getLowerHalf();
-            auto highest = addressB.getUpperHalf();
-            address_.bytes[0] = lowest;
-            address_.bytes[1] = lower;
-            address_.bytes[2] = higher;
-            address_.bytes[3] = highest;
+            {
+                digitalWrite<i960Pinout::MUXSel0, HIGH>();
+                auto channelB = DigitalPin<i960Pinout::MUXADR0>::readInPort();
+                auto addressB = extractAddress(channelB);
+                auto lower = addressB.getLowerHalf();
+                auto highest = addressB.getUpperHalf();
+                address_.bytes[0] = lowest;
+                address_.bytes[1] = lower;
+                address_.bytes[2] = higher;
+                address_.bytes[3] = highest;
+            }
         }
         updateTargetFunctions<inDebugMode>();
     }
