@@ -472,7 +472,7 @@ void waitForBootSignal() noexcept {
     while (DigitalPin<i960Pinout::SuccessfulBoot>::read() == LOW);
     attachInterrupt(i960Pinout::SuccessfulBoot,
                     []() { signalHaltState("CHECKSUM FAILURE"); },
-                    LOW);
+                    FALLING);
 }
 // the setup routine runs once when you press reset:
 void setup() {
@@ -610,7 +610,7 @@ signalHaltState(const __FlashStringHelper* haltMsg) noexcept {
     Serial.print(F("CHIPSET HALT: "));
     Serial.println(haltMsg);
     while(true) {
-        delay(10);
+        delay(1000);
     }
 }
 [[noreturn]]
@@ -619,7 +619,7 @@ signalHaltState(const char* haltMsg) noexcept {
     Serial.print("CHIPSET HALT: ");
     Serial.println(haltMsg);
     while(true) {
-        delay(10);
+        delay(1000);
     }
 }
 #ifdef __arm__
