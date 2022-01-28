@@ -285,10 +285,14 @@ void setup() {
   // after this point, if FAIL960 ever goes from LOW to HIGH again, then we have checksum failed!
   attachInterrupt(digitalPinToInterrupt(FAIL960), handleChecksumFail, RISING);
 }
+constexpr bool EnableOneCycleWaitStates = false;
+template<bool enable = EnableOneCycleWaitStates>
 [[gnu::always_inline]]
 inline void waitOneBusCycle() noexcept {
-  asm volatile ("nop");
-  asm volatile ("nop");
+  if constexpr (enable) {
+    asm volatile ("nop");
+    asm volatile ("nop");
+  }
 }
 [[gnu::always_inline]]
 inline void informCPUAndWait() noexcept {
