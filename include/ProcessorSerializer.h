@@ -45,6 +45,7 @@ public:
         SplitWord16 result{0};
         result.bytes[0] = static_cast<byte>(portContents);
         result.bytes[1] = static_cast<byte>(portContents >> 10);
+        //delayMicroseconds(10);
         return result;
     }
     static void setDataBits(uint16_t value) noexcept {
@@ -60,6 +61,7 @@ public:
         auto portContents = DigitalPin<i960Pinout::Data0>::readOutPort() & invertMask;
         auto output = latchedPortContents | portContents;
         DigitalPin<i960Pinout::Data0>::writeOutPort(output);
+        //delayMicroseconds(10);
     };
     [[nodiscard]] static LoadStoreStyle getStyle() noexcept {
         auto lower = static_cast<byte>(DigitalPin<i960Pinout::BE0>::read());
@@ -134,7 +136,7 @@ public:
     template<bool inDebugMode>
     static void newDataCycle() noexcept {
         full32BitUpdate<inDebugMode>();
-        delayMicroseconds(2); // this gets rid of a chipset halt problem that I'm not sure where is coming from
+        //delayMicroseconds(10); // this gets rid of a chipset halt problem that I'm not sure where is coming from
         //Serial.print(F("Address 0x")); Serial.println(address_.getWholeValue(), HEX);
         if (ProcessorInterface::isReadOperation()) {
             setupDataLinesForRead();
