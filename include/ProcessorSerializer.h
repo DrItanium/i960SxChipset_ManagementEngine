@@ -316,8 +316,7 @@ public:
 
 private:
     static SplitWord16 getHalfAddress() noexcept {
-        auto channelA = DigitalPin<i960Pinout::MUXADR0>::readInPort();
-        return extractAddress(channelA);
+        return extractAddress(DigitalPin<i960Pinout::MUXADR0>::readInPort());
     }
 public:
     template<bool inDebugMode>
@@ -456,8 +455,8 @@ public:
                 full32BitUpdate<inDebugMode>();
                 break;
         }
-        Serial.print(F("Address: 0x"));
-        Serial.println(address_.getWholeValue(), HEX);
+        //Serial.print(F("Address: 0x"));
+        //Serial.println(address_.getWholeValue(), HEX);
         /// @todo implement parallel read support
         if constexpr (TargetBoard::separateReadWriteFunctionPointers()) {
             if (ProcessorInterface::isReadOperation()) {
