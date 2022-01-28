@@ -86,10 +86,15 @@ public:
     Serial0Interface& operator=(const Serial0Interface&) = delete;
     Serial0Interface& operator=(Serial0Interface&&) = delete;
 private:
+    static inline uint16_t getConsoleInput() noexcept {
+        auto result = Serial.read();
+        delay(1);
+        return result;
+    }
     static inline uint16_t handleFirstPageRegisterReads(uint8_t offset, LoadStoreStyle) noexcept {
         switch (static_cast<Registers>(offset)) {
             case Registers::ConsoleIO:
-                return Serial.read();
+                return getConsoleInput();
             case Registers::AddressDebuggingFlag:
                 if constexpr (AddressDebuggingAllowed) {
                     return static_cast<uint16_t>(enableAddressDebugging_);
@@ -108,6 +113,7 @@ private:
                 break;
             case Registers::ConsoleIO:
                 Serial.write(static_cast<char>(value.getWholeValue()));
+                delay(1);
                 break;
             case Registers::AddressDebuggingFlag:
                 if constexpr (AddressDebuggingAllowed) {
