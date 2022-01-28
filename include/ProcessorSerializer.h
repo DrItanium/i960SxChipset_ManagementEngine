@@ -313,12 +313,7 @@ public:
     }
     static constexpr SplitWord16 extractAddress(uint32_t value) noexcept {
         // okay first step is to get the part of the value that we actually care about
-        constexpr uint32_t LowerPortion =  0b0000000000000000'0000001111111111;
-        constexpr uint32_t UpperPortion =  0b0000000000000011'1111000000000000;
-        auto lowerPart = LowerPortion & value;
-        auto upperPart = (UpperPortion & value) >> 2;
-        // The AHD158 inverts the output
-        return SplitWord16(~static_cast<uint16_t>(lowerPart | upperPart));
+        return {static_cast<byte>(~value), static_cast<byte>(~(value >> 10))};
     }
 
     template<bool inDebugMode>
@@ -447,6 +442,8 @@ public:
                 full32BitUpdate<inDebugMode>();
                 break;
         }
+        Serial.print(F("GOT ADDRESS: 0x"));
+        Serial.println(address_.getWholeValue(), HEX);
         /// @todo implement parallel read support
         if constexpr (TargetBoard::separateReadWriteFunctionPointers()) {
             if (ProcessorInterface::isReadOperation()) {
