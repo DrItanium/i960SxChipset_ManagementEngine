@@ -88,6 +88,9 @@ public:
 private:
     static inline uint16_t getConsoleInput() noexcept {
         auto result = Serial.read();
+        // this is to prevent the serial console output from overwhelming the bus and causing a machine check exception from occurring
+        // this does not seem to affect system performance at all beyond printing.
+        /// @todo introduce bus gating into the management engine based on cycles provided
         delay(1);
         return result;
     }
@@ -113,6 +116,8 @@ private:
                 break;
             case Registers::ConsoleIO:
                 Serial.write(static_cast<char>(value.getWholeValue()));
+                // The serial console is very fast and seems to be out pacing the i960 and the rest of the bus.
+                // So introduce this delay after writing to make sure we don't run into problems in the future.
                 delay(1);
                 break;
             case Registers::AddressDebuggingFlag:
