@@ -134,7 +134,7 @@ public:
     template<bool inDebugMode>
     static void newDataCycle() noexcept {
         full32BitUpdate<inDebugMode>();
-        delayMicroseconds(10); // this gets rid of a chipset halt problem that I'm not sure where is coming from
+        delayMicroseconds(2); // this gets rid of a chipset halt problem that I'm not sure where is coming from
         //Serial.print(F("Address 0x")); Serial.println(address_.getWholeValue(), HEX);
         if (ProcessorInterface::isReadOperation()) {
             setupDataLinesForRead();
@@ -157,6 +157,8 @@ public:
         if constexpr (advanceAddress) {
             address_.wholeValue_ += 2;
         }
+        // a test to see if we are running too fast and not allowing enough charge time between transaction points
+        //delayMicroseconds(10);
     }
     /**
      * @brief Return the least significant byte of the address, useful for CoreChipsetFeatures
