@@ -79,14 +79,14 @@ public:
     [[nodiscard]] static bool isReadOperation() noexcept { return DigitalPin<i960Pinout::W_R_>::isAsserted(); }
     template<byte offsetMask>
     [[nodiscard]] static auto getCacheOffsetEntry() noexcept { return (address_.bytes[0] >> 1) & offsetMask; }
-    inline static void setupDataLinesForWrite() noexcept {
+    static void setupDataLinesForWrite() noexcept {
         static constexpr uint32_t PortDirectionMask = 0x0003FCFF;
         static constexpr uint32_t InvertPortDirectionMask = ~PortDirectionMask;
         auto portDirection = DigitalPin<i960Pinout::Data0>::readPortDir();
         portDirection &= InvertPortDirectionMask;
         DigitalPin<i960Pinout::Data0>::writePortDir(portDirection);
     }
-    inline static void setupDataLinesForRead() noexcept {
+    static void setupDataLinesForRead() noexcept {
         static constexpr uint32_t PortDirectionMask = 0x0003FCFF;
         static constexpr uint32_t InvertPortDirectionMask = ~PortDirectionMask;
         auto portDirection = DigitalPin<i960Pinout::Data0>::readPortDir();
@@ -95,21 +95,13 @@ public:
     }
 private:
     template<bool inDebugMode>
-    inline static void updateTargetFunctions() noexcept {
-        if constexpr (TargetBoard::separateReadWriteFunctionPointers()) {
-            if constexpr (auto [a, b] = getSplitBody<inDebugMode>(address_.bytes[3]); inDebugMode) {
-                lastReadDebug_ = a;
-                lastWriteDebug_ = b;
-            } else {
-                lastRead_ = a;
-                lastWrite_ = b;
-            }
+    static void updateTargetFunctions() noexcept {
+        if constexpr (auto [a, b] = getSplitBody<inDebugMode>(address_.bytes[3]); inDebugMode) {
+            lastReadDebug_ = a;
+            lastWriteDebug_ = b;
         } else {
-            if constexpr (auto a = getBody<inDebugMode>(address_.bytes[3]); inDebugMode) {
-                lastDebug_ = a;
-            } else {
-                last_ = a;
-            }
+            lastRead_ = a;
+            lastWrite_ = b;
         }
     }
 public:
@@ -150,10 +142,9 @@ public:
     }
 
     template<bool inDebugMode>
-    static inline void newDataCycle() noexcept {
+    static void newDataCycle() noexcept {
         full32BitUpdate<inDebugMode>();
-        Serial.print(F("Address 0x"));
-        Serial.println(address_.getWholeValue(), HEX);
+        //Serial.print(F("Address 0x")); Serial.println(address_.getWholeValue(), HEX);
         if constexpr (TargetBoard::separateReadWriteFunctionPointers()) {
             if (ProcessorInterface::isReadOperation()) {
                 setupDataLinesForRead();
@@ -179,8 +170,7 @@ public:
         }
     }
     template<bool advanceAddress = true>
-    [[gnu::always_inline]]
-    static inline void burstNext() noexcept {
+    static void burstNext() noexcept {
         if constexpr (advanceAddress) {
             address_.wholeValue_ += 2;
         }
