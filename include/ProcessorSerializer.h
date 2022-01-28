@@ -184,8 +184,6 @@ public:
     [[nodiscard]] static SplitWord16 getDataBits() noexcept {
         auto portContents = DigitalPin<i960Pinout::Data0>::readInPort();
         SplitWord16 result{0};
-        Serial.print(F("\tPORT CONTENTS FROM GET: 0x"));
-        Serial.println(portContents, HEX);
         result.bytes[0] = static_cast<byte>(portContents);
         result.bytes[1] = static_cast<byte>(portContents >> 10);
 #if 0
@@ -212,8 +210,6 @@ public:
         }
         auto portContents = DigitalPin<i960Pinout::Data0>::readOutPort() & invertMask;
         auto output = latchedPortContents | portContents;
-        Serial.print(F("\tFINAL PORT CONTENTS FROM PUT: 0x"));
-        Serial.println(output, HEX);
         DigitalPin<i960Pinout::Data0>::writeOutPort(output);
     };
     union PortAInput {
@@ -327,17 +323,19 @@ public:
             address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
         } else {
             // The multiplexed address lines are not mapped 01/23
+            // when high: 0-7, 16-23
+            // when low: 8-15, 24-31
             // They are laid out 13/02 so it is necessary to unpack them and assign them as needed
-            DigitalPin<i960Pinout::MUXSel0>::assertPin();
+            digitalWrite<i960Pinout::MUXSel0, LOW>();
             auto channelA = DigitalPin<i960Pinout::MUXADR0>::readInPort();
             auto addressA = extractAddress(channelA);
-            auto lower = addressA.getLowerHalf();
-            auto highest = addressA.getUpperHalf();
-            DigitalPin<i960Pinout::MUXSel0>::deassertPin();
+            auto lowest = addressA.getLowerHalf();
+            auto higher = addressA.getUpperHalf();
+            digitalWrite<i960Pinout::MUXSel0, HIGH>();
             auto channelB = DigitalPin<i960Pinout::MUXADR0>::readInPort();
             auto addressB = extractAddress(channelB);
-            auto lowest = addressB.getLowerHalf();
-            auto higher = addressB.getUpperHalf();
+            auto lower = addressB.getLowerHalf();
+            auto highest = addressB.getUpperHalf();
             address_.bytes[0] = lowest;
             address_.bytes[1] = lower;
             address_.bytes[2] = higher;
