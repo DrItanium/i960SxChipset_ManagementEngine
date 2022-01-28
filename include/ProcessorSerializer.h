@@ -184,6 +184,8 @@ public:
     [[nodiscard]] static SplitWord16 getDataBits() noexcept {
         auto portContents = DigitalPin<i960Pinout::Data0>::readInPort();
         SplitWord16 result{0};
+        Serial.print(F("\tPORT CONTENTS FROM GET: 0x"));
+        Serial.println(portContents, HEX);
         result.bytes[0] = static_cast<byte>(portContents);
         result.bytes[1] = static_cast<byte>(portContents >> 10);
 #if 0
@@ -209,7 +211,10 @@ public:
             latchedPortContents = (static_cast<uint32_t>(latchedDataOutput.bytes[0]) | (static_cast<uint32_t>(latchedDataOutput.bytes[1]) << 10)) & normalMask;
         }
         auto portContents = DigitalPin<i960Pinout::Data0>::readOutPort() & invertMask;
-        DigitalPin<i960Pinout::Data0>::writeOutPort(latchedPortContents | portContents);
+        auto output = latchedPortContents | portContents;
+        Serial.print(F("\tFINAL PORT CONTENTS FROM PUT: 0x"));
+        Serial.println(output, HEX);
+        DigitalPin<i960Pinout::Data0>::writeOutPort(output);
     };
     union PortAInput {
         uint32_t raw = 0;
@@ -303,17 +308,14 @@ private:
         }
     }
 public:
-    static inline uint16_t readLowerHalfParallel() noexcept {
-        SplitWord16 value{0};
-        DigitalPin<i960Pinout::MUXSel0>::assertPin();
-        value.bytes[1] = static_cast<byte>(~DigitalPin<i960Pinout::MUXADR0>::readInPort());
-        DigitalPin<i960Pinout::MUXSel0>::deassertPin();
-        value.bytes[0] = static_cast<byte>(~DigitalPin<i960Pinout::MUXADR0>::readInPort());
-        return value.getWholeValue();
-    }
     static constexpr SplitWord16 extractAddress(uint32_t value) noexcept {
         // okay first step is to get the part of the value that we actually care about
-        return {static_cast<byte>(~value), static_cast<byte>(~(value >> 10))};
+        constexpr uint32_t LowerPortion =  0b0000000000000000'0000001111111111;
+        constexpr uint32_t UpperPortion =  0b0000000000000011'1111000000000000;
+        auto lowerPart = LowerPortion & value;
+        auto upperPart = (UpperPortion & value) >> 2;
+        // The AHD158 inverts the output
+        return SplitWord16(~static_cast<uint16_t>(lowerPart | upperPart));
     }
 
     template<bool inDebugMode>
@@ -326,10 +328,14 @@ public:
         } else {
             DigitalPin<i960Pinout::MUXSel0>::assertPin();
             auto lowerHalf = DigitalPin<i960Pinout::MUXADR0>::readInPort();
+            address_.setLowerHalf(extractAddress(lowerHalf));
+            Serial.print(F("\tlower: 0x"));
+            Serial.println(address_.getLowerHalf(), HEX);
             DigitalPin<i960Pinout::MUXSel0>::deassertPin();
             auto upperHalf = DigitalPin<i960Pinout::MUXADR0>::readInPort();
-            address_.setLowerHalf(extractAddress(lowerHalf));
             address_.setUpperHalf(extractAddress(upperHalf));
+            Serial.print(F("\tupper: 0x"));
+            Serial.println(address_.getUpperHalf(), HEX);
         }
         updateTargetFunctions<inDebugMode>();
     }
@@ -442,7 +448,7 @@ public:
                 full32BitUpdate<inDebugMode>();
                 break;
         }
-        Serial.print(F("GOT ADDRESS: 0x"));
+        Serial.print(F("Address: 0x"));
         Serial.println(address_.getWholeValue(), HEX);
         /// @todo implement parallel read support
         if constexpr (TargetBoard::separateReadWriteFunctionPointers()) {
