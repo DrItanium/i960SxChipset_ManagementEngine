@@ -326,16 +326,22 @@ public:
             address_.setLowerHalf(readGPIO16<IOExpanderAddress::Lower16Lines>());
             address_.setUpperHalf(readGPIO16<IOExpanderAddress::Upper16Lines>());
         } else {
+            // The multiplexed address lines are not mapped 01/23
+            // They are laid out 13/02 so it is necessary to unpack them and assign them as needed
             DigitalPin<i960Pinout::MUXSel0>::assertPin();
-            auto lowerHalf = DigitalPin<i960Pinout::MUXADR0>::readInPort();
-            address_.setLowerHalf(extractAddress(lowerHalf));
-            Serial.print(F("\tlower: 0x"));
-            Serial.println(address_.getLowerHalf(), HEX);
+            auto channelA = DigitalPin<i960Pinout::MUXADR0>::readInPort();
+            auto addressA = extractAddress(channelA);
+            auto lower = addressA.getLowerHalf();
+            auto highest = addressA.getUpperHalf();
             DigitalPin<i960Pinout::MUXSel0>::deassertPin();
-            auto upperHalf = DigitalPin<i960Pinout::MUXADR0>::readInPort();
-            address_.setUpperHalf(extractAddress(upperHalf));
-            Serial.print(F("\tupper: 0x"));
-            Serial.println(address_.getUpperHalf(), HEX);
+            auto channelB = DigitalPin<i960Pinout::MUXADR0>::readInPort();
+            auto addressB = extractAddress(channelB);
+            auto lowest = addressB.getLowerHalf();
+            auto higher = addressB.getUpperHalf();
+            address_.bytes[0] = lowest;
+            address_.bytes[1] = lower;
+            address_.bytes[2] = higher;
+            address_.bytes[3] = highest;
         }
         updateTargetFunctions<inDebugMode>();
     }
