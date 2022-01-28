@@ -45,16 +45,6 @@ public:
         SplitWord16 result{0};
         result.bytes[0] = static_cast<byte>(portContents);
         result.bytes[1] = static_cast<byte>(portContents >> 10);
-#if 0
-        Serial.println("{");
-        Serial.print("\tP00 Result: 0x");
-        Serial.println(result.getWholeValue(), HEX);
-        auto spiResult = readGPIO16<ProcessorInterface::IOExpanderAddress::DataLines>();
-        Serial.print("\tSPI Result: 0x");
-        Serial.println(spiResult.getWholeValue(), HEX);
-        Serial.println("}");
-        return spiResult;
-#endif
         return result;
     }
     static void setDataBits(uint16_t value) noexcept {
@@ -145,7 +135,6 @@ public:
     static void newDataCycle() noexcept {
         full32BitUpdate<inDebugMode>();
         //Serial.print(F("Address 0x")); Serial.println(address_.getWholeValue(), HEX);
-        if constexpr (TargetBoard::separateReadWriteFunctionPointers()) {
             if (ProcessorInterface::isReadOperation()) {
                 setupDataLinesForRead();
                 if constexpr (inDebugMode) {
@@ -161,13 +150,6 @@ public:
                     lastWrite_();
                 }
             }
-        } else {
-            if constexpr (inDebugMode) {
-                lastDebug_();
-            } else {
-                last_();
-            }
-        }
     }
     template<bool advanceAddress = true>
     static void burstNext() noexcept {
@@ -182,40 +164,13 @@ public:
     [[nodiscard]] static auto getPageOffset() noexcept { return address_.bytes[0]; }
     [[nodiscard]] static auto getPageIndex() noexcept { return address_.bytes[1]; }
     static void begin() noexcept {
-        if (!initialized_) {
-            initialized_ = true;
-            //SPI.beginTransaction(SPISettings(TargetBoard::runIOExpanderSPIInterfaceAt(), MSBFIRST, SPI_MODE0));
-            //DigitalPin<i960Pinout::GPIOSelect>::configure();
-            //DigitalPin<i960Pinout::GPIOSelect>::deassertPin();
-            //// at bootup, the IOExpanders all respond to 0b000 because IOCON.HAEN is
-            //// disabled. We can send out a single IOCON.HAEN enable message and all
-            //// should receive it.
-            //// so do a begin operation on all chips (0b000)
-            //// set IOCON.HAEN on all chips
-            //write8<ProcessorInterface::IOExpanderAddress::DataLines, MCP23x17Registers::IOCON, false>(0b0000'1000);
-            //write8<ProcessorInterface::IOExpanderAddress::Upper16Lines, MCP23x17Registers::IOCON, false>(0b0000'1000);
-            //write8<ProcessorInterface::IOExpanderAddress::Lower16Lines, MCP23x17Registers::IOCON, false>(0b0000'1000);
-            //writeDirection<IOExpanderAddress::Lower16Lines, false>(0xFFFF);
-            //writeDirection<IOExpanderAddress::Upper16Lines, false>(0xFFFF);
-            //writeDirection<IOExpanderAddress::DataLines, false>(0xFFFF);
-            //write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF);
-            //write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::GPINTEN, false>(0xFFFF);
-            //write16<IOExpanderAddress::Lower16Lines, MCP23x17Registers::INTCON, false>(0x0000);
-            //write16<IOExpanderAddress::Upper16Lines, MCP23x17Registers::INTCON, false>(0x0000);
-            //write16<IOExpanderAddress::DataLines, MCP23x17Registers::OLAT, false>(latchedDataOutput.getWholeValue());
-            updateTargetFunctions<true>();
-            updateTargetFunctions<false>();
-            //SPI.endTransaction();
-        }
+        updateTargetFunctions<true>();
+        updateTargetFunctions<false>();
     }
 private:
     static inline SplitWord32 address_{0};
     static inline SplitWord16 latchedDataOutput {0};
     static inline uint32_t latchedPortContents = 0;
-    static inline byte dataLinesDirection_ = 0xFF;
-    static inline bool initialized_ = false;
-    static inline BodyFunction last_ = nullptr;
-    static inline BodyFunction lastDebug_ = nullptr;
     static inline BodyFunction lastRead_ = nullptr;
     static inline BodyFunction lastWrite_ = nullptr;
     static inline BodyFunction lastReadDebug_ = nullptr;

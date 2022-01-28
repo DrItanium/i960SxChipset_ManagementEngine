@@ -90,10 +90,10 @@ constexpr auto CacheSize = TargetBoard::getCacheSize();
 using L1Cache = CacheInstance_t<SixteenWayRandPLRUCacheWay, CacheSize, 32, CacheLineSize, BackingMemoryStorage_t, CompileInCacheSystemDebuggingSupport>;
 L1Cache theCache;
 
-inline void waitForCycleUnlock() noexcept {
+void waitForCycleUnlock() noexcept {
     while (DigitalPin<i960Pinout::DoCycle>::isDeasserted());
 }
-[[nodiscard]] inline bool informCPU() noexcept {
+[[nodiscard]] bool informCPU() noexcept {
     // don't pulse READY, instead just pull it low, the interrupt latency on the 4809 is horrible
     // so we just pull Ready high as soon as we get the next phase in.
     //DigitalPin<i960Pinout::Ready>::pulse();
@@ -108,14 +108,14 @@ constexpr auto IncrementAddress = true;
 constexpr auto LeaveAddressAlone = false;
 // while the i960 does not allow going beyond 8 words, we can use the number of words cached in all cases to be safe
 constexpr byte MaximumNumberOfWordsTransferrableInASingleTransaction = decltype(theCache)::NumWordsCached;
-inline void displayRequestedAddress() noexcept {
+void displayRequestedAddress() noexcept {
     auto address = ProcessorInterface::getAddress();
     Serial.print(F("ADDRESS: 0x"));
     Serial.println(address, HEX);
 }
 
 template<bool inDebugMode>
-inline void fallbackBodyRead() noexcept {
+void fallbackBodyRead() noexcept {
     if constexpr (inDebugMode) {
         displayRequestedAddress();
     }
@@ -131,7 +131,7 @@ inline void fallbackBodyRead() noexcept {
     } while (true);
 }
 template<bool inDebugMode>
-inline void fallbackBodyWrite() noexcept {
+void fallbackBodyWrite() noexcept {
     if constexpr (inDebugMode) {
         displayRequestedAddress();
     }
@@ -148,7 +148,7 @@ inline void fallbackBodyWrite() noexcept {
     } while (true);
 }
 template<bool inDebugMode>
-inline void fallbackBody() noexcept {
+void fallbackBody() noexcept {
     // fallback, be consistent to make sure we don't run faster than the i960
     if (ProcessorInterface::isReadOperation()) {
         fallbackBodyRead<inDebugMode>();
@@ -157,7 +157,7 @@ inline void fallbackBody() noexcept {
     }
 }
 template<bool inDebugMode>
-inline void handleMemoryInterfaceRead() noexcept {
+void handleMemoryInterfaceRead() noexcept {
     if constexpr (inDebugMode) {
         displayRequestedAddress();
     }
@@ -190,7 +190,7 @@ inline void handleMemoryInterfaceRead() noexcept {
     }
 }
 template<bool inDebugMode>
-inline void handleMemoryInterfaceWrite() noexcept {
+void handleMemoryInterfaceWrite() noexcept {
     if constexpr (inDebugMode) {
         displayRequestedAddress();
     }
@@ -226,7 +226,7 @@ inline void handleMemoryInterfaceWrite() noexcept {
     }
 }
 template<bool inDebugMode>
-inline void handleMemoryInterface() noexcept {
+void handleMemoryInterface() noexcept {
     // okay we are dealing with the psram chips
     // now take the time to compute the cache offset entries
     if (ProcessorInterface::isReadOperation()) {
@@ -238,7 +238,7 @@ inline void handleMemoryInterface() noexcept {
     }
 }
 template<bool inDebugMode, typename T>
-inline void handleExternalDeviceRequestRead() noexcept {
+void handleExternalDeviceRequestRead() noexcept {
     if constexpr (inDebugMode) {
         displayRequestedAddress();
     }
@@ -269,7 +269,7 @@ inline void handleExternalDeviceRequestRead() noexcept {
     }
 }
 template<bool inDebugMode, typename T>
-inline void handleExternalDeviceRequestWrite() noexcept {
+void handleExternalDeviceRequestWrite() noexcept {
     if constexpr (inDebugMode) {
         displayRequestedAddress();
     }
@@ -302,7 +302,7 @@ inline void handleExternalDeviceRequestWrite() noexcept {
     }
 }
 template<bool inDebugMode, typename T>
-inline void handleExternalDeviceRequest() noexcept {
+void handleExternalDeviceRequest() noexcept {
     // with burst transactions in the core chipset, we do not have access to a cache line to write into.
     // instead we need to do the old style infinite iteration design
     if (ProcessorInterface::isReadOperation()) {
@@ -314,7 +314,7 @@ inline void handleExternalDeviceRequest() noexcept {
     }
 }
 template<bool inDebugMode>
-inline void invocationBody() noexcept {
+void invocationBody() noexcept {
     // wait for the management engine to give the go ahead
     while (DigitalPin<i960Pinout::InTransaction>::isDeasserted());
 
