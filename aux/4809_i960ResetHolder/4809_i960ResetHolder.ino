@@ -294,12 +294,14 @@ inline void waitOneBusCycle() noexcept {
 inline void informCPUAndWait() noexcept {
   DigitalPin<READY960>::pulse();
   while (DigitalPin<MCU_READY>::isAsserted());
+  waitOneBusCycle();
 }
 
 [[gnu::always_inline]]
 inline void waitForCycleEnd() noexcept {
   while (DigitalPin<MCU_READY>::isDeasserted());
   DigitalPin<DO_CYCLE>::deassertPin();
+  waitOneBusCycle();
 }
 
 [[noreturn]]
