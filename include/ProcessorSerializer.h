@@ -26,7 +26,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef ARDUINO_IOEXPANDERS_H
 #define ARDUINO_IOEXPANDERS_H
 #include <Arduino.h>
-#include <SPI.h>
 #include "Pinout.h"
 #include "i960SxChipset.h"
 
