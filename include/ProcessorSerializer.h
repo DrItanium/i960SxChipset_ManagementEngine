@@ -96,7 +96,6 @@ private:
             lastWrite_ = b;
         }
     }
-public:
     static constexpr SplitWord16 extractAddress(uint32_t value) noexcept {
         // okay first step is to get the part of the value that we actually care about
         constexpr uint32_t LowerPortion =  0b0000000000000000'0000001111111111;
@@ -106,11 +105,7 @@ public:
         // The AHD158 inverts the output
         return SplitWord16(~static_cast<uint16_t>(lowerPart | upperPart));
     }
-
-private:
-    static SplitWord16 getHalfAddress() noexcept {
-        return extractAddress(DigitalPin<i960Pinout::MUXADR0>::readInPort());
-    }
+    static SplitWord16 getHalfAddress() noexcept;
 public:
     template<bool inDebugMode>
     static void full32BitUpdate() noexcept {
