@@ -307,7 +307,7 @@ inline void waitForCycleEnd() noexcept {
   DigitalPin<DO_CYCLE>::deassertPin();
   waitOneBusCycle();
 }
-constexpr byte MaxNumberOfCyclesBeforePause = 32;
+constexpr byte MaxNumberOfCyclesBeforePause = 64;
 volatile byte numCycles = 0;
 [[noreturn]]
 void loop() {
