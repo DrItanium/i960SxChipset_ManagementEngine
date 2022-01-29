@@ -64,12 +64,10 @@ ProcessorInterface::setDataBits(uint16_t value) noexcept {
     // check the latch and see if the output value is the same as what is latched
     constexpr uint32_t normalMask = 0x0003FCFF;
     constexpr uint32_t invertMask = ~normalMask;
-    if (latchedDataOutput.getWholeValue() != value) {
-        latchedDataOutput.wholeValue_ = value;
-        latchedPortContents = (static_cast<uint32_t>(latchedDataOutput.bytes[0]) | (static_cast<uint32_t>(latchedDataOutput.bytes[1]) << 10)) & normalMask;
-    }
+    SplitWord16 data(value);
+    auto contents = (static_cast<uint32_t>(data.bytes[0]) | (static_cast<uint32_t>(data.bytes[1]) << 10)) & normalMask;
     auto portContents = DigitalPin<i960Pinout::Data0>::readOutPort() & invertMask;
-    auto output = latchedPortContents | portContents;
+    auto output = contents | portContents;
     DigitalPin<i960Pinout::Data0>::writeOutPort(output);
     //delayMicroseconds(10);
 };

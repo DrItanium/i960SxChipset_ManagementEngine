@@ -128,8 +128,6 @@ public:
     static void begin() noexcept;
 private:
     static inline SplitWord32 address_{0};
-    static inline SplitWord16 latchedDataOutput {0};
-    static inline uint32_t latchedPortContents = 0;
     static inline BodyFunction lastRead_ = nullptr;
     static inline BodyFunction lastWrite_ = nullptr;
     static inline BodyFunction lastReadDebug_ = nullptr;
