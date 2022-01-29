@@ -28,3 +28,59 @@ SplitWord16
 ProcessorInterface::getHalfAddress() noexcept {
     return extractAddress(DigitalPin<i960Pinout::MUXADR0>::readInPort());
 }
+void
+ProcessorInterface::setupDataLinesForWrite() noexcept {
+    static constexpr uint32_t PortDirectionMask = 0x0003FCFF;
+    static constexpr uint32_t InvertPortDirectionMask = ~PortDirectionMask;
+    auto portDirection = DigitalPin<i960Pinout::Data0>::readPortDir();
+    portDirection &= InvertPortDirectionMask;
+    DigitalPin<i960Pinout::Data0>::writePortDir(portDirection);
+}
+void
+ProcessorInterface::setupDataLinesForRead() noexcept {
+    static constexpr uint32_t PortDirectionMask = 0x0003FCFF;
+    static constexpr uint32_t InvertPortDirectionMask = ~PortDirectionMask;
+    auto portDirection = DigitalPin<i960Pinout::Data0>::readPortDir();
+    portDirection &= InvertPortDirectionMask;
+    DigitalPin<i960Pinout::Data0>::writePortDir(portDirection | PortDirectionMask);
+}
+bool
+ProcessorInterface::isReadOperation() noexcept {
+    return DigitalPin<i960Pinout::W_R_>::isAsserted();
+}
+SplitWord16
+ProcessorInterface::getDataBits() noexcept {
+    auto portContents = DigitalPin<i960Pinout::Data0>::readInPort();
+    SplitWord16 result{0};
+    result.bytes[0] = static_cast<byte>(portContents);
+    result.bytes[1] = static_cast<byte>(portContents >> 10);
+    //delayMicroseconds(10);
+    return result;
+}
+void
+ProcessorInterface::setDataBits(uint16_t value) noexcept {
+    // the latch is preserved in between data line changes
+    // okay we are still pointing as output values
+    // check the latch and see if the output value is the same as what is latched
+    constexpr uint32_t normalMask = 0x0003FCFF;
+    constexpr uint32_t invertMask = ~normalMask;
+    if (latchedDataOutput.getWholeValue() != value) {
+        latchedDataOutput.wholeValue_ = value;
+        latchedPortContents = (static_cast<uint32_t>(latchedDataOutput.bytes[0]) | (static_cast<uint32_t>(latchedDataOutput.bytes[1]) << 10)) & normalMask;
+    }
+    auto portContents = DigitalPin<i960Pinout::Data0>::readOutPort() & invertMask;
+    auto output = latchedPortContents | portContents;
+    DigitalPin<i960Pinout::Data0>::writeOutPort(output);
+    //delayMicroseconds(10);
+};
+LoadStoreStyle
+ProcessorInterface::getStyle() noexcept {
+    auto lower = static_cast<byte>(DigitalPin<i960Pinout::BE0>::read());
+    auto upper = static_cast<byte>(DigitalPin<i960Pinout::BE1>::read()) << 1;
+    return static_cast<LoadStoreStyle>(lower | upper);
+}
+void
+ProcessorInterface::begin() noexcept {
+    updateTargetFunctions<true>();
+    updateTargetFunctions<false>();
+}

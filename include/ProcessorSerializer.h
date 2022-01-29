@@ -40,51 +40,14 @@ public:
     ProcessorInterface& operator=(ProcessorInterface&&) = delete;
 public:
     [[nodiscard]] static constexpr Address getAddress() noexcept { return address_.getWholeValue(); }
-    [[nodiscard]] static SplitWord16 getDataBits() noexcept {
-        auto portContents = DigitalPin<i960Pinout::Data0>::readInPort();
-        SplitWord16 result{0};
-        result.bytes[0] = static_cast<byte>(portContents);
-        result.bytes[1] = static_cast<byte>(portContents >> 10);
-        //delayMicroseconds(10);
-        return result;
-    }
-    static void setDataBits(uint16_t value) noexcept {
-        // the latch is preserved in between data line changes
-        // okay we are still pointing as output values
-        // check the latch and see if the output value is the same as what is latched
-        constexpr uint32_t normalMask = 0x0003FCFF;
-        constexpr uint32_t invertMask = ~normalMask;
-        if (latchedDataOutput.getWholeValue() != value) {
-            latchedDataOutput.wholeValue_ = value;
-            latchedPortContents = (static_cast<uint32_t>(latchedDataOutput.bytes[0]) | (static_cast<uint32_t>(latchedDataOutput.bytes[1]) << 10)) & normalMask;
-        }
-        auto portContents = DigitalPin<i960Pinout::Data0>::readOutPort() & invertMask;
-        auto output = latchedPortContents | portContents;
-        DigitalPin<i960Pinout::Data0>::writeOutPort(output);
-        //delayMicroseconds(10);
-    };
-    [[nodiscard]] static LoadStoreStyle getStyle() noexcept {
-        auto lower = static_cast<byte>(DigitalPin<i960Pinout::BE0>::read());
-        auto upper = static_cast<byte>(DigitalPin<i960Pinout::BE1>::read()) << 1;
-        return static_cast<LoadStoreStyle>(lower | upper);
-    }
-    [[nodiscard]] static bool isReadOperation() noexcept { return DigitalPin<i960Pinout::W_R_>::isAsserted(); }
+    [[nodiscard]] static SplitWord16 getDataBits() noexcept;
+    static void setDataBits(uint16_t value) noexcept;
+    [[nodiscard]] static LoadStoreStyle getStyle() noexcept;
+    [[nodiscard]] static bool isReadOperation() noexcept;
     template<byte offsetMask>
     [[nodiscard]] static auto getCacheOffsetEntry() noexcept { return (address_.bytes[0] >> 1) & offsetMask; }
-    static void setupDataLinesForWrite() noexcept {
-        static constexpr uint32_t PortDirectionMask = 0x0003FCFF;
-        static constexpr uint32_t InvertPortDirectionMask = ~PortDirectionMask;
-        auto portDirection = DigitalPin<i960Pinout::Data0>::readPortDir();
-        portDirection &= InvertPortDirectionMask;
-        DigitalPin<i960Pinout::Data0>::writePortDir(portDirection);
-    }
-    static void setupDataLinesForRead() noexcept {
-        static constexpr uint32_t PortDirectionMask = 0x0003FCFF;
-        static constexpr uint32_t InvertPortDirectionMask = ~PortDirectionMask;
-        auto portDirection = DigitalPin<i960Pinout::Data0>::readPortDir();
-        portDirection &= InvertPortDirectionMask;
-        DigitalPin<i960Pinout::Data0>::writePortDir(portDirection | PortDirectionMask);
-    }
+    static void setupDataLinesForWrite() noexcept;
+    static void setupDataLinesForRead() noexcept;
 private:
     template<bool inDebugMode>
     static void updateTargetFunctions() noexcept {
@@ -163,10 +126,7 @@ public:
      */
     [[nodiscard]] static auto getPageOffset() noexcept { return address_.bytes[0]; }
     [[nodiscard]] static auto getPageIndex() noexcept { return address_.bytes[1]; }
-    static void begin() noexcept {
-        updateTargetFunctions<true>();
-        updateTargetFunctions<false>();
-    }
+    static void begin() noexcept;
 private:
     static inline SplitWord32 address_{0};
     static inline SplitWord16 latchedDataOutput {0};
