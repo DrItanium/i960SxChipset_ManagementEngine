@@ -26,5 +26,5 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 SplitWord16
 ProcessorInterface::getHalfAddress() noexcept {
-return extractAddress(DigitalPin<i960Pinout::MUXADR0>::readInPort());
+    return extractAddress(DigitalPin<i960Pinout::MUXADR0>::readInPort());
 }
