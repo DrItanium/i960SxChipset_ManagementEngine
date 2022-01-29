@@ -307,8 +307,8 @@ inline void waitForCycleEnd() noexcept {
   DigitalPin<DO_CYCLE>::deassertPin();
   waitOneBusCycle();
 }
-constexpr byte MaxNumberOfTransactionsBeforePause = 32;
-volatile byte numTransactions = 0;
+constexpr byte MaxNumberOfCyclesBeforePause = 32;
+volatile byte numCycles = 0;
 [[noreturn]]
 void loop() {
   for (;;) {
@@ -316,9 +316,15 @@ void loop() {
     waitOneBusCycle();
     // okay so we need to wait for AS and DEN to go low
     while (DigitalPin<DEN>::isDeasserted());
-    if (numTransactions >= MaxNumberOfTransactionsBeforePause) {
-      while (numTransactions > 0) {
-        --numTransactions;
+    if (numCycles >= MaxNumberOfCyclesBeforePause) {
+      // Provide a pause/cooldown period after a new data request to make sure
+      // that the bus has time to "cool". If you don't have this then the 
+      // i960 can chipset fault when it shouldn't... very strange
+      while (numCycles > 0) {
+        // use the loop itself to provide some amount of time to cool off
+        // numTransactions is volatile to prevent the compiler from optimizing any of 
+        // this away.
+        --numCycles;
       }
     }
     // now do the logic
@@ -328,7 +334,9 @@ void loop() {
       for (;;) {
         // instead of pulsing do cycle, we just assert do cycle while we wait
         DigitalPin<DO_CYCLE>::assertPin();
-        ++numTransactions;
+        // we have entered a new transaction (burst or non) so increment the counter
+        // we want to count the number of cycles
+        ++numCycles;
         // now wait for the chipset to tell us it has satisified the current part of the transaction
         if (DigitalPin<BLAST>::isAsserted()) {
           // break out of the current loop if we are in the last transaction
