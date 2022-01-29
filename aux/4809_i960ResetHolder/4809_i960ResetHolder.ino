@@ -307,7 +307,8 @@ inline void waitForCycleEnd() noexcept {
   DigitalPin<DO_CYCLE>::deassertPin();
   waitOneBusCycle();
 }
-
+constexpr byte MaxNumberOfTransactionsBeforePause = 32;
+volatile byte numTransactions = 0;
 [[noreturn]]
 void loop() {
   for (;;) {
@@ -315,6 +316,11 @@ void loop() {
     waitOneBusCycle();
     // okay so we need to wait for AS and DEN to go low
     while (DigitalPin<DEN>::isDeasserted());
+    if (numTransactions >= MaxNumberOfTransactionsBeforePause) {
+      while (numTransactions > 0) {
+        --numTransactions;
+      }
+    }
     // now do the logic
     {
       PinAsserter<IN_TRANSACTION> transactionEnter; // tell the chipset that we are starting a transaction
@@ -322,6 +328,7 @@ void loop() {
       for (;;) {
         // instead of pulsing do cycle, we just assert do cycle while we wait
         DigitalPin<DO_CYCLE>::assertPin();
+        ++numTransactions;
         // now wait for the chipset to tell us it has satisified the current part of the transaction
         if (DigitalPin<BLAST>::isAsserted()) {
           // break out of the current loop if we are in the last transaction
