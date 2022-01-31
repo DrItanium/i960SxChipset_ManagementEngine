@@ -86,20 +86,25 @@ public:
     Serial0Interface& operator=(const Serial0Interface&) = delete;
     Serial0Interface& operator=(Serial0Interface&&) = delete;
 private:
+    template<unsigned int usecDelay = 100>
     static inline uint16_t getConsoleInput() noexcept {
         auto result = Serial.read();
         // this is to prevent the serial console output from overwhelming the bus and causing a machine check exception from occurring
         // this does not seem to affect system performance at all beyond printing.
         /// @todo introduce bus gating into the management engine based on cycles provided
-        delayMicroseconds(100);
+        if constexpr (usecDelay > 0) {
+            delayMicroseconds(usecDelay);
+        }
         return result;
     }
+    template<unsigned int usecDelay = 100>
     static inline void sendToConsole(char value) noexcept {
-        Serial.write(value);
-        //delayMicroseconds(100);
         // The serial console is very fast and seems to be out pacing the i960 and the rest of the bus.
         // So introduce this delay after writing to make sure we don't run into problems in the future.
-        //delay(1);
+        Serial.write(value);
+        if constexpr (usecDelay > 0) {
+            delayMicroseconds(usecDelay);
+        }
     }
     static inline uint16_t handleFirstPageRegisterReads(uint8_t offset, LoadStoreStyle) noexcept {
         switch (static_cast<Registers>(offset)) {
