@@ -76,6 +76,17 @@ public:
     }
     [[nodiscard]] constexpr bool matches(const TaggedAddress& addr) const noexcept { return isValid() && (addr.getRest() == key_); }
     [[nodiscard]] constexpr auto get(OffsetType offset) const noexcept { return data[offset].getWholeValue(); }
+private:
+    [[noreturn]]
+    void noteBadSetAttempt(OffsetType offset, const SplitWord16& value) noexcept {
+        Serial.println(F("FAILED SET ATTEMPT!"));
+        Serial.print(F("\tOFFSET: 0x"));
+        Serial.println(offset, HEX);
+        Serial.print(F("\tValue: 0x"));
+        Serial.println(value.getWholeValue(), HEX);
+        signalHaltState(F("BAD LOAD STORE STYLE FOR SETTING A CACHE LINE"));
+    }
+public:
     inline void set(OffsetType offset, LoadStoreStyle style, const SplitWord16& value) noexcept {
         // while unsafe, assume it is correct because we only get this from the ProcessorSerializer, perhaps directly grab it?
         if (auto &target = data[offset]; target.getWholeValue() != value.getWholeValue()) {
@@ -92,7 +103,8 @@ public:
                     target.bytes[1] = value.bytes[1];
                     break;
                 default:
-                    signalHaltState(F("BAD LOAD STORE STYLE FOR SETTING A CACHE LINE"));
+                    noteBadSetAttempt(offset, value);
+                    break;
             }
             // do a comparison at the end to see if we actually changed anything
             // the idea is that if the values don't change don't mark the cache line as dirty again
