@@ -94,6 +94,13 @@ private:
         delayMicroseconds(100);
         return result;
     }
+    static inline void sendToConsole(char value) noexcept {
+        Serial.write(value);
+        delayMicroseconds(100);
+        // The serial console is very fast and seems to be out pacing the i960 and the rest of the bus.
+        // So introduce this delay after writing to make sure we don't run into problems in the future.
+        //delay(1);
+    }
     static inline uint16_t handleFirstPageRegisterReads(uint8_t offset, LoadStoreStyle) noexcept {
         switch (static_cast<Registers>(offset)) {
             case Registers::ConsoleIO:
@@ -115,10 +122,7 @@ private:
                 Serial.flush();
                 break;
             case Registers::ConsoleIO:
-                Serial.write(static_cast<char>(value.getWholeValue()));
-                // The serial console is very fast and seems to be out pacing the i960 and the rest of the bus.
-                // So introduce this delay after writing to make sure we don't run into problems in the future.
-                //delay(1);
+                sendToConsole(static_cast<char>(value.getWholeValue()));
                 break;
             case Registers::AddressDebuggingFlag:
                 if constexpr (AddressDebuggingAllowed) {
