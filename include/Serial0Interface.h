@@ -86,7 +86,7 @@ public:
     Serial0Interface& operator=(const Serial0Interface&) = delete;
     Serial0Interface& operator=(Serial0Interface&&) = delete;
 private:
-    template<unsigned int usecDelay = 0, byte cooloffThreshold = 64>
+    template<unsigned int usecDelay = 0, unsigned long cooloffThreshold = 1024>
     static inline uint16_t getConsoleInput() noexcept {
         static volatile byte numEmptyReads = 0;
         auto result = Serial.read();
