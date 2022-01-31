@@ -96,7 +96,7 @@ private:
     }
     static inline void sendToConsole(char value) noexcept {
         Serial.write(value);
-        delayMicroseconds(100);
+        //delayMicroseconds(100);
         // The serial console is very fast and seems to be out pacing the i960 and the rest of the bus.
         // So introduce this delay after writing to make sure we don't run into problems in the future.
         //delay(1);
