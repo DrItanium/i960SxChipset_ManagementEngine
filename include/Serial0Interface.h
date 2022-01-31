@@ -86,9 +86,19 @@ public:
     Serial0Interface& operator=(const Serial0Interface&) = delete;
     Serial0Interface& operator=(Serial0Interface&&) = delete;
 private:
-    template<unsigned int usecDelay = 100>
+    template<unsigned int usecDelay = 0, byte cooloffThreshold = 64>
     static inline uint16_t getConsoleInput() noexcept {
+        static volatile byte numEmptyReads = 0;
         auto result = Serial.read();
+        if (result == -1) {
+            ++numEmptyReads;
+        }
+        if (numEmptyReads >= cooloffThreshold) {
+            // introduce a cool off period instead of a fixed delay
+            while (numEmptyReads != 0) {
+                --numEmptyReads;
+            }
+        }
         // this is to prevent the serial console output from overwhelming the bus and causing a machine check exception from occurring
         // this does not seem to affect system performance at all beyond printing.
         /// @todo introduce bus gating into the management engine based on cycles provided
