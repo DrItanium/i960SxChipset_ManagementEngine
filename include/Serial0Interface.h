@@ -88,7 +88,7 @@ public:
 private:
     template<unsigned int usecDelay = 0, unsigned long cooloffThreshold = 8192>
     static inline uint16_t getConsoleInput() noexcept {
-        static volatile byte numEmptyReads = 0;
+        static volatile unsigned long numEmptyReads = 0;
         auto result = Serial.read();
         if (result == -1) {
             ++numEmptyReads;
