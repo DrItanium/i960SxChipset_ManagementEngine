@@ -86,7 +86,7 @@ public:
     Serial0Interface& operator=(const Serial0Interface&) = delete;
     Serial0Interface& operator=(Serial0Interface&&) = delete;
 private:
-    template<unsigned int usecDelay = 10, unsigned long cooloffThreshold = 2048>
+    template<unsigned int usecDelay = 100, unsigned long cooloffThreshold = 2048>
     static inline uint16_t getConsoleInput() noexcept {
         static volatile unsigned long numEmptyReads = 0;
         auto result = Serial.read();
@@ -119,7 +119,7 @@ private:
     static inline uint16_t handleFirstPageRegisterReads(uint8_t offset, LoadStoreStyle) noexcept {
         switch (static_cast<Registers>(offset)) {
             case Registers::ConsoleIO:
-                return getConsoleInput<100>();
+                return getConsoleInput();
             case Registers::AddressDebuggingFlag:
                 if constexpr (AddressDebuggingAllowed) {
                     return static_cast<uint16_t>(enableAddressDebugging_);
