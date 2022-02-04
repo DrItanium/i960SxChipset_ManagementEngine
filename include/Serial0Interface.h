@@ -119,7 +119,7 @@ private:
     static inline uint16_t handleFirstPageRegisterReads(uint8_t offset, LoadStoreStyle) noexcept {
         switch (static_cast<Registers>(offset)) {
             case Registers::ConsoleIO:
-                return getConsoleInput();
+                return getConsoleInput<100>();
             case Registers::AddressDebuggingFlag:
                 if constexpr (AddressDebuggingAllowed) {
                     return static_cast<uint16_t>(enableAddressDebugging_);
