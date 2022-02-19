@@ -167,7 +167,7 @@ DefOutputPin(INT3_960, LOW, HIGH);
 DefOutputPin(SYSTEMBOOT, HIGH, LOW);
 DefOutputPin(IN_TRANSACTION, LOW, HIGH);
 DefOutputPin(DO_CYCLE, LOW, HIGH);
-DefOutputPin(BURST_NEXT, LOW, HIGH);
+DefOutputPin(BURST_NEXT, HIGH, LOW);
 
 DefInputPullupPin(WAITBOOT960, LOW, HIGH);
 DefInputPullupPin(MCU_READY, LOW, HIGH);

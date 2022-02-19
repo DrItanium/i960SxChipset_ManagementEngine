@@ -211,7 +211,7 @@ DefInputPin2(i960Pinout::INT_EN1, LOW, HIGH);
 DefInputPin2(i960Pinout::INT_EN2, LOW, HIGH);
 DefInputPin2(i960Pinout::INT_EN3, LOW, HIGH);
 DefInputPin2(i960Pinout::DoCycle, LOW, HIGH);
-DefInputPin2(i960Pinout::BurstNext, LOW, HIGH);
+DefInputPin2(i960Pinout::BurstNext, HIGH, LOW); // BLAST Pin emulation
 DefInputPin2(i960Pinout::InTransaction, LOW, HIGH);
 DefBidirectionalPin2(i960Pinout::Data0, LOW, HIGH);
 DefBidirectionalPin2(i960Pinout::Data1, LOW, HIGH);
