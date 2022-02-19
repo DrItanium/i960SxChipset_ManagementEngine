@@ -86,7 +86,7 @@ public:
     Serial0Interface& operator=(const Serial0Interface&) = delete;
     Serial0Interface& operator=(Serial0Interface&&) = delete;
 private:
-    template<unsigned int usecDelay = 1000, unsigned long cooloffThreshold = 2048>
+    template<unsigned int usecDelay = 100, unsigned long cooloffThreshold = 128>
     static inline uint16_t getConsoleInput() noexcept {
         static volatile unsigned long numEmptyReads = 0;
         auto result = Serial.read();
@@ -107,7 +107,7 @@ private:
         }
         return result;
     }
-    template<unsigned int usecDelay = 1000>
+    template<unsigned int usecDelay = 100>
     static inline void sendToConsole(char value) noexcept {
         // The serial console is very fast and seems to be out pacing the i960 and the rest of the bus.
         // So introduce this delay after writing to make sure we don't run into problems in the future.
