@@ -152,7 +152,7 @@ static constexpr byte numberOfBitsForCount(uint64_t count) noexcept {
         default: return 0;
     }
 }
-static constexpr byte getNumberOfBitsForNumberOfEntries(uint16_t count) noexcept { return numberOfBitsForCount(count); }
+static constexpr byte getNumberOfBitsForNumberOfEntries(uint64_t count) noexcept { return numberOfBitsForCount(count); }
 
 static_assert(getNumberOfBitsForNumberOfEntries(512/4) == 7);
 static_assert(getNumberOfBitsForNumberOfEntries(256/4) == 6);
