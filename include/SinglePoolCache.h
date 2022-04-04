@@ -123,7 +123,7 @@ public:
     [[nodiscard]] static CacheLine& getLine() noexcept { return theCache_.getLine(); }
     static void begin() noexcept { theCache_.begin(); }
     static void clear() noexcept { theCache_.clear(); }
-    [[nodiscard]] static constexpr auto getCacheSize() noexcept { return backingStoreSize; }
+    [[nodiscard]] static constexpr auto getCacheSize() noexcept { return theCache_.getCacheSize(); }
     [[nodiscard]] static auto viewAsStorage() noexcept { return theCache_.viewAsStorage(); }
 private:
     static inline UnderlyingCache_t theCache_;
