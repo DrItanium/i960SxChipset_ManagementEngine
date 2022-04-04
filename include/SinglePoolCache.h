@@ -34,16 +34,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "CacheEntry.h"
 #include "ProcessorSerializer.h"
 
-template<template<auto, auto, auto, typename, bool> typename C, uint32_t numEntries, byte numAddressBits, byte numOffsetBits, typename T, bool debugMode = false>
+template<template<auto, auto, auto, typename, bool> typename C, uint32_t numEntries, byte numAddressBits, byte numOffsetBits, typename T, bool debugMode = false, bool directlyUseEntryCount = false>
 class SinglePoolCache {
 private:
     using FakeCacheType = C<getNumberOfBitsForNumberOfEntries(numEntries), numAddressBits, numOffsetBits, T, debugMode>;
 public:
     static constexpr auto NumCacheWays = FakeCacheType::NumberOfWays;
-    using CacheWay = C<getNumberOfBitsForNumberOfEntries(numEntries/NumCacheWays), numAddressBits, numOffsetBits, T, debugMode>;
-    static constexpr auto WayMask = CacheWay::WayMask;
+    static constexpr auto NumberOfSets = numEntries / (directlyUseEntryCount ? 1 : NumCacheWays);
+    static constexpr auto NumberOfBitsForGivenSet = getNumberOfBitsForNumberOfEntries(NumberOfSets);
+    static_assert(NumberOfBitsForGivenSet > 0, "Illegal number of sets detected!");
+    using CacheWay = C<NumberOfBitsForGivenSet, numAddressBits, numOffsetBits, T, debugMode>;
     static constexpr auto MaximumNumberOfEntries = numEntries;
-    static constexpr auto ActualNumberOfEntries = MaximumNumberOfEntries / CacheWay :: NumberOfWays;
+    static constexpr auto ActualNumberOfEntries = directlyUseEntryCount ? MaximumNumberOfEntries : (MaximumNumberOfEntries / CacheWay :: NumberOfWays);
     using CacheEntry = typename CacheWay::CacheEntry;
     using TaggedAddress = typename CacheWay::TaggedAddress;
     static constexpr auto NumBytesCached = CacheEntry::NumBytesCached;
@@ -82,20 +84,10 @@ public:
     }
 
     void begin() noexcept {
-        // populate the lines from a separate block of entries known as the backing storage
-        //for (size_t i = 0; i < ActualNumberOfEntries; ++i) {
-        //    auto& way = backingStorage_[i];
-        //    CacheWay& targetEntry = entries_[i];
-        //    for (size_t j = 0; j < CacheWay::NumberOfWays; ++j) {
-        //        targetEntry.setWay(way[j], j);
-        //    }
-        //}
         clear();
-        // set everything up
     }
     constexpr auto getCacheSize() const noexcept { return sizeof(entries_); }
 private:
-    //CacheEntry backingStorage_[ActualNumberOfEntries][CacheWay::NumberOfWays];
     CacheWay entries_[ActualNumberOfEntries];
 };
 
@@ -118,7 +110,7 @@ public:
     static constexpr auto NumOffsetBits = numOffsetBits;
     static constexpr auto NumBackingStoreBytes = backingStoreSize;
     static constexpr auto TotalEntryCount = NumBackingStoreBytes/ pow2(NumOffsetBits);
-    using UnderlyingCache_t = SinglePoolCache<C, TotalEntryCount, numAddressBits, numOffsetBits, T, debugMode>;
+    using UnderlyingCache_t = SinglePoolCache<C, TotalEntryCount, numAddressBits, numOffsetBits, T, debugMode, false>;
     using CacheLine = typename UnderlyingCache_t::CacheEntry;
     static constexpr auto CacheEntryMask = CacheLine::CacheEntryMask;
     static constexpr auto NumWordsCached = CacheLine::NumWordsCached;
@@ -137,10 +129,52 @@ private:
     static inline UnderlyingCache_t theCache_;
 };
 
+/**
+ * @brief A different kind of cache where the number of entries is defined instead of the total size.
+ * @tparam C The cache set type
+ * @tparam numberOfEntries The number of sets to hold in this cache
+ * @tparam numAddressBits The total number of bits that make up a cache address
+ * @tparam numOffsetBits The number of bits for the backing store in each cache line (6 -> 64 bytes, etc)
+ * @tparam T The backing storage of this cache
+ * @tparam useSpecificTypeSizes When true use the smallest type available for each bit field (will barf out in most cases)
+ */
+template<template<auto, auto, auto, typename, bool> typename C,
+        uint32_t numberOfEntries,
+        byte numAddressBits,
+        byte numOffsetBits,
+        typename T,
+        bool debugMode = false>
+struct Cache2 {
+public:
+    using UnderlyingCache_t = SinglePoolCache<C, numberOfEntries, numAddressBits, numOffsetBits, T, debugMode, true>;
+    using CacheLine = typename UnderlyingCache_t::CacheEntry;
+    static constexpr auto CacheEntryMask = CacheLine::CacheEntryMask;
+    static constexpr auto NumWordsCached = CacheLine::NumWordsCached;
+public:
+    Cache2() = delete;
+    ~Cache2() = delete;
+    Cache2(const Cache2&) = delete;
+    Cache2(Cache2&&) = delete;
+    /// @todo delete more of the default methods
+    [[nodiscard]] static CacheLine& getLine() noexcept { return theCache_.getLine(); }
+    static void begin() noexcept { theCache_.begin(); }
+    static void clear() noexcept { theCache_.clear(); }
+    [[nodiscard]] static constexpr auto getCacheSize() noexcept { return theCache_.getCacheSize(); }
+    [[nodiscard]] static auto viewAsStorage() noexcept { return theCache_.viewAsStorage(); }
+private:
+    static inline UnderlyingCache_t theCache_;
+};
+
 template<template<auto, auto, auto, typename, bool> typename C, uint32_t backingStoreSize, byte numAddressBits, byte numOffsetBits, typename T, bool debugMode = false>
 using Cache_t = Cache<C, backingStoreSize, numAddressBits, numOffsetBits, T, debugMode>;
 
 template<template<auto, auto, auto, typename, bool> typename C, uint32_t backingStoreSize, byte numAddressBits, byte numOffsetBits, typename T, bool debugMode = false>
 using CacheInstance_t = typename Cache_t<C, backingStoreSize, numAddressBits, numOffsetBits, T, debugMode>::UnderlyingCache_t;
+
+template<template<auto, auto, auto, typename, bool> typename C, uint32_t backingStoreSize, byte numAddressBits, byte numOffsetBits, typename T, bool debugMode = false>
+using Cache2_t = Cache2<C, backingStoreSize, numAddressBits, numOffsetBits, T, debugMode>;
+
+template<template<auto, auto, auto, typename, bool> typename C, uint32_t backingStoreSize, byte numAddressBits, byte numOffsetBits, typename T, bool debugMode = false>
+using Cache2Instance_t = typename Cache2_t<C, backingStoreSize, numAddressBits, numOffsetBits, T, debugMode>::UnderlyingCache_t;
 
 #endif //SXCHIPSET_SINGLEPOOLCACHE_H
