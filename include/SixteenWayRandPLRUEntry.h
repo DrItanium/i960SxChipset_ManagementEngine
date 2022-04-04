@@ -37,6 +37,7 @@ template<byte numTagBits, byte totalBitCount, byte numLowestBits, typename T, bo
 class SixteenWayRandPLRUCacheWay {
 public:
     static constexpr auto NumberOfWays = 16;
+    static constexpr auto NumberOfGroups = NumberOfWays / 2;
     static constexpr auto WayMask = NumberOfWays - 1;
     using CacheEntry = ::CacheEntry<numTagBits, totalBitCount, numLowestBits, T, debugMode>;
     using TaggedAddress = typename CacheEntry::TaggedAddress;
@@ -45,28 +46,28 @@ public:
     CacheEntry& getLine(const TaggedAddress& theAddress) noexcept {
         byte firstInvalid = NumberOfWays;
         for (byte i = 0; i < NumberOfWays; ++i) {
-            if (ways_[i]->matches(theAddress)) {
+            if (ways_[i].matches(theAddress)) {
                 updateFlags(i);
-                return *ways_[i];
-            } else if (firstInvalid == NumberOfWays && !ways_[i]->isValid()) {
+                return ways_[i];
+            } else if (firstInvalid == NumberOfWays && !ways_[i].isValid()) {
                 firstInvalid = i;
             }
         }
         auto index = firstInvalid != NumberOfWays ? firstInvalid : getLeastRecentlyUsed();
         updateFlags(index);
-        ways_[index]->reset(theAddress);
-        return *ways_[index];
+        ways_[index].reset(theAddress);
+        return ways_[index];
 
     }
     void clear() noexcept {
         for (auto way : ways_) {
-            way->clear();
+            way.clear();
         }
         bits_ = 0;
     }
 private:
     void updateFlags(byte index) noexcept {
-        constexpr byte masks[16] {
+        constexpr byte masks[NumberOfGroups*2] {
                 0b11111110, 0b00000001,
                 0b11111101, 0b00000010,
                 0b11111011, 0b00000100,
@@ -89,11 +90,11 @@ private:
             bits_ |= masks[rIndex];
         }
     }
-    static constexpr auto NumberOfGroups = NumberOfWays / 2;
     [[nodiscard]] byte getLeastRecentlyUsed() const noexcept {
+        static constexpr auto NumberOfRandomTableEntries = 256;
         static bool initialized = false;
         static byte counter = 0;
-        static byte randomTable[256] = { 0 };
+        static byte randomTable[NumberOfRandomTableEntries] = { 0 };
         static constexpr byte secondLookupTable[NumberOfGroups][2] {
                 { 1, 0 },
                 {3, 2},
@@ -104,7 +105,7 @@ private:
                 {13, 12},
                 {15, 14},
         };
-        static constexpr byte maskLookup[8] {
+        static constexpr byte maskLookup[NumberOfGroups] {
                 0b00000001,
                 0b00000010,
                 0b00000100,
@@ -117,7 +118,7 @@ private:
         if (!initialized) {
             initialized = true;
             counter = 0;
-            for (uint16_t i = 0; i < 256; ++i) {
+            for (uint16_t i = 0; i < NumberOfRandomTableEntries; ++i) {
                 randomTable[i] = random(0, NumberOfGroups);
             }
         }
@@ -125,11 +126,9 @@ private:
         return secondLookupTable[theIndex][(bits_ & maskLookup[theIndex]) ? 1 : 0];
     }
 public:
-    [[nodiscard]] constexpr auto getWay(size_t index = 0) const noexcept { return ways_[index & WayMask]; }
-    void setWay(CacheEntry& way, size_t index = 0) noexcept { ways_[index & WayMask] = &way; }
     [[nodiscard]] constexpr size_t size() const noexcept { return NumberOfWays; }
 private:
-    CacheEntry* ways_[NumberOfWays] = { nullptr };
+    CacheEntry ways_[NumberOfWays] = { nullptr };
     byte bits_ = 0;
 };
 #endif //SXCHIPSET_SIXTEENWAYRANDPSEUDOLRUENTRY_H

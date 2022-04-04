@@ -68,9 +68,6 @@ public:
         }
         return entries_[theAddress.getTagIndex()].getLine(theAddress);
     }
-    [[nodiscard]] auto* find(const TaggedAddress& theAddress) noexcept {
-        return entries_[theAddress.getTagIndex()].find(theAddress);
-    }
     [[nodiscard]] CacheEntry& reset(const TaggedAddress& theAddress) noexcept {
         return entries_[theAddress.getTagIndex()].reset(theAddress);
     }
@@ -81,24 +78,24 @@ public:
         }
     }
     byte* viewAsStorage() noexcept {
-        return reinterpret_cast<byte*>(backingStorage_);
+        return reinterpret_cast<byte*>(entries_);
     }
 
     void begin() noexcept {
         // populate the lines from a separate block of entries known as the backing storage
-        for (size_t i = 0; i < ActualNumberOfEntries; ++i) {
-            auto& way = backingStorage_[i];
-            CacheWay& targetEntry = entries_[i];
-            for (size_t j = 0; j < CacheWay::NumberOfWays; ++j) {
-                targetEntry.setWay(way[j], j);
-            }
-        }
+        //for (size_t i = 0; i < ActualNumberOfEntries; ++i) {
+        //    auto& way = backingStorage_[i];
+        //    CacheWay& targetEntry = entries_[i];
+        //    for (size_t j = 0; j < CacheWay::NumberOfWays; ++j) {
+        //        targetEntry.setWay(way[j], j);
+        //    }
+        //}
         clear();
         // set everything up
     }
-    constexpr auto getCacheSize() const noexcept { return sizeof(backingStorage_); }
+    constexpr auto getCacheSize() const noexcept { return sizeof(entries_); }
 private:
-    CacheEntry backingStorage_[ActualNumberOfEntries][CacheWay::NumberOfWays];
+    //CacheEntry backingStorage_[ActualNumberOfEntries][CacheWay::NumberOfWays];
     CacheWay entries_[ActualNumberOfEntries];
 };
 
