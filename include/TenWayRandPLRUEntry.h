@@ -26,17 +26,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // Created by jwscoggins on 11/19/21.
 //
 
-#ifndef SXCHIPSET_TWELVEWAY_RAND_PLRU_ENTRY_H
-#define SXCHIPSET_TWELVEWAY_RAND_PLRU_ENTRY_H
+#ifndef SXCHIPSET_TENWAY_RAND_PLRU_ENTRY_H
+#define SXCHIPSET_TENWAY_RAND_PLRU_ENTRY_H
 #include "MCUPlatform.h"
 #include "Pinout.h"
 #include "TaggedCacheAddress.h"
 #include "CacheEntry.h"
 
 template<byte numTagBits, byte totalBitCount, byte numLowestBits, typename T, bool debugMode = false>
-class TwelveWayRandPLRUCacheWay {
+class TenWayRandPLRUCacheWay {
 public:
-    static constexpr auto NumberOfWays = 12;
+    static constexpr auto NumberOfWays = 10;
     static constexpr auto NumberOfGroups = NumberOfWays / 2;
     static constexpr auto WayMask = NumberOfWays - 1;
     using CacheEntry = ::CacheEntry<numTagBits, totalBitCount, numLowestBits, T, debugMode>;
@@ -68,12 +68,11 @@ public:
 private:
     void updateFlags(byte index) noexcept {
         constexpr byte masks[NumberOfGroups*2] {
-                0b111110, 0b000001,
-                0b111101, 0b000010,
-                0b111011, 0b000100,
-                0b110111, 0b001000,
-                0b101111, 0b010000,
-                0b011111, 0b100000,
+                0b11110, 0b000001,
+                0b11101, 0b000010,
+                0b11011, 0b000100,
+                0b10111, 0b001000,
+                0b01111, 0b010000,
         };
         // taken from the 8way rand plru implementation
         // Take the index provided and see if the least significant bit is zero or not
@@ -99,17 +98,13 @@ private:
                 {5, 4},
                 {7, 6},
                 {9, 8},
-                {11, 10},
-                //{13, 12},
-                //{15, 14},
         };
         static constexpr byte maskLookup[NumberOfGroups] {
-                0b000001,
-                0b000010,
-                0b000100,
-                0b001000,
-                0b010000,
-                0b100000,
+                0b00001,
+                0b00010,
+                0b00100,
+                0b01000,
+                0b10000,
         };
         if (!initialized) {
             initialized = true;
@@ -127,4 +122,4 @@ private:
     CacheEntry ways_[NumberOfWays];
     byte bits_ = 0;
 };
-#endif //SXCHIPSET_TWELVEWAY_RAND_PLRU_ENTRY_H
+#endif //SXCHIPSET_TENWAY_RAND_PLRU_ENTRY_H

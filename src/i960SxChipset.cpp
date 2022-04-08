@@ -38,6 +38,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "EightWayRandPLRUEntry.h"
 #include "SixteenWayRandPLRUEntry.h"
 #include "TwelveWayRandPLRUEntry.h"
+#include "TenWayRandPLRUEntry.h"
 #include "FourteenWayRandPLRUEntry.h"
 #include "SinglePoolCache.h"
 
@@ -84,7 +85,7 @@ constexpr auto CacheSize = TargetBoard::getCacheSize();
 //using L1Cache = CacheInstance_t<EightWayRandPLRUCacheSet, CacheSize, 32, CacheLineSize, BackingMemoryStorage_t, CompileInCacheSystemDebuggingSupport>;
 //using L1Cache = CacheInstance_t<SixteenWayRandPLRUCacheWay, CacheSize, 32, CacheLineSize, BackingMemoryStorage_t, CompileInCacheSystemDebuggingSupport>;
 //using L1Cache = Cache2Instance_t<FourteenWayRandPLRUCacheWay, 128, 32, CacheLineSize, BackingMemoryStorage_t, CompileInAddressDebuggingSupport>;
-using L1Cache = Cache2Instance_t<TwelveWayRandPLRUCacheWay, 128, 32, CacheLineSize, BackingMemoryStorage_t, CompileInAddressDebuggingSupport>;
+using L1Cache = Cache2Instance_t<TwelveWayRandPLRUCacheWay, 256, 32, CacheLineSize, BackingMemoryStorage_t, CompileInAddressDebuggingSupport>;
 
 L1Cache theCache;
 
