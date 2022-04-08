@@ -37,6 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "CacheEntry.h"
 #include "EightWayRandPLRUEntry.h"
 #include "SixteenWayRandPLRUEntry.h"
+#include "FourteenWayRandPLRUEntry.h"
 #include "SinglePoolCache.h"
 
 #include "ProcessorSerializer.h"
