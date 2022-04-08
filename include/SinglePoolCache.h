@@ -171,10 +171,10 @@ using Cache_t = Cache<C, backingStoreSize, numAddressBits, numOffsetBits, T, deb
 template<template<auto, auto, auto, typename, bool> typename C, uint32_t backingStoreSize, byte numAddressBits, byte numOffsetBits, typename T, bool debugMode = false>
 using CacheInstance_t = typename Cache_t<C, backingStoreSize, numAddressBits, numOffsetBits, T, debugMode>::UnderlyingCache_t;
 
-template<template<auto, auto, auto, typename, bool> typename C, uint32_t backingStoreSize, byte numAddressBits, byte numOffsetBits, typename T, bool debugMode = false>
-using Cache2_t = Cache2<C, backingStoreSize, numAddressBits, numOffsetBits, T, debugMode>;
+template<template<auto, auto, auto, typename, bool> typename C, uint32_t numEntries, byte numAddressBits, byte numOffsetBits, typename T, bool debugMode = false>
+using Cache2_t = Cache2<C, numEntries, numAddressBits, numOffsetBits, T, debugMode>;
 
-template<template<auto, auto, auto, typename, bool> typename C, uint32_t backingStoreSize, byte numAddressBits, byte numOffsetBits, typename T, bool debugMode = false>
-using Cache2Instance_t = typename Cache2_t<C, backingStoreSize, numAddressBits, numOffsetBits, T, debugMode>::UnderlyingCache_t;
+template<template<auto, auto, auto, typename, bool> typename C, uint32_t numEntries, byte numAddressBits, byte numOffsetBits, typename T, bool debugMode = false>
+using Cache2Instance_t = typename Cache2_t<C, numEntries, numAddressBits, numOffsetBits, T, debugMode>::UnderlyingCache_t;
 
 #endif //SXCHIPSET_SINGLEPOOLCACHE_H

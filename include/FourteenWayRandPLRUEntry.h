@@ -128,7 +128,7 @@ private:
 public:
     [[nodiscard]] constexpr size_t size() const noexcept { return NumberOfWays; }
 private:
-    CacheEntry ways_[NumberOfWays] = { nullptr };
+    CacheEntry ways_[NumberOfWays];
     byte bits_ = 0;
 };
 #endif //SXCHIPSET_FOURTEENWAY_RAND_PLRU_ENTRY_H

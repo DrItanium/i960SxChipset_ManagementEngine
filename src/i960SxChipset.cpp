@@ -80,8 +80,15 @@ using BackingMemoryStorage_t = BackingMemoryStorage<TargetBoard::getMCUTarget()>
 constexpr auto CacheLineSize = TargetBoard::getCacheLineSizeInBits();
 constexpr auto CacheSize = TargetBoard::getCacheSize();
 
-using L1Cache = CacheInstance_t<EightWayRandPLRUCacheSet, CacheSize, 32, CacheLineSize, BackingMemoryStorage_t, CompileInCacheSystemDebuggingSupport>;
+//using L1Cache = CacheInstance_t<EightWayRandPLRUCacheSet, CacheSize, 32, CacheLineSize, BackingMemoryStorage_t, CompileInCacheSystemDebuggingSupport>;
 //using L1Cache = CacheInstance_t<SixteenWayRandPLRUCacheWay, CacheSize, 32, CacheLineSize, BackingMemoryStorage_t, CompileInCacheSystemDebuggingSupport>;
+using L1Cache = Cache2Instance_t<FourteenWayRandPLRUCacheWay,
+                                 128, // entries
+                                 32, // bits
+                                 CacheLineSize,
+                                 BackingMemoryStorage_t,
+                                 CompileInAddressDebuggingSupport>;
+
 L1Cache theCache;
 
 void waitForCycleUnlock() noexcept {
