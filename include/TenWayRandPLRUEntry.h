@@ -67,12 +67,13 @@ public:
     }
 private:
     void updateFlags(byte index) noexcept {
+        // This is really a two dimensional array but flattened to improve efficiency
         constexpr byte masks[NumberOfGroups*2] {
-                0b11110, 0b000001,
-                0b11101, 0b000010,
-                0b11011, 0b000100,
-                0b10111, 0b001000,
-                0b01111, 0b010000,
+                0b11110, 0b00001,
+                0b11101, 0b00010,
+                0b11011, 0b00100,
+                0b10111, 0b01000,
+                0b01111, 0b10000,
         };
         // taken from the 8way rand plru implementation
         // Take the index provided and see if the least significant bit is zero or not
