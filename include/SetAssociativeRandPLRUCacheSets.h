@@ -101,12 +101,6 @@ private:
             {5, 4},
             {7, 6},
         };
-        static constexpr byte maskLookup[NumberOfGroups] {
-            0b0001,
-                    0b0010,
-                    0b0100,
-                    0b1000,
-        };
         if (!initialized) {
             initialized = true;
             counter = 0;
@@ -115,7 +109,7 @@ private:
             }
         }
         auto theIndex = randomTable[counter++];
-        return secondLookupTable[theIndex][(bits_ & maskLookup[theIndex]) ? 1 : 0];
+        return secondLookupTable[theIndex][(bits_ & BitMaskTable_Byte[theIndex]) ? 1 : 0];
     }
 private:
     // This is RandPLRU Tree so we need to organize things correctly, I'm going to try four groups of two
@@ -192,15 +186,6 @@ private:
             {11, 10},
             {13, 12},
         };
-        static constexpr byte maskLookup[NumberOfGroups] {
-            0b0000001,
-                    0b0000010,
-                    0b0000100,
-                    0b0001000,
-                    0b0010000,
-                    0b0100000,
-                    0b1000000,
-        };
         if (!initialized) {
             initialized = true;
             counter = 0;
@@ -209,7 +194,7 @@ private:
             }
         }
         auto theIndex = randomTable[counter++];
-        return secondLookupTable[theIndex][(bits_ & maskLookup[theIndex]) ? 1 : 0];
+        return secondLookupTable[theIndex][(bits_ & BitMaskTable_Byte[theIndex]) ? 1 : 0];
     }
 public:
     [[nodiscard]] constexpr size_t size() const noexcept { return NumberOfWays; }
@@ -289,16 +274,6 @@ private:
             {13, 12},
             {15, 14},
         };
-        static constexpr byte maskLookup[NumberOfGroups] {
-            0b00000001,
-                    0b00000010,
-                    0b00000100,
-                    0b00001000,
-                    0b00010000,
-                    0b00100000,
-                    0b01000000,
-                    0b10000000,
-        };
         if (!initialized) {
             initialized = true;
             counter = 0;
@@ -307,7 +282,7 @@ private:
             }
         }
         auto theIndex = randomTable[counter++];
-        return secondLookupTable[theIndex][(bits_ & maskLookup[theIndex]) ? 1 : 0];
+        return secondLookupTable[theIndex][(bits_ & BitMaskTable_Byte[theIndex]) ? 1 : 0];
     }
 public:
     [[nodiscard]] constexpr size_t size() const noexcept { return NumberOfWays; }
@@ -385,14 +360,6 @@ private:
             //{13, 12},
             //{15, 14},
         };
-        static constexpr byte maskLookup[NumberOfGroups] {
-            0b000001,
-                    0b000010,
-                    0b000100,
-                    0b001000,
-                    0b010000,
-                    0b100000,
-        };
         if (!initialized) {
             initialized = true;
             counter = 0;
@@ -401,7 +368,7 @@ private:
             }
         }
         auto theIndex = randomTable[counter++];
-        return secondLookupTable[theIndex][(bits_ & maskLookup[theIndex]) ? 1 : 0];
+        return secondLookupTable[theIndex][(bits_ & BitMaskTable_Byte[theIndex]) ? 1 : 0];
     }
 public:
     [[nodiscard]] constexpr size_t size() const noexcept { return NumberOfWays; }
@@ -476,13 +443,6 @@ private:
             {7, 6},
             {9, 8},
         };
-        static constexpr byte maskLookup[NumberOfGroups] {
-            0b00001,
-                    0b00010,
-                    0b00100,
-                    0b01000,
-                    0b10000,
-        };
         if (!initialized) {
             initialized = true;
             counter = 0;
@@ -491,7 +451,7 @@ private:
             }
         }
         auto theIndex = randomTable[counter++];
-        return secondLookupTable[theIndex][(bits_ & maskLookup[theIndex]) ? 1 : 0];
+        return secondLookupTable[theIndex][(bits_ & BitMaskTable_Byte[theIndex]) ? 1 : 0];
     }
 public:
     [[nodiscard]] constexpr size_t size() const noexcept { return NumberOfWays; }
