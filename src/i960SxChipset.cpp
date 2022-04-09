@@ -35,11 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Pinout.h"
 
 #include "CacheEntry.h"
-#include "EightWayRandPLRUEntry.h"
-#include "SixteenWayRandPLRUEntry.h"
-#include "TwelveWayRandPLRUEntry.h"
-#include "TenWayRandPLRUEntry.h"
-#include "FourteenWayRandPLRUEntry.h"
+#include "SetAssociativeRandPLRUCacheSets.h"
 #include "SinglePoolCache.h"
 
 #include "ProcessorSerializer.h"
