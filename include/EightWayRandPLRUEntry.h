@@ -75,15 +75,11 @@ public:
     [[nodiscard]] constexpr size_t size() const noexcept { return NumberOfWays; }
 private:
     void updateFlags(byte index) noexcept {
-        constexpr byte masks[8] {
-                0b1110,
-                0b0001,
-                0b1101,
-                0b0010,
-                0b1011,
-                0b0100,
-                0b0111,
-                0b1000,
+        constexpr byte masks[NumberOfGroups * 2] {
+                0b1110, 0b0001,
+                0b1101, 0b0010,
+                0b1011, 0b0100,
+                0b0111, 0b1000,
         };
         // Take the index provided and see if the least significant bit is zero or not
         // if it is zero then and the tracking bits with the value stored in the masks table
@@ -102,13 +98,13 @@ private:
         static bool initialized = false;
         static byte counter = 0;
         static byte randomTable[256] = { 0 };
-        static constexpr byte secondLookupTable[4][2] {
+        static constexpr byte secondLookupTable[NumberOfGroups][2] {
                 { 1, 0 },
                 {3, 2},
                 {5, 4},
                 {7, 6},
         };
-        static constexpr byte maskLookup[4] {
+        static constexpr byte maskLookup[NumberOfGroups] {
             0b0001,
             0b0010,
             0b0100,

@@ -38,7 +38,6 @@ class FourteenWayRandPLRUCacheWay {
 public:
     static constexpr auto NumberOfWays = 14;
     static constexpr auto NumberOfGroups = NumberOfWays / 2;
-    static constexpr auto WayMask = NumberOfWays - 1;
     using CacheEntry = ::CacheEntry<numTagBits, totalBitCount, numLowestBits, T, debugMode>;
     using TaggedAddress = typename CacheEntry::TaggedAddress;
     static constexpr auto NumBytesCached = CacheEntry::NumBytesCached;
