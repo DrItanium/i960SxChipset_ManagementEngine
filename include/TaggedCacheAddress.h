@@ -6,12 +6,13 @@
 #define SXCHIPSET_TAGGEDCACHEADDRESS_H
 #include "MCUPlatform.h"
 #include "type_traits.h"
-template<byte tagBits, byte totalBits = 32, byte offsetBits = 4, bool debugMode = false>
+template<byte tagBits, byte offsetBits = 4, bool debugMode = false>
 union TaggedAddress {
     static constexpr auto NumLowestBits = offsetBits;
     static constexpr auto NumTagBits = tagBits;
-    static constexpr auto NumRestBits = totalBits - (NumTagBits + NumLowestBits);
-    static constexpr auto MaximumAddressSize = totalBits;
+    static constexpr auto AddressSize = 32;
+    static constexpr auto NumRestBits = AddressSize - (NumTagBits + NumLowestBits);
+    static constexpr auto MaximumAddressSize = AddressSize;
     static_assert((NumLowestBits + NumTagBits + NumRestBits) == MaximumAddressSize, "Too many or too few bits for this given tagged address!");
     static_assert((MaximumAddressSize >= 26) && (MaximumAddressSize <= 32), "Addresses cannot be smaller than 26 bits!");
     constexpr explicit TaggedAddress(Address value = 0) noexcept : base(value) { }
