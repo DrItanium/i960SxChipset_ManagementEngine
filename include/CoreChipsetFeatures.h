@@ -118,5 +118,15 @@ public:
     static void write(uint8_t targetPage, uint8_t offset, LoadStoreStyle lss, SplitWord16 value) noexcept {
         // do nothing
     }
+public:
+    static void write8(uint32_t, uint8_t) noexcept {
+        // do nothing
+    }
+    static void write16(uint32_t address, uint16_t) noexcept {
+        // do nothing
+    }
+    static void write32(uint32_t address, uint32_t) noexcept {
+        // do nothing
+    }
 };
 #endif //I960SXCHIPSET_CORECHIPSETFEATURES_H

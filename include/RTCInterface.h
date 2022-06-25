@@ -154,19 +154,25 @@ public:
                 return 0;
         }
     }
-    static void write(uint8_t, uint8_t offset, LoadStoreStyle, SplitWord16) noexcept {
-        switch (static_cast<Registers>(offset)) {
-            case Registers::NowRequest: {
-                if (rtcUp_) {
-                    now_ = rtc_.now();
-                    unixtime_ = now_.unixtime();
-                    secondstime_ = now_.secondstime();
-                }
-                break;
-            }
-            default:
-                break;
-        }
+    static void write8(uint32_t, uint8_t) noexcept {
+        // do nothing
+    }
+    static void write16(uint32_t address, uint16_t) noexcept {
+       switch (static_cast<Registers>(static_cast<uint8_t>(address))) {
+           case Registers::NowRequest: {
+               if (rtcUp_) {
+                   now_ = rtc_.now();
+                   unixtime_ = now_.unixtime();
+                   secondstime_ = now_.secondstime();
+               }
+               break;
+           }
+           default:
+               break;
+       }
+    }
+    static void write32(uint32_t address, uint32_t) noexcept {
+        // do nothing
     }
     static constexpr auto available() noexcept { return rtcUp_; }
 private:

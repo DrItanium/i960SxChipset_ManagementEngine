@@ -334,7 +334,16 @@ public:
             // do nothing
         }
     }
-
+public:
+    static void write8(uint32_t, uint8_t) noexcept {
+        // do nothing
+    }
+    static void write16(uint32_t address, uint16_t) noexcept {
+        // do nothing
+    }
+    static void write32(uint32_t address, uint32_t) noexcept {
+        // do nothing
+    }
 private:
     static inline bool initialized_ = false;
     static inline SplitWord32 clusterCount_ {0};

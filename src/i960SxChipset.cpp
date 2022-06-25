@@ -198,7 +198,7 @@ void handleMemoryInterfaceWrite() noexcept {
         auto style1 = LoadStoreStyle::None;
         waitForCycleUnlock();
         style0 = ProcessorInterface::getStyle();
-        contents.setLowerHalf(ProcessorInterface::getDataBits());
+        contents.setLowerWord(ProcessorInterface::getDataBits());
         if (informCPU()) {
             theEntry.set(i, style0, style1, contents);
             break;
@@ -206,7 +206,7 @@ void handleMemoryInterfaceWrite() noexcept {
         // okay so this is a burst 32-bit operation, so we need to make sure we write them both out at the same time
         waitForCycleUnlock();
         style1 = ProcessorInterface::getStyle();
-        contents.setUpperHalf(ProcessorInterface::getDataBits());
+        contents.setUpperWord(ProcessorInterface::getDataBits());
         theEntry.set(i, style0, style1, contents);
         if (informCPU()) {
             break;
@@ -228,32 +228,126 @@ void handleMemoryInterface() noexcept {
 }
 template<bool inDebugMode, typename T>
 void handleExternalDeviceRequestRead() noexcept {
+    // for external device reads, just read 16-bits at a time since I can't be sure we are looking
+    // at a 32 or 16 bit value. If it is a 16-bit value then we run the risk of triggering extra features
+    // in the external device space
     for(;;) {
         waitForCycleUnlock();
-        ProcessorInterface::setDataBits(
-                T::read(ProcessorInterface::getPageIndex(),
-                        ProcessorInterface::getPageOffset(),
-                        ProcessorInterface::getStyle()));
+        ProcessorInterface::setDataBits(T::read(ProcessorInterface::getPageIndex(),
+                                        ProcessorInterface::getPageOffset(),
+                                        ProcessorInterface::getStyle()));
         if (informCPU()) {
             break;
         }
         ProcessorInterface::burstNext<IncrementAddress>();
     }
 }
+template<typename T>
+void decodeAndExecuteExternalDeviceWrite16(uint32_t baseAddress, LoadStoreStyle style, const SplitWord16& value) noexcept {
+    switch (style) {
+        case LoadStoreStyle::Full16:
+            T::write16(baseAddress, value.getWholeValue());
+            break;
+        case LoadStoreStyle::Lower8:
+            T::write8(baseAddress, value.getLowerHalf());
+            break;
+        case LoadStoreStyle::Upper8:
+            T::write8(baseAddress, value.getUpperHalf());
+            break;
+        default:
+            break;
+    }
+}
+template<typename T>
+void decodeAndExecuteExternalDeviceWrite32(uint32_t baseAddress, LoadStoreStyle lowerStyle, LoadStoreStyle upperStyle, const SplitWord32& value) noexcept {
+    byte mergedValue = (static_cast<byte>(lowerStyle) | (static_cast<byte>(upperStyle) << 2)) & 0b1111;
+    // unaligned operations have to be broken up into multiple sub operations so it is really important you don't do unaligned writes...
+    // however we do support it
+    switch (mergedValue) {
+        case 0b0000:
+            T::write32(baseAddress, value.getWholeValue());
+            break;
+        case 0b0001:
+            T::write8(baseAddress + 1, value.getLowerWord().getUpperHalf());
+            T::write16(baseAddress + 2, value.getUpperHalf());
+            break;
+        case 0b0010:
+            T::write8(baseAddress, value.getLowerWord().getLowerHalf());
+            T::write16(baseAddress + 2, value.getUpperHalf());
+            break;
+        case 0b0011:
+            T::write16(baseAddress + 2, value.getUpperHalf());
+            break;
+        case 0b0100:
+            T::write16(baseAddress, value.getLowerHalf());
+            T::write8(baseAddress + 3, value.getUpperWord().getUpperHalf());
+            break;
+        case 0b0101:
+            T::write8(baseAddress + 1, value.getLowerWord().getUpperHalf());
+            T::write8(baseAddress + 3, value.getUpperWord().getUpperHalf());
+            break;
+        case 0b0110:
+            T::write8(baseAddress, value.getLowerWord().getLowerHalf());
+            T::write8(baseAddress + 3, value.getUpperWord().getUpperHalf());
+            break;
+        case 0b0111:
+            T::write8(baseAddress + 3, value.getUpperWord().getUpperHalf());
+            break;
+        case 0b1000:
+            T::write16(baseAddress, value.getLowerHalf());
+            T::write8(baseAddress + 2, value.getUpperWord().getLowerHalf());
+            break;
+        case 0b1001:
+            T::write8(baseAddress + 1, value.getLowerWord().getUpperHalf());
+            T::write8(baseAddress + 2, value.getUpperWord().getLowerHalf());
+            break;
+        case 0b1010:
+            T::write8(baseAddress, value.getLowerWord().getLowerHalf());
+            T::write8(baseAddress+2, value.getUpperWord().getLowerHalf());
+            break;
+        case 0b1011:
+            T::write8(baseAddress + 2, value.getUpperWord().getLowerHalf());
+            break;
+        case 0b1100:
+            T::write16(baseAddress, value.getLowerHalf());
+            break;
+        case 0b1101:
+            T::write8(baseAddress + 1, value.getLowerWord().getUpperHalf());
+            break;
+        case 0b1110:
+            T::write8(baseAddress, value.getLowerWord().getLowerHalf());
+            break;
+        default:
+            break;
+    }
+}
 template<bool inDebugMode, typename T>
 void handleExternalDeviceRequestWrite() noexcept {
+    // we need to operate on 16 or 32-bit values instead of having a silly hacked setup
+    // this is totally doable compared to external device reads because we can defer execution while we are setting things up
     for (;;) {
+        auto baseAddress = ProcessorInterface::getAddress();
         waitForCycleUnlock();
-        T::write(ProcessorInterface::getPageIndex(),
-                 ProcessorInterface::getPageOffset(),
-                 ProcessorInterface::getStyle(),
-                 ProcessorInterface::getDataBits());
+        SplitWord32 fullWord{0};
+        auto style0 = ProcessorInterface::getStyle();
+        fullWord.setLowerWord(ProcessorInterface::getDataBits());
         if (informCPU()) {
+            decodeAndExecuteExternalDeviceWrite32<T>(baseAddress, style0, LoadStoreStyle::None, fullWord);
             break;
         }
         // be careful of querying i960 state at this point because the chipset runs at twice the frequency of the i960
         // so you may still be reading the previous i960 cycle state!
         ProcessorInterface::burstNext<IncrementAddress>();
+        waitForCycleUnlock();
+        fullWord.setUpperWord(ProcessorInterface::getDataBits());
+        decodeAndExecuteExternalDeviceWrite32<T>(baseAddress,
+                                                 style0,
+                                                 ProcessorInterface::getStyle(), fullWord);
+        if (informCPU()) {
+            break;
+        }
+        ProcessorInterface::burstNext<IncrementAddress>();
+
     }
 }
 template<bool inDebugMode, typename T>

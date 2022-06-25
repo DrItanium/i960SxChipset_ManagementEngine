@@ -294,6 +294,16 @@ private:
             return 0;
         }
     }
+public:
+    static void write8(uint32_t, uint8_t) noexcept {
+        // do nothing
+    }
+    static void write16(uint32_t address, uint16_t) noexcept {
+        // do nothing
+    }
+    static void write32(uint32_t address, uint32_t) noexcept {
+        // do nothing
+    }
 private:
     static inline Adafruit_ILI9341 tft {static_cast<int>(i960Pinout::TFT_CS), static_cast<int>(i960Pinout::TFT_DC) };
     static inline Adafruit_FT6206 touchController_{};

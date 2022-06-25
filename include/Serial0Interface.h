@@ -162,6 +162,16 @@ public:
         handleFirstPageRegisterWrites(offset, lss, value);
     }
     static bool addressDebuggingEnabled() noexcept { return AddressDebuggingAllowed && enableAddressDebugging_; }
+public:
+    static void write8(uint32_t, uint8_t) noexcept {
+        // do nothing
+    }
+    static void write16(uint32_t address, uint16_t) noexcept {
+        // do nothing
+    }
+    static void write32(uint32_t address, uint32_t) noexcept {
+        // do nothing
+    }
 private:
     // 257th char is always zero and not accessible, prevent crap from going beyond the cache
     static inline bool enableAddressDebugging_ = defaultAddressDebuggingModeTo;
