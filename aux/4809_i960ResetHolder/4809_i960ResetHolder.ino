@@ -304,7 +304,12 @@ inline void informCPUAndWait() noexcept {
 [[gnu::always_inline]]
 inline void waitForCycleEnd() noexcept {
   while (DigitalPin<MCU_READY>::isDeasserted());
+  // at this point the chipset will wait around until we end this cycle
+  // so we can use this time to clear state of pins
+  // we want to make sure that we deassert BURST_NEXT ahead of time
+  DigitalPin<BURST_NEXT>::deassertPin();
   DigitalPin<DO_CYCLE>::deassertPin();
+  // at this point we are outside a bus cycle
   waitOneBusCycle();
 }
 constexpr byte MaxNumberOfCyclesBeforePause = 64;
@@ -333,6 +338,14 @@ void loop() {
       // okay now we need to emulate the wait loop
       for (;;) {
         // instead of pulsing do cycle, we just assert do cycle while we wait
+        if (DigitalPin<BLAST>::isAsserted()) {
+          // BLAST being low means that we set BURST NEXT LOW
+          DigitalPin<BURST_NEXT>::deassertPin();
+        } else {
+          DigitalPin<BURST_NEXT>::assertPin();
+        }
+
+        // okay now start the cycle
         DigitalPin<DO_CYCLE>::assertPin();
         // we have entered a new transaction (burst or non) so increment the counter
         // we want to count the number of cycles
