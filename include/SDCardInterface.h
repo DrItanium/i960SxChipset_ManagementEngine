@@ -287,69 +287,13 @@ private:
         }
     }
     static void ctlWrite32(uint8_t offset, uint32_t value) noexcept {
-        // we could be slightly misaligned in many places so just do two sets of 16-bit writes since all registers are 16-bits wide
-        ctlWrite16(offset, value);
-        ctlWrite16(offset + 2, value >> 16);
-    }
-    static void ctlWrite(uint8_t offset, LoadStoreStyle lss, SplitWord16 value) noexcept {
-        if (offset < 80) {
-            if (lss == LoadStoreStyle::Upper8) {
-                sdCardPath_[offset + 1] = static_cast<char>(value.bytes[1]);
-            } else if (lss == LoadStoreStyle::Lower8) {
-                sdCardPath_[offset] = static_cast<char>(value.bytes[0]);
-            } else {
-                sdCardPath_[offset] = static_cast<char>(value.bytes[0]);
-                sdCardPath_[offset+1] = static_cast<char>(value.bytes[1]);
-            }
+        if (offset <= 76) {
+            sdCardPath_[offset]  = static_cast<char>(value);
+            sdCardPath_[offset+1]  = static_cast<char>(value >> 8);
+            sdCardPath_[offset+2]  = static_cast<char>(value >> 16);
+            sdCardPath_[offset+3]  = static_cast<char>(value >> 24);
         } else {
-            using T = SDCardFileSystemRegisters;
-            switch (static_cast<T>(offset)) {
-                case T::MakeMissingParentDirectories:
-                    makeMissingParentDirectories_ = value.getWholeValue() != 0;
-                    break;
-                case T::FilePermissions:
-                    filePermissions_ = value.getWholeValue();
-                    break;
-                case T::OpenReadWrite:
-                    if (value.getWholeValue() != 0) {
-                        filePermissions_ |= O_RDWR;
-                    }
-                    break;
-                case T::OpenReadOnly:
-                    if (value.getWholeValue() != 0) {
-                        filePermissions_ |= O_RDONLY;
-                    }
-                    break;
-                case T::OpenWriteOnly:
-                    if (value.getWholeValue() != 0) {
-                        filePermissions_ |= O_WRITE;
-                    }
-                    break;
-                case T::CreateFileIfMissing:
-                    if (value.getWholeValue() != 0) {
-                        filePermissions_ |= O_CREAT;
-                    }
-                    break;
-                case T::ClearFileContentsOnOpen:
-                    if (value.getWholeValue() != 0) {
-                        filePermissions_ |= O_TRUNC;
-                    }
-                    break;
-                case T::MountCTL:
-                    // 0 means unmount,
-                    // 1 means mount
-                    // other values are ignored
-                    if (value.getWholeValue() == 0) {
-                        // unmount
-                        unmountSDCard();
-                    } else if (value.getWholeValue() == 1) {
-                        // mount
-                        (void)tryMountSDCard();
-                    }
-                    break;
-                default:
-                    break;
-            }
+           //  don't allow 32-bit writes beyond the character section
         }
     }
     static uint16_t fileRead(uint8_t index, uint8_t offset, LoadStoreStyle lss) noexcept {

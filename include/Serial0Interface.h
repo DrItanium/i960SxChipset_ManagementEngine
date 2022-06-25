@@ -128,26 +128,6 @@ private:
                 return 0;
         }
     }
-    static inline void handleFirstPageRegisterWrites(uint8_t offset, LoadStoreStyle, SplitWord16 value) noexcept {
-        switch (static_cast<Registers>(offset)) {
-            case Registers::TriggerInterrupt:
-                // do nothing here
-                break;
-            case Registers::ConsoleFlush:
-                Serial.flush();
-                break;
-            case Registers::ConsoleIO:
-                sendToConsole(static_cast<char>(value.getWholeValue()));
-                break;
-            case Registers::AddressDebuggingFlag:
-                if constexpr (AddressDebuggingAllowed) {
-                    enableAddressDebugging_ = (value.getWholeValue() != 0);
-                }
-                break;
-            default:
-                break;
-        }
-    }
 public:
     static void begin() noexcept {
         // this is done ahead of time
@@ -158,16 +138,26 @@ public:
         return handleFirstPageRegisterReads(offset, lss);
     }
 
-    static inline void write(uint8_t, uint8_t offset, LoadStoreStyle lss, SplitWord16 value) noexcept {
-        handleFirstPageRegisterWrites(offset, lss, value);
-    }
     static bool addressDebuggingEnabled() noexcept { return AddressDebuggingAllowed && enableAddressDebugging_; }
 public:
     static void write8(uint32_t, uint8_t) noexcept {
         // do nothing
     }
-    static void write16(uint32_t address, uint16_t) noexcept {
+    static void write16(uint32_t address, uint16_t value) noexcept {
         // do nothing
+        switch (static_cast<Registers>(address)) {
+            case Registers::TriggerInterrupt:
+                // do nothing here
+                break;
+            case Registers::ConsoleFlush:
+                Serial.flush();
+                break;
+            case Registers::ConsoleIO:
+                sendToConsole(static_cast<char>(value));
+                break;
+            default:
+                break;
+        }
     }
     static void write32(uint32_t address, uint32_t) noexcept {
         // do nothing

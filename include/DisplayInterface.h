@@ -148,20 +148,6 @@ public:
             return 0;
         }
     }
-    static void write(uint8_t targetPage, uint8_t offset, LoadStoreStyle lss, SplitWord16 value) noexcept {
-        if constexpr (TargetBoard::enableDisplayDriver()) {
-            switch (targetPage) {
-                case SeesawPage:
-                    handleSeesawWrite(offset, lss, value);
-                    break;
-                case DisplayPage:
-                    handleDisplayWrite(offset, lss, value);
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
 private:
     enum class InvokeOpcodes : uint8_t {
         // four bit class, four bit kind
@@ -186,8 +172,8 @@ private:
         FillRoundRect = 0x16,
         FillCircle = 0x17,
     };
-    static void invoke(SplitWord16 opcode) noexcept {
-            switch (static_cast<InvokeOpcodes>(opcode.getWholeValue())) {
+    static void invoke(uint16_t opcode) noexcept {
+            switch (static_cast<InvokeOpcodes>(opcode)) {
                 case InvokeOpcodes::FillScreen:
                     tft.fillScreen(fields_[0]);
                     break;
@@ -250,7 +236,7 @@ private:
             return 0;
         }
     }
-    static void handleDisplayWrite(uint8_t offset, LoadStoreStyle lss, SplitWord16 value) noexcept {
+    static void handleDisplayWrite16(uint8_t offset, uint16_t value) noexcept {
         if constexpr (TargetBoard::enableDisplayDriver()) {
             switch (static_cast<DisplayInterfaceRegisters>(offset)) {
                 case DisplayInterfaceRegisters::InstructionField00:
@@ -261,7 +247,7 @@ private:
                 case DisplayInterfaceRegisters::InstructionField05:
                 case DisplayInterfaceRegisters::InstructionField06:
                 case DisplayInterfaceRegisters::InstructionField07:
-                    fields_[offset - static_cast<byte>(DisplayInterfaceRegisters::InstructionField00)] = value.getWholeValue();
+                    fields_[offset - static_cast<byte>(DisplayInterfaceRegisters::InstructionField00)] = value;
                     break;
                 case DisplayInterfaceRegisters::Invoke0:
                     invoke(value);
@@ -271,11 +257,11 @@ private:
             }
         }
     }
-    static void handleSeesawWrite(uint8_t offset, LoadStoreStyle, SplitWord16 value) noexcept {
+    static void handleSeesawWrite16(uint8_t offset, uint16_t value) noexcept {
         if constexpr (TargetBoard::enableDisplayDriver()) {
             switch (static_cast<SeesawRegisters>(offset)) {
                 case SeesawRegisters::Backlight:
-                    setBacklightIntensity(value.getWholeValue());
+                    setBacklightIntensity(value);
                     break;
                 default:
                     break;
@@ -295,13 +281,27 @@ private:
         }
     }
 public:
-    static void write8(uint32_t, uint8_t) noexcept {
+    static void write8(uint32_t address, uint8_t value) noexcept {
         // do nothing
     }
-    static void write16(uint32_t address, uint16_t) noexcept {
+    static void write16(uint32_t address, uint16_t value) noexcept {
         // do nothing
+        if constexpr (TargetBoard::enableDisplayDriver()) {
+            switch (auto targetPage = static_cast<uint8_t>(address >> 8),
+                        offset = static_cast<uint8_t>(address);
+                    targetPage) {
+                case SeesawPage:
+                    handleSeesawWrite16(offset, value);
+                    break;
+                case DisplayPage:
+                    handleDisplayWrite16(offset, value);
+                    break;
+                default:
+                    break;
+            }
+        }
     }
-    static void write32(uint32_t address, uint32_t) noexcept {
+    static void write32(uint32_t address, uint32_t value) noexcept {
         // do nothing
     }
 private:
