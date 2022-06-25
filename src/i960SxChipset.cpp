@@ -243,22 +243,6 @@ void handleExternalDeviceRequestRead() noexcept {
     }
 }
 template<typename T>
-void decodeAndExecuteExternalDeviceWrite16(uint32_t baseAddress, LoadStoreStyle style, const SplitWord16& value) noexcept {
-    switch (style) {
-        case LoadStoreStyle::Full16:
-            T::write16(baseAddress, value.getWholeValue());
-            break;
-        case LoadStoreStyle::Lower8:
-            T::write8(baseAddress, value.getLowerHalf());
-            break;
-        case LoadStoreStyle::Upper8:
-            T::write8(baseAddress, value.getUpperHalf());
-            break;
-        default:
-            break;
-    }
-}
-template<typename T>
 void decodeAndExecuteExternalDeviceWrite32(uint32_t baseAddress, LoadStoreStyle lowerStyle, LoadStoreStyle upperStyle, const SplitWord32& value) noexcept {
     byte mergedValue = (static_cast<byte>(lowerStyle) | (static_cast<byte>(upperStyle) << 2)) & 0b1111;
     // unaligned operations have to be broken up into multiple sub operations so it is really important you don't do unaligned writes...
