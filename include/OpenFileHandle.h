@@ -80,10 +80,13 @@ public:
         SeekBeginning = SeekBeginning0,
         SeekAbsoluteLower = SeekAbsolute00,
         SeekAbsoluteUpper = SeekAbsolute10,
+        SeekAbsolute = SeekAbsoluteLower,
         SeekRelativeLower = SeekRelative00,
         SeekRelativeUpper = SeekRelative10,
+        SeekRelative = SeekRelativeLower,
         SizeLower = Size00,
         SizeUpper = Size10,
+        Size = SizeLower,
         Permissions = Permissions0,
         WriteError = WriteError0,
         ErrorCode = ErrorCode0,
@@ -130,8 +133,11 @@ public:
         }
     }
     void putChar(SplitWord16 value) noexcept {
+        putChar(value.getWholeValue());
+    }
+    void putChar(uint16_t value) noexcept {
         if (backingStore_) {
-            backingStore_.write(static_cast<byte>(value.getWholeValue()));
+            backingStore_.write(static_cast<byte>(value));
         }
     }
     [[nodiscard]] size_t read(void* buf, size_t count) noexcept { return backingStore_.read(buf, count); }
@@ -149,10 +155,11 @@ public:
             default: return 0;
         }
     }
-    void write(uint8_t offset, LoadStoreStyle lss, SplitWord16 value) noexcept {
+    void write8(uint8_t, uint8_t) noexcept {
+        // do nothing
+    }
+    void write16(uint8_t offset, uint16_t value) noexcept {
         using T = Registers;
-        bool callSeekAbsolute = false;
-        bool callSeekRelative = false;
         switch(static_cast<T>(offset)) {
             case T::Close: close(); break;
             case T::IOPort: putChar(value); break;
@@ -160,34 +167,26 @@ public:
             case T::Flush: flush(); break;
             case T::SeekBeginning: seekToBeginning(); break;
             case T::SeekEnd: seekToEnd(); break;
-            case T::SeekAbsoluteLower:
-                seekAbsoluteTemporary_.words_[0] = value;
+            default:
                 break;
-            case T::SeekAbsoluteUpper:
-                callSeekAbsolute = true;
-                seekAbsoluteTemporary_.words_[1] = value;
+        }
+    }
+    void write32(uint8_t offset, uint32_t value) noexcept {
+        using T = Registers;
+        SplitWord32 tmp{value};
+        switch (static_cast<T>(offset)) {
+            case T::SeekAbsolute:
+                setAbsolutePosition(tmp.getWholeValue());
                 break;
-            case T::SeekRelativeLower:
-                seekRelativeTemporary_.words_[0] = value;
-                break;
-            case T::SeekRelativeUpper:
-                callSeekRelative = true;
-                seekRelativeTemporary_.words_[1] = value;
+            case T::SeekRelative:
+                setRelativePosition(tmp.getSignedRepresentation());
                 break;
             default:
                 break;
         }
-        if (callSeekAbsolute) {
-            setAbsolutePosition(seekAbsoluteTemporary_.getWholeValue());
-        }
-        if (callSeekRelative) {
-            setRelativePosition(seekRelativeTemporary_.getSignedRepresentation());
-        }
     }
 private:
     File backingStore_;
-    SplitWord32 seekAbsoluteTemporary_{0};
-    SplitWord32 seekRelativeTemporary_{0};
     uint16_t permissions_ = 0;
 };
 

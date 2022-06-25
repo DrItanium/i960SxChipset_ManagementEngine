@@ -222,6 +222,75 @@ private:
             }
         }
     }
+    static void ctlWrite16(uint8_t offset, uint16_t value) noexcept {
+        // write16 will always be aligned
+        if (offset < 80) {
+            sdCardPath_[offset] = static_cast<char>(value);
+            sdCardPath_[offset + 1] = static_cast<char>(value >> 8);
+        } else {
+            using T = SDCardFileSystemRegisters;
+            switch (static_cast<T>(offset)) {
+                case T::MakeMissingParentDirectories:
+                    makeMissingParentDirectories_ = value != 0;
+                    break;
+                case T::FilePermissions:
+                    filePermissions_ = value;
+                    break;
+                case T::OpenReadWrite:
+                    if (value != 0) {
+                        filePermissions_ |= O_RDWR;
+                    }
+                    break;
+                case T::OpenReadOnly:
+                    if (value != 0) {
+                        filePermissions_ |= O_RDONLY;
+                    }
+                    break;
+                case T::OpenWriteOnly:
+                    if (value != 0) {
+                        filePermissions_ |= O_WRITE;
+                    }
+                    break;
+                case T::CreateFileIfMissing:
+                    if (value != 0) {
+                        filePermissions_ |= O_CREAT;
+                    }
+                    break;
+                case T::ClearFileContentsOnOpen:
+                    if (value != 0) {
+                        filePermissions_ |= O_TRUNC;
+                    }
+                    break;
+                case T::MountCTL:
+                    // 0 means unmount,
+                    // 1 means mount
+                    // other values are ignored
+                    if (value == 0) {
+                        // unmount
+                        unmountSDCard();
+                    } else if (value == 1) {
+                        // mount
+                        (void)tryMountSDCard();
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+    static void ctlWrite8(uint8_t offset, uint8_t value) noexcept {
+        if (offset < 80) {
+            sdCardPath_[offset] = static_cast<char>(value);
+        } else {
+            // if you're doing byte by byte writes, I don't now what that means. So I'm just going to state that you have to have
+            // BE0 and BE1 low to perform proper execution
+        }
+    }
+    static void ctlWrite32(uint8_t offset, uint32_t value) noexcept {
+        // we could be slightly misaligned in many places so just do two sets of 16-bit writes since all registers are 16-bits wide
+        ctlWrite16(offset, value);
+        ctlWrite16(offset + 2, value >> 16);
+    }
     static void ctlWrite(uint8_t offset, LoadStoreStyle lss, SplitWord16 value) noexcept {
         if (offset < 80) {
             if (lss == LoadStoreStyle::Upper8) {
@@ -289,6 +358,9 @@ private:
     static void fileWrite(uint8_t index, uint8_t offset, LoadStoreStyle lss, SplitWord16 value) {
         files_[index].write(offset, lss, value);
     }
+    static void fileWrite8(uint8_t index, uint8_t offset, uint8_t value) { files_[index].write8(offset, value); }
+    static void fileWrite16(uint8_t index, uint8_t offset, uint16_t value) { files_[index].write16(offset, value); }
+    static void fileWrite32(uint8_t index, uint8_t offset, uint32_t value) { files_[index].write32(offset, value); }
 public:
     static constexpr bool respondsTo(byte targetPage) noexcept {
         return targetPage >= StartPage && targetPage < EndPage;
@@ -335,14 +407,38 @@ public:
         }
     }
 public:
-    static void write8(uint32_t, uint8_t) noexcept {
+    static void write8(uint32_t address, uint8_t value) noexcept {
+        // do nothing
+        auto targetOffset = static_cast<byte>(address);
+        if (auto targetPage = static_cast<byte>(address >> 8); targetPage == CTLPage) {
+            ctlWrite8(targetOffset, value);
+        } else if (targetPage >= FileStartPage && targetPage < FileEndPage) {
+            fileWrite8(targetPage - FileStartPage, targetOffset, value);
+        } else {
+
+        }
+    }
+    static void write16(uint32_t address, uint16_t value) noexcept {
+        auto targetOffset = static_cast<byte>(address);
+        if (auto targetPage = static_cast<byte>(address >> 8); targetPage == CTLPage) {
+            ctlWrite16(targetOffset, value);
+        } else if (targetPage >= FileStartPage && targetPage < FileEndPage) {
+            fileWrite16(targetPage - FileStartPage, targetOffset, value);
+        } else {
+
+        }
+
         // do nothing
     }
-    static void write16(uint32_t address, uint16_t) noexcept {
-        // do nothing
-    }
-    static void write32(uint32_t address, uint32_t) noexcept {
-        // do nothing
+    static void write32(uint32_t address, uint32_t value) noexcept {
+        auto targetOffset = static_cast<byte>(address);
+        if (auto targetPage = static_cast<byte>(address >> 8); targetPage == CTLPage) {
+            ctlWrite32(targetOffset, value);
+        } else if (targetPage >= FileStartPage && targetPage < FileEndPage) {
+            fileWrite32(targetPage - FileStartPage, targetOffset, value);
+        } else {
+
+        }
     }
 private:
     static inline bool initialized_ = false;
