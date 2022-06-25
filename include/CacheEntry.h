@@ -89,7 +89,7 @@ private:
 public:
     inline void set(OffsetType offset, LoadStoreStyle lower, LoadStoreStyle upper, const SplitWord32& value) noexcept {
         set(offset, lower, value.words_[0]);
-        set(offset, upper, value.words_[1]);
+        set(offset + 1, upper, value.words_[1]);
     }
     inline void set(OffsetType offset, LoadStoreStyle style, const SplitWord16& value) noexcept {
         // while unsafe, assume it is correct because we only get this from the ProcessorSerializer, perhaps directly grab it?
