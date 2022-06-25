@@ -143,7 +143,7 @@ public:
 
     }
     void clear() noexcept {
-        for (auto way : ways_) {
+        for (auto& way : ways_) {
             way.clear();
         }
         bits_ = 0;
@@ -229,7 +229,7 @@ public:
 
     }
     void clear() noexcept {
-        for (auto way : ways_) {
+        for (auto& way : ways_) {
             way.clear();
         }
         bits_ = 0;
@@ -317,7 +317,7 @@ public:
 
     }
     void clear() noexcept {
-        for (auto way : ways_) {
+        for (auto& way : ways_) {
             way.clear();
         }
         bits_ = 0;
@@ -403,7 +403,7 @@ public:
 
     }
     void clear() noexcept {
-        for (auto way : ways_) {
+        for (auto& way : ways_) {
             way.clear();
         }
         bits_ = 0;
