@@ -164,7 +164,7 @@ void handleMemoryInterfaceRead() noexcept {
     for (auto i = start; i < end; i+=2) {
         // start working on getting the given value way ahead of cycle unlock happening
         // construct a full word while we are waiting for cycle unlocking
-        SplitWord32 fullWord(theEntry.get(i), theEntry.get(i+1));
+        SplitWord32 fullWord = theEntry.get32(i);
         waitForCycleUnlock();
         ProcessorInterface::setDataBits(fullWord.getLowerHalf());
         // Only pay for what we need even if it is slower
@@ -194,16 +194,18 @@ void handleMemoryInterfaceWrite() noexcept {
     // Also the manual states that the processor cannot burst across 16-byte boundaries so :D.
     for (auto i = start; i < end; i+=2) {
         SplitWord32 contents{0};
+        auto style0 = LoadStoreStyle::None;
+        auto style1 = LoadStoreStyle::None;
         waitForCycleUnlock();
-        auto style0 = ProcessorInterface::getStyle();
+        style0 = ProcessorInterface::getStyle();
         contents.setLowerHalf(ProcessorInterface::getDataBits());
         if (informCPU()) {
-            theEntry.set(i, style0, contents.words_[0]);
+            theEntry.set(i, style0, style1, contents);
             break;
         }
         // okay so this is a burst 32-bit operation, so we need to make sure we write them both out at the same time
         waitForCycleUnlock();
-        auto style1 = ProcessorInterface::getStyle();
+        style1 = ProcessorInterface::getStyle();
         contents.setUpperHalf(ProcessorInterface::getDataBits());
         theEntry.set(i, style0, style1, contents);
         if (informCPU()) {
@@ -231,24 +233,10 @@ void handleExternalDeviceRequestRead() noexcept {
     }
     for(;;) {
         waitForCycleUnlock();
-        if constexpr (inDebugMode && TargetBoard::compileInExtendedDebugInformation()) {
-            auto result = T::read(ProcessorInterface::getPageIndex(),
-                                  ProcessorInterface::getPageOffset(),
-                                  ProcessorInterface::getStyle());
-            Serial.print(F("\tPage Index: 0x")) ;
-            Serial.println(ProcessorInterface::getPageIndex(), HEX);
-            Serial.print(F("\tPage Offset: 0x")) ;
-            Serial.println(ProcessorInterface::getPageOffset(), HEX);
-            Serial.print(F("\tRead Value: 0x"));
-            Serial.println(result, HEX);
-            ProcessorInterface::setDataBits(result);
-        } else {
-            ProcessorInterface::setDataBits(
-                    T::read(ProcessorInterface::getPageIndex(),
-                            ProcessorInterface::getPageOffset(),
-                            ProcessorInterface::getStyle()));
-
-        }
+        ProcessorInterface::setDataBits(
+                T::read(ProcessorInterface::getPageIndex(),
+                        ProcessorInterface::getPageOffset(),
+                        ProcessorInterface::getStyle()));
         if (informCPU()) {
             break;
         }
@@ -262,24 +250,10 @@ void handleExternalDeviceRequestWrite() noexcept {
     }
     for (;;) {
         waitForCycleUnlock();
-        if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
-            auto dataBits = ProcessorInterface::getDataBits();
-            Serial.print(F("\tPage Index: 0x")) ;
-            Serial.println(ProcessorInterface::getPageIndex(), HEX);
-            Serial.print(F("\tPage Offset: 0x")) ;
-            Serial.println(ProcessorInterface::getPageOffset(), HEX);
-            Serial.print(F("\tData To Write: 0x"));
-            Serial.println(dataBits.getWholeValue(), HEX);
-            T::write(ProcessorInterface::getPageIndex(),
-                     ProcessorInterface::getPageOffset(),
-                     ProcessorInterface::getStyle(),
-                     dataBits);
-        } else {
-            T::write(ProcessorInterface::getPageIndex(),
-                     ProcessorInterface::getPageOffset(),
-                     ProcessorInterface::getStyle(),
-                     ProcessorInterface::getDataBits());
-        }
+        T::write(ProcessorInterface::getPageIndex(),
+                 ProcessorInterface::getPageOffset(),
+                 ProcessorInterface::getStyle(),
+                 ProcessorInterface::getDataBits());
         if (informCPU()) {
             break;
         }
