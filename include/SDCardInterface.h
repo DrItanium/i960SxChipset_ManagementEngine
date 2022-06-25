@@ -397,15 +397,6 @@ public:
             return 0;
         }
     }
-    static void write(uint8_t targetPage, uint8_t offset, LoadStoreStyle lss, SplitWord16 value) noexcept {
-        if (targetPage == CTLPage) {
-            ctlWrite(offset, lss, value);
-        } else if (targetPage >= FileStartPage && targetPage < FileEndPage) {
-            fileWrite(targetPage - FileStartPage, offset, lss, value);
-        } else {
-            // do nothing
-        }
-    }
 public:
     static void write8(uint32_t address, uint8_t value) noexcept {
         // do nothing
