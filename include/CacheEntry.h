@@ -37,7 +37,8 @@ template<byte numTagBits, byte numLowestBits, typename T, bool debugMode = false
 class CacheEntry final {
 public:
     static constexpr size_t NumBytesCached = pow2(numLowestBits);
-    static constexpr size_t NumWordsCached = NumBytesCached / sizeof(SplitWord16);
+    using SingleEntryType = SplitWord16;
+    static constexpr size_t NumWordsCached = NumBytesCached / sizeof(SingleEntryType);
     static constexpr byte CacheEntryMask = NumWordsCached - 1;
     using TaggedAddress = ::TaggedAddress<numTagBits, numLowestBits, debugMode>;
     using OffsetType = Address;
@@ -51,9 +52,9 @@ public:
             byte end = ((highestUpdated_ - dirty_) + 1);
             //Serial.print(F("end offset: "));
             //Serial.println(end);
-            (void)T::write(TaggedAddress{key_, newTag.getTagIndex(), 0}.getAddress() + (dirty_ * sizeof(SplitWord16)),
+            (void)T::write(TaggedAddress{key_, newTag.getTagIndex(), 0}.getAddress() + (dirty_ * sizeof(SingleEntryType)),
                            reinterpret_cast<byte *>(data + dirty_),
-                           sizeof(SplitWord16) * end);
+                           sizeof(SingleEntryType) * end);
         }
         dirty_ = CleanCacheLineState;
         highestUpdated_ = 0;
@@ -78,7 +79,7 @@ public:
     [[nodiscard]] constexpr auto get(OffsetType offset) const noexcept { return data[offset].getWholeValue(); }
 private:
     [[noreturn]]
-    void noteBadSetAttempt(OffsetType offset, const SplitWord16& value) noexcept {
+    void noteBadSetAttempt(OffsetType offset, const SingleEntryType& value) noexcept {
         Serial.println(F("FAILED SET ATTEMPT!"));
         Serial.print(F("\tOFFSET: 0x"));
         Serial.println(offset, HEX);
@@ -87,19 +88,19 @@ private:
         signalHaltState(F("BAD LOAD STORE STYLE FOR SETTING A CACHE LINE"));
     }
 public:
-    inline void set(OffsetType offset, LoadStoreStyle style, const SplitWord16& value) noexcept {
+    inline void set(OffsetType offset, LoadStoreStyle style, const SingleEntryType& value) noexcept {
         // while unsafe, assume it is correct because we only get this from the ProcessorSerializer, perhaps directly grab it?
         if (auto &target = data[offset]; target.getWholeValue() != value.getWholeValue()) {
             // now hold onto the old value
             auto oldValue = target.getWholeValue();
             switch (style) {
-                case LoadStoreStyle::Full16:
+                case LoadStoreStyle::Lower16: // 0b1100
                     target = value;
                     break;
-                case LoadStoreStyle::Lower8:
+                case LoadStoreStyle::Lowest8: // 0b1110
                     target.bytes[0] = value.bytes[0];
                     break;
-                case LoadStoreStyle::Upper8:
+                case LoadStoreStyle::Lower8: // 0b1101
                     target.bytes[1] = value.bytes[1];
                     break;
                 default:
@@ -126,7 +127,7 @@ public:
     [[nodiscard]] constexpr bool isDirty() const noexcept { return dirty_ < NumWordsCached; }
     [[nodiscard]] constexpr bool isClean() const noexcept { return dirty_ == CleanCacheLineState; }
 private:
-    SplitWord16 data[NumWordsCached]; // 16 bytes
+    SingleEntryType data[NumWordsCached];
     Address key_ = 0;
     /**
      * @brief Describes lowest dirty word in a valid cache line; also denotes if the cache line is valid or not
