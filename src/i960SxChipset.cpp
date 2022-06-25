@@ -93,6 +93,8 @@ void waitForCycleUnlock() noexcept {
     // so we just pull Ready high as soon as we get the next phase in.
     //DigitalPin<i960Pinout::Ready>::pulse();
     DigitalPin<i960Pinout::Ready>::assertPin();
+    // wait until do cycle is deasserted before continuing
+    while (DigitalPin<i960Pinout::DoCycle>::isAsserted());
     // make sure that we just wait for the gating signal before continuing
     while (DigitalPin<i960Pinout::InTransaction>::isAsserted() && DigitalPin<i960Pinout::BurstNext>::isDeasserted());
     bool outcome = DigitalPin<i960Pinout::InTransaction>::isDeasserted();
