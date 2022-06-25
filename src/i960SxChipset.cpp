@@ -192,28 +192,24 @@ void handleMemoryInterfaceWrite() noexcept {
     // far as we can go with how the Sx works!
 
     // Also the manual states that the processor cannot burst across 16-byte boundaries so :D.
-    for (auto i = start; i < end; ++i) {
+    for (auto i = start; i < end; i+=2) {
+        SplitWord32 contents{0};
         waitForCycleUnlock();
-        if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
-            auto bits = ProcessorInterface::getDataBits();
-            Serial.print(F("\tOffset: 0x")) ;
-            Serial.print(i << 1, HEX);
-            Serial.print(F(" (")) ;
-            Serial.print(i);
-            Serial.print(F("),  Writing the value: 0x"));
-            Serial.println(bits.getWholeValue(), HEX);
-            theEntry.set(i, ProcessorInterface::getStyle(), bits);
-        } else {
-
-            theEntry.set(i, ProcessorInterface::getStyle(), ProcessorInterface::getDataBits());
+        auto style0 = ProcessorInterface::getStyle();
+        contents.setLowerHalf(ProcessorInterface::getDataBits());
+        if (informCPU()) {
+            theEntry.set(i, style0, contents.words_[0]);
+            break;
         }
+        // okay so this is a burst 32-bit operation, so we need to make sure we write them both out at the same time
+        waitForCycleUnlock();
+        auto style1 = ProcessorInterface::getStyle();
+        contents.setUpperHalf(ProcessorInterface::getDataBits());
+        theEntry.set(i, style0, style1, contents);
         if (informCPU()) {
             break;
         }
-        // the manual doesn't state that the burst transaction will always have BE0 and BE1 pulled low and this is very true, you must
-        // check the pins because it will do unaligned burst transactions but even that will never span multiple 16-byte entries
-        // so if I don't increment the address, I think we run too fast xD based on some experimentation
-        ProcessorInterface::burstNext<LeaveAddressAlone>();
+        // then jump back around
     }
 }
 template<bool inDebugMode>
