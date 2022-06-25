@@ -228,9 +228,6 @@ void handleMemoryInterface() noexcept {
 }
 template<bool inDebugMode, typename T>
 void handleExternalDeviceRequestRead() noexcept {
-    if constexpr (inDebugMode) {
-        displayRequestedAddress();
-    }
     for(;;) {
         waitForCycleUnlock();
         ProcessorInterface::setDataBits(
@@ -245,9 +242,6 @@ void handleExternalDeviceRequestRead() noexcept {
 }
 template<bool inDebugMode, typename T>
 void handleExternalDeviceRequestWrite() noexcept {
-    if constexpr (inDebugMode) {
-        displayRequestedAddress();
-    }
     for (;;) {
         waitForCycleUnlock();
         T::write(ProcessorInterface::getPageIndex(),
