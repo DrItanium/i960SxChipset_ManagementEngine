@@ -94,13 +94,13 @@ public:
             // now hold onto the old value
             auto oldValue = target.getWholeValue();
             switch (style) {
-                case LoadStoreStyle::Lower16: // 0b1100
+                case LoadStoreStyle::Full16:
                     target = value;
                     break;
-                case LoadStoreStyle::Lowest8: // 0b1110
+                case LoadStoreStyle::Lower8:
                     target.bytes[0] = value.bytes[0];
                     break;
-                case LoadStoreStyle::Lower8: // 0b1101
+                case LoadStoreStyle::Upper8:
                     target.bytes[1] = value.bytes[1];
                     break;
                 default:

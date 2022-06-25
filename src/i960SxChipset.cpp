@@ -161,27 +161,23 @@ void handleMemoryInterfaceRead() noexcept {
     auto& theEntry = theCache.getLine();
     // when dealing with read operations, we can actually easily unroll the do while by starting at the cache offset entry and walking
     // forward until we either hit the end of the cache line or blast is asserted first (both are valid states)
-    for (auto i = start; i < end; ++i) {
+    for (auto i = start; i < end; i+=2) {
         // start working on getting the given value way ahead of cycle unlock happening
+        // construct a full word while we are waiting for cycle unlocking
+        SplitWord32 fullWord(theEntry.get(i), theEntry.get(i+1));
         waitForCycleUnlock();
-        if constexpr (inDebugMode && CompileInExtendedDebugInformation) {
-            auto outcome = theEntry.get(i);
-            Serial.print(F("\tOffset: 0x")) ;
-            Serial.print(i << 1, HEX);
-            Serial.print(F(" (")) ;
-            Serial.print(i);
-            Serial.print(F("),  Read the value: 0x"));
-            Serial.println(outcome, HEX);
-            ProcessorInterface::setDataBits(outcome);
-        } else {
-            ProcessorInterface::setDataBits(theEntry.get(i));
-        }
+        ProcessorInterface::setDataBits(fullWord.getLowerHalf());
         // Only pay for what we need even if it is slower
         if (informCPU()) {
             break;
         }
-        // so if I don't increment the address, I think we run too fast xD based on some experimentation
-        ProcessorInterface::burstNext<LeaveAddressAlone>();
+        // so we need to provide the next 16-bit quantity, thus we need to wait for cycle unlock first
+        waitForCycleUnlock();
+        ProcessorInterface::setDataBits(fullWord.getUpperHalf());
+        if (informCPU()) {
+            break;
+        }
+        // okay now jump to the next 32-bit quantity
     }
 }
 template<bool inDebugMode>
