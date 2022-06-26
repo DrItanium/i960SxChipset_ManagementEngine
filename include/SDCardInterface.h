@@ -177,15 +177,12 @@ private:
     static bool tryMakeDirectory(bool makeMissingParents = false) noexcept { return SD.mkdir(sdCardPath_, makeMissingParents); }
     static bool exists() noexcept { return SD.exists(sdCardPath_); }
     static bool remove() noexcept { return SD.remove(sdCardPath_); }
-    static uint16_t ctlRead(uint8_t offset, LoadStoreStyle lss) noexcept {
+    static uint16_t ctlRead16(uint8_t offset) noexcept {
         if (offset < 80) {
-            if (auto result = SplitWord16(reinterpret_cast<uint16_t*>(sdCardPath_)[offset >> 1]); lss == LoadStoreStyle::Upper8) {
-                return result.bytes[1];
-            } else if (lss == LoadStoreStyle::Lower8) {
-                return result.bytes[0];
-            } else {
-                return result.getWholeValue();
-            }
+            SplitWord16 result(0);
+            result.bytes[0] = sdCardPath_[offset];
+            result.bytes[1] = sdCardPath_[offset + 1];
+            return result.getWholeValue();
         } else {
             using T = SDCardFileSystemRegisters;
             switch (static_cast<T>(offset)) {
@@ -197,14 +194,6 @@ private:
                     return exists();
                 case T::RemovePort:
                     return remove();
-                case T::SDClusterCountLower:
-                    return clusterCount_.halves[0];
-                case T::SDClusterCountUpper:
-                    return clusterCount_.halves[1];
-                case T::SDVolumeSectorCountLower:
-                    return volumeSectorCount_.halves[0];
-                case T::SDVolumeSectorCountUpper:
-                    return volumeSectorCount_.halves[1];
                 case T::SDBytesPerSector:
                     return bytesPerSector_;
                 case T::MaximumNumberOfOpenFiles:
@@ -217,6 +206,25 @@ private:
                     return filePermissions_;
                 case T::MountCTL:
                     return cardMounted_ ? 0xFFFF : 0;
+                default:
+                    return 0;
+            }
+        }
+    }
+    static uint32_t ctlRead32(uint8_t offset) noexcept {
+        if (offset < 80) {
+            SplitWord32 result(0);
+            for (uint8_t i = offset, j = 0; i < 80; ++i, ++j) {
+                result.bytes[j] = sdCardPath_[i];
+            }
+            return result.getWholeValue();
+        } else {
+            using T = SDCardFileSystemRegisters;
+            switch (static_cast<T>(offset)) {
+                case T::SDClusterCount:
+                    return clusterCount_.getWholeValue();
+                case T::SDVolumeSectorCount:
+                    return volumeSectorCount_.getWholeValue();
                 default:
                     return 0;
             }
@@ -296,15 +304,11 @@ private:
            //  don't allow 32-bit writes beyond the character section
         }
     }
-    static uint16_t fileRead(uint8_t index, uint8_t offset, LoadStoreStyle lss) noexcept {
-        return files_[index].read(offset, lss);
-    }
-    static void fileWrite(uint8_t index, uint8_t offset, LoadStoreStyle lss, SplitWord16 value) {
-        files_[index].write(offset, lss, value);
-    }
-    static void fileWrite8(uint8_t index, uint8_t offset, uint8_t value) { files_[index].write8(offset, value); }
-    static void fileWrite16(uint8_t index, uint8_t offset, uint16_t value) { files_[index].write16(offset, value); }
-    static void fileWrite32(uint8_t index, uint8_t offset, uint32_t value) { files_[index].write32(offset, value); }
+    static uint16_t fileRead16(uint8_t index, uint8_t offset) noexcept { return files_[index].read16(offset); }
+    static uint32_t fileRead32(uint8_t index, uint8_t offset) noexcept { return files_[index].read32(offset); }
+    static void fileWrite8(uint8_t index, uint8_t offset, uint8_t value) noexcept { files_[index].write8(offset, value); }
+    static void fileWrite16(uint8_t index, uint8_t offset, uint16_t value) noexcept { files_[index].write16(offset, value); }
+    static void fileWrite32(uint8_t index, uint8_t offset, uint32_t value) noexcept { files_[index].write32(offset, value); }
 public:
     static constexpr bool respondsTo(byte targetPage) noexcept {
         return targetPage >= StartPage && targetPage < EndPage;
@@ -317,10 +321,6 @@ public:
             }
             Serial.println(F("SD CARD UP!"));
             clusterCount_ = SplitWord32(SD.clusterCount());
-#ifdef ARDUINO_AVR_ATmega1284
-            volumeSectorCount_ = SplitWord32{SD.volumeSectorCount()};
-            bytesPerSector_ = SD.bytesPerSector();
-#else
             // if we use SdFat class then we have to do some work ourselves
             // we only know how many sectors per cluster and the number of clusters so we multiply them together
             // to get the volume sector count
@@ -328,15 +328,23 @@ public:
             // to get the bytes per sector, we get the number of bytes per cluster and divide it by the number of sectors in a cluster
             // this will yield the number of bytes per sector.
             bytesPerSector_ = SD.bytesPerCluster() / SD.sectorsPerCluster();
-#endif
             initialized_ = true;
         }
     }
-    static uint16_t read(uint8_t targetPage, uint8_t offset, LoadStoreStyle lss) noexcept {
-        if (targetPage == CTLPage) {
-            return ctlRead(offset, lss);
+    static uint32_t read32(uint32_t address) noexcept {
+        if (auto targetPage = static_cast<uint8_t>(address >> 8), offset = static_cast<uint8_t>(address); targetPage == CTLPage) {
+            return ctlRead32(offset);
         } else if (targetPage >= FileStartPage && targetPage < FileEndPage) {
-            return fileRead(targetPage - FileStartPage, offset, lss);
+            return fileRead32(targetPage - FileStartPage, offset);
+        } else {
+            return 0;
+        }
+    }
+    static uint16_t read16(uint32_t address) noexcept {
+        if (auto targetPage = static_cast<uint8_t>(address >> 8), offset = static_cast<uint8_t>(address); targetPage == CTLPage) {
+            return ctlRead16(offset);
+        } else if (targetPage >= FileStartPage && targetPage < FileEndPage) {
+            return fileRead16(targetPage - FileStartPage, offset);
         } else {
             return 0;
         }

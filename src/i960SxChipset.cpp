@@ -237,7 +237,7 @@ void handleExternalDeviceRequestRead() noexcept {
     for(;;) {
         auto baseAddress = ProcessorInterface::getAddress();
         waitForCycleUnlock();
-        SplitWord32 value(0);
+        SplitWord32 value;
         // at this point it is safe to check and see if we need to do a 32-bit read or not
         if (DigitalPin<i960Pinout::BurstNext>::isAsserted()) {
            // okay so do a 32-bit read instead
@@ -245,8 +245,8 @@ void handleExternalDeviceRequestRead() noexcept {
         } else {
             value.setLowerHalf(T::read16(baseAddress));
         }
-        ProcessorInterface::setDataBits(value.getLowerHalf());
         if (informCPU()) {
+            ProcessorInterface::setDataBits(value.getLowerHalf());
             break;
         }
         ProcessorInterface::burstNext<IncrementAddress>();
