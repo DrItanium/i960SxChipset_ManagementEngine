@@ -83,8 +83,10 @@ public:
         NowRequest = NowRequest0,
         UnixtimeLower = Unixtime00,
         UnixtimeUpper = Unixtime10,
+        Unixtime = UnixtimeLower,
         SecondstimeLower = Secondstime00,
         SecondstimeUpper = Secondstime10,
+        Secondstime = SecondstimeLower,
         Seconds = Seconds0,
         Minutes = Minutes0,
         Hours = Hours0,
@@ -131,8 +133,8 @@ public:
             }
         }
     }
-    static uint16_t read(uint8_t, uint8_t offset, LoadStoreStyle) noexcept {
-        switch (static_cast<Registers>(offset)) {
+    static uint16_t read16(uint32_t address) noexcept {
+        switch (static_cast<Registers>(address)) {
             case Registers::Seconds: return static_cast<uint16_t>(now_.second());
             case Registers::Hours: return static_cast<uint16_t>(now_.hour());
             case Registers::Minutes: return static_cast<uint16_t>(now_.minute());
@@ -150,6 +152,16 @@ public:
                 return static_cast<uint16_t>(secondstime_);
             case Registers::SecondstimeUpper:
                 return static_cast<uint16_t>(secondstime_ >> 16);
+            default:
+                return 0;
+        }
+    }
+    static uint32_t read32(uint32_t address) noexcept {
+        switch (static_cast<Registers>(address)) {
+            case Registers::Unixtime:
+                return unixtime_;
+            case Registers::Secondstime:
+                return secondstime_;
             default:
                 return 0;
         }

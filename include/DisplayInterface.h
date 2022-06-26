@@ -133,21 +133,6 @@ private:
     static void setBacklightIntensity(uint16_t value) noexcept {
         backlightIntensity_ = value;
     }
-public:
-    static uint16_t read(uint8_t targetPage, uint8_t offset, LoadStoreStyle lss) noexcept {
-        if constexpr (TargetBoard::enableDisplayDriver()) {
-            switch (targetPage) {
-                case SeesawPage:
-                    return handleSeesawReads(offset, lss);
-                case DisplayPage:
-                    return handleDisplayRead(offset, lss);
-                default:
-                    return 0;
-            }
-        } else {
-            return 0;
-        }
-    }
 private:
     enum class InvokeOpcodes : uint8_t {
         // four bit class, four bit kind
@@ -217,25 +202,6 @@ private:
                     break;
             }
     }
-    static uint16_t handleDisplayRead(uint8_t offset, LoadStoreStyle) noexcept {
-        if constexpr (TargetBoard::enableDisplayDriver()) {
-            switch (static_cast<DisplayInterfaceRegisters>(offset)) {
-                case DisplayInterfaceRegisters::InstructionField00:
-                case DisplayInterfaceRegisters::InstructionField01:
-                case DisplayInterfaceRegisters::InstructionField02:
-                case DisplayInterfaceRegisters::InstructionField03:
-                case DisplayInterfaceRegisters::InstructionField04:
-                case DisplayInterfaceRegisters::InstructionField05:
-                case DisplayInterfaceRegisters::InstructionField06:
-                case DisplayInterfaceRegisters::InstructionField07:
-                    return fields_[offset - static_cast<byte>(DisplayInterfaceRegisters::InstructionField00)];
-                default:
-                    return 0;
-            }
-        } else {
-            return 0;
-        }
-    }
     static void handleDisplayWrite16(uint8_t offset, uint16_t value) noexcept {
         if constexpr (TargetBoard::enableDisplayDriver()) {
             switch (static_cast<DisplayInterfaceRegisters>(offset)) {
@@ -268,7 +234,7 @@ private:
             }
         }
     }
-    static uint16_t handleSeesawReads(uint8_t offset, LoadStoreStyle) noexcept {
+    static uint16_t handleSeesawReads16(uint8_t offset) noexcept {
         if constexpr (TargetBoard::enableDisplayDriver()) {
             switch (static_cast<SeesawRegisters>(offset)) {
                 case SeesawRegisters::Backlight:
@@ -280,7 +246,41 @@ private:
             return 0;
         }
     }
+    static uint16_t handleDisplayRead16(uint8_t offset) noexcept {
+        if constexpr (TargetBoard::enableDisplayDriver()) {
+            switch (static_cast<DisplayInterfaceRegisters>(offset)) {
+                case DisplayInterfaceRegisters::InstructionField00:
+                case DisplayInterfaceRegisters::InstructionField01:
+                case DisplayInterfaceRegisters::InstructionField02:
+                case DisplayInterfaceRegisters::InstructionField03:
+                case DisplayInterfaceRegisters::InstructionField04:
+                case DisplayInterfaceRegisters::InstructionField05:
+                case DisplayInterfaceRegisters::InstructionField06:
+                case DisplayInterfaceRegisters::InstructionField07:
+                    return fields_[offset - static_cast<byte>(DisplayInterfaceRegisters::InstructionField00)];
+                default:
+                    return 0;
+            }
+        } else {
+            return 0;
+        }
+    }
 public:
+    static uint16_t read16(uint32_t address) noexcept {
+        if constexpr (TargetBoard::enableDisplayDriver()) {
+            switch (auto targetPage = static_cast<uint8_t>(address >> 8), offset = static_cast<uint8_t>(address); targetPage) {
+                case SeesawPage:
+                    return handleSeesawReads16(offset);
+                case DisplayPage:
+                    return handleDisplayRead16(offset);
+                default:
+                    return 0;
+            }
+        } else {
+            return 0;
+        }
+    }
+    static uint32_t read32(uint32_t address) noexcept { return 0; }
     static void write8(uint32_t address, uint8_t value) noexcept {
         // do nothing
     }
