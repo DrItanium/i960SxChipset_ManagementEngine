@@ -245,8 +245,8 @@ void handleExternalDeviceRequestRead() noexcept {
         } else {
             value.setLowerHalf(T::read16(baseAddress));
         }
+        ProcessorInterface::setDataBits(value.getLowerHalf());
         if (informCPU()) {
-            ProcessorInterface::setDataBits(value.getLowerHalf());
             break;
         }
         ProcessorInterface::burstNext<IncrementAddress>();
