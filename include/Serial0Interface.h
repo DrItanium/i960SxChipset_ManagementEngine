@@ -116,7 +116,7 @@ private:
             delayMicroseconds(usecDelay);
         }
     }
-    static inline uint16_t handleFirstPageRegisterReads(uint8_t offset, LoadStoreStyle) noexcept {
+    static inline uint16_t handleFirstPageRegisterReads16(uint8_t offset) noexcept {
         switch (static_cast<Registers>(offset)) {
             case Registers::ConsoleIO:
                 return getConsoleInput();
@@ -133,10 +133,10 @@ public:
         // this is done ahead of time
         Serial.println(F("CONSOLE UP!"));
     }
-
-    static inline uint16_t read(uint8_t, uint8_t offset, LoadStoreStyle lss) noexcept {
-        return handleFirstPageRegisterReads(offset, lss);
+    static uint16_t read16(uint32_t address) noexcept {
+        return handleFirstPageRegisterReads16(static_cast<uint8_t>(address));
     }
+    static uint32_t read32(uint32_t address) noexcept { return 0; }
 
     static bool addressDebuggingEnabled() noexcept { return AddressDebuggingAllowed && enableAddressDebugging_; }
 public:
