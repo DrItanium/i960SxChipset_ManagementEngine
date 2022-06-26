@@ -328,6 +328,9 @@ union SplitWord16 {
     [[nodiscard]] constexpr auto getWholeValue() const noexcept { return wholeValue_; }
     [[nodiscard]] constexpr auto getLowerHalf() const noexcept { return bytes[0]; }
     [[nodiscard]] constexpr auto getUpperHalf() const noexcept { return bytes[1]; }
+    void setWholeValue(uint16_t value) noexcept { wholeValue_ = value; }
+    void setLowerHalf(uint8_t value) noexcept { bytes[0] = value; }
+    void setUpperHalf(uint8_t value) noexcept { bytes[1] = value; }
     uint16_t wholeValue_ = 0;
     uint8_t bytes[sizeof(uint16_t) / sizeof(uint8_t)];
 };
