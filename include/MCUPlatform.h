@@ -350,6 +350,7 @@ union SplitWord32 {
     void setUpperWord(SplitWord16 value) noexcept { words_[1] = value; }
     void setLowerHalf(uint16_t value) noexcept { halves[0] = value; }
     void setUpperHalf(uint16_t value) noexcept { halves[1] = value; }
+    void setWholeValue(uint32_t value) noexcept { wholeValue_ = value; }
     uint32_t wholeValue_ = 0;
     int32_t signedRepresentation_;
     byte bytes[sizeof(uint32_t)];

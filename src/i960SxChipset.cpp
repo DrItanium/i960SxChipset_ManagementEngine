@@ -230,14 +230,28 @@ void handleMemoryInterface() noexcept {
 }
 template<bool inDebugMode, typename T>
 void handleExternalDeviceRequestRead() noexcept {
-    // for external device reads, just read 16-bits at a time since I can't be sure we are looking
-    // at a 32 or 16 bit value. If it is a 16-bit value then we run the risk of triggering extra features
-    // in the external device space
+    // unlike writes, reads can be more sloppy. We only support 16 bit or 32 bit reads because to be honest you should
+    // align registers to 16 or 32-bit boundaries. When reading byte values, we will request from the same location multiple times so it
+    // makes more sense to just return the same value twice
+
     for(;;) {
+        auto baseAddress = ProcessorInterface::getAddress();
         waitForCycleUnlock();
-        ProcessorInterface::setDataBits(T::read(ProcessorInterface::getPageIndex(),
-                                        ProcessorInterface::getPageOffset(),
-                                        ProcessorInterface::getStyle()));
+        SplitWord32 value(0);
+        // at this point it is safe to check and see if we need to do a 32-bit read or not
+        if (DigitalPin<i960Pinout::BurstNext>::isAsserted()) {
+           // okay so do a 32-bit read instead
+           value.setWholeValue(T::read32(baseAddress));
+        } else {
+            value.setLowerHalf(T::read16(baseAddress));
+        }
+        ProcessorInterface::setDataBits(value.getLowerHalf());
+        if (informCPU()) {
+            break;
+        }
+        ProcessorInterface::burstNext<IncrementAddress>();
+        waitForCycleUnlock();
+        ProcessorInterface::setDataBits(value.getUpperHalf());
         if (informCPU()) {
             break;
         }
