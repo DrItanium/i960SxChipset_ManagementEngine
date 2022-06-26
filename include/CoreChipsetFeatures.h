@@ -61,16 +61,22 @@ public:
         End,
         Serial0BaseAddressLower = Serial0BaseAddress00,
         Serial0BaseAddressUpper = Serial0BaseAddress10,
+        Serial0BaseAddress = Serial0BaseAddressLower,
         SDCardInterfaceBaseAddressLower = SDCardInterfaceBaseAddress00,
         SDCardInterfaceBaseAddressUpper = SDCardInterfaceBaseAddress10,
+        SDCardInterfaceBaseAddress = SDCardInterfaceBaseAddressLower,
         SDCardFileBlock0BaseAddressLower = SDCardFileBlock0BaseAddress00,
         SDCardFileBlock0BaseAddressUpper = SDCardFileBlock0BaseAddress10,
+        SDCardFileBlock0BaseAddress = SDCardFileBlock0BaseAddressLower,
         DisplayShieldBaseAddressLower = DisplayShieldBaseAddress00,
         DisplayShieldBaseAddressUpper = DisplayShieldBaseAddress10,
+        DisplayShieldBaseAddress = DisplayShieldBaseAddressLower,
         ST7735DisplayBaseAddressLower = ST7735DisplayBaseAddress00,
         ST7735DisplayBaseAddressUpper = ST7735DisplayBaseAddress10,
+        ST7735DisplayBaseAddress = ST7735DisplayBaseAddressLower,
         RTCBaseAddressLower = RTCBaseAddress00,
         RTCBaseAddressUpper = RTCBaseAddress10,
+        RTCBaseAddress = RTCBaseAddressLower,
     };
 
 
@@ -106,6 +112,20 @@ private:
         }
     }
 
+    static uint32_t readIOConfigurationSpace0_32(uint8_t offset) noexcept {
+        switch (static_cast<IOConfigurationSpace0Registers>(offset)) {
+#define X(title, var) case IOConfigurationSpace0Registers:: title : return var
+            X(Serial0BaseAddress, TheConsoleInterface::StartAddress);
+            X(SDCardInterfaceBaseAddress, TheSDInterface::ControlBaseAddress);
+            X(SDCardFileBlock0BaseAddress, TheSDInterface::FilesBaseAddress);
+            X(DisplayShieldBaseAddress, TheDisplayInterface::SeesawSectionStart);
+            X(ST7735DisplayBaseAddress, TheDisplayInterface::DisplaySectionStart);
+            X(RTCBaseAddress, TheRTCInterface::StartAddress);
+#undef X
+
+            default: return 0; // zero is never an io page!
+        }
+    }
 public:
     [[nodiscard]] static uint16_t read(uint8_t targetPage, uint8_t offset, LoadStoreStyle lss) noexcept {
         // force override the default implementation
@@ -128,5 +148,20 @@ public:
     static void write32(uint32_t address, uint32_t) noexcept {
         // do nothing
     }
+    static uint32_t read32(uint32_t address) noexcept {
+        auto page = static_cast<uint8_t>(address >> 8);
+        auto offset = static_cast<uint8_t>(address);
+        switch (page) {
+            case 0:
+                return readIOConfigurationSpace0_32(offset);
+            default:
+                return 0;
+        }
+    }
+    static uint16_t read16(uint32_t address) noexcept {
+        // only return full addresses from io space for simplicity
+        return 0;
+    }
+
 };
 #endif //I960SXCHIPSET_CORECHIPSETFEATURES_H

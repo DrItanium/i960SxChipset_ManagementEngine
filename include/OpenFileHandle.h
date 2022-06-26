@@ -142,16 +142,21 @@ public:
     }
     [[nodiscard]] size_t read(void* buf, size_t count) noexcept { return backingStore_.read(buf, count); }
     [[nodiscard]] size_t write(void* buf, size_t count) noexcept { return backingStore_.write(buf, count); }
-    [[nodiscard]] uint16_t read(uint8_t offset, LoadStoreStyle lss) noexcept {
+    [[nodiscard]] uint16_t read16(uint8_t offset) noexcept {
         using T = Registers;
         switch (static_cast<T>(offset)) {
             case T::IOPort: return getChar();
             case T::IsOpen: return isOpen() ? 0xFFFF : 0;
-            case T::SizeLower: return static_cast<uint16_t>(size());
-            case T::SizeUpper: return static_cast<uint16_t>(size() >> 16);
             case T::Permissions: return permissions_;
             case T::ErrorCode: return getError();
             case T::WriteError: return getWriteError();
+            default: return 0;
+        }
+    }
+    [[nodiscard]] uint32_t read32(uint8_t offset) noexcept {
+        using T = Registers;
+        switch (static_cast<T>(offset)) {
+            case T::Size: return size();
             default: return 0;
         }
     }
