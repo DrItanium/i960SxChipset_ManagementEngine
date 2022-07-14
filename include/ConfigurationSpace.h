@@ -28,19 +28,22 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef SXCHIPSET_MANAGEMENTENGINE_CONFIGURATIONSPACE_H
 #define SXCHIPSET_MANAGEMENTENGINE_CONFIGURATIONSPACE_H
-
+#include <cstdint>
 namespace ConfigurationSpace {
     /**
      * @brief A single 256 byte page that is mapped into configuration space which describes a given device
      */
    class Page {
    public:
-   private:
-       union
-       {
-       };
-   } __attribute((packed));
-
+       virtual ~Page() noexcept = default;
+       virtual uint8_t readByte(uint8_t offset) noexcept { return 0; }
+       virtual uint32_t readWord(uint8_t offset) noexcept { return 0; }
+       virtual uint16_t readHalfWord(uint8_t offset) noexcept { return 0; }
+       virtual uint64_t readLongWord(uint8_t offset) noexcept { return 0; }
+       virtual void writeByte(uint8_t offset, uint8_t value) noexcept { }
+       virtual void writeWord(uint8_t offset, uint32_t value) noexcept { }
+       virtual void writeHalfWord(uint8_t offset, uint16_t value) noexcept { }
+       virtual void writeLongWord(uint8_t offset,uint64_t value) noexcept { }
    };
 } // end namespace ConfigurationSpace
 

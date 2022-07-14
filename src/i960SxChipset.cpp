@@ -35,6 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Pinout.h"
 
 #include "CacheEntry.h"
+#include "ConfigurationSpace.h"
 #include "SetAssociativeRandPLRUCacheSets.h"
 #include "SinglePoolCache.h"
 
@@ -65,7 +66,7 @@ using TheDisplayInterface = DisplayInterface<DisplayBaseAddress>;
 using TheSDInterface = SDCardInterface<MaximumNumberOfOpenFiles, SDBaseAddress>;
 using TheConsoleInterface = Serial0Interface<Serial0BaseAddress, CompileInAddressDebuggingSupport, AddressDebuggingEnabledOnStartup>;
 using TheRTCInterface = RTCInterface<RTCBaseAddress>;
-using ConfigurationSpace = CoreChipsetFeatures<TheConsoleInterface,
+using ConfigSpace = CoreChipsetFeatures<TheConsoleInterface,
         TheSDInterface,
         TheDisplayInterface,
         TheRTCInterface>;
@@ -486,8 +487,8 @@ void setupDispatchTable() noexcept {
     lookupTable[TheConsoleInterface::SectionID] = handleExternalDeviceRequest<false, TheConsoleInterface>;
     lookupTableSplit[TheConsoleInterface::SectionID] = std::make_tuple(handleExternalDeviceRequestRead<false, TheConsoleInterface>, handleExternalDeviceRequestWrite<false, TheConsoleInterface>);
 
-    lookupTable[ConfigurationSpace::SectionID] = handleExternalDeviceRequest<false, ConfigurationSpace>;
-    lookupTableSplit[ConfigurationSpace::SectionID] = std::make_tuple(handleExternalDeviceRequestRead<false, ConfigurationSpace>, handleExternalDeviceRequestWrite<false, ConfigurationSpace>);
+    lookupTable[ConfigSpace::SectionID] = handleExternalDeviceRequest<false, ConfigSpace>;
+    lookupTableSplit[ConfigSpace::SectionID] = std::make_tuple(handleExternalDeviceRequestRead<false, ConfigSpace>, handleExternalDeviceRequestWrite<false, ConfigSpace>);
     if constexpr (TargetBoard::compileInAddressDebuggingSupport()) {
         auto defaultFallback_Debug = std::make_tuple(fallbackBodyRead<true>, fallbackBodyWrite<true>);
         for (int i = 0; i < 256; ++i) {
@@ -512,8 +513,8 @@ void setupDispatchTable() noexcept {
         lookupTable_Debug[TheConsoleInterface::SectionID] = handleExternalDeviceRequest<true, TheConsoleInterface>;
         lookupTableSplit_Debug[TheConsoleInterface::SectionID] = std::make_tuple(handleExternalDeviceRequestRead<true, TheConsoleInterface>, handleExternalDeviceRequestWrite<true, TheConsoleInterface>);
 
-        lookupTable_Debug[ConfigurationSpace::SectionID] = handleExternalDeviceRequest<true, ConfigurationSpace>;
-        lookupTableSplit_Debug[ConfigurationSpace::SectionID] = std::make_tuple(handleExternalDeviceRequestRead<true, ConfigurationSpace>, handleExternalDeviceRequestWrite<true, ConfigurationSpace>);
+        lookupTable_Debug[ConfigSpace::SectionID] = handleExternalDeviceRequest<true, ConfigSpace>;
+        lookupTableSplit_Debug[ConfigSpace::SectionID] = std::make_tuple(handleExternalDeviceRequestRead<true, ConfigSpace>, handleExternalDeviceRequestWrite<true, ConfigSpace>);
     }
 }
 
@@ -602,7 +603,7 @@ void setup() {
     // setup the pins that could be attached to an io expander separately
     theCache.begin();
     // purge the cache pages
-    ConfigurationSpace::begin();
+    ConfigSpace::begin();
     Serial.println(F("i960Sx chipset bringup"));
     ProcessorInterface::begin();
     BackingMemoryStorage_t::begin();
