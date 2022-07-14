@@ -36,14 +36,29 @@ namespace ConfigurationSpace {
    class Page {
    public:
        virtual ~Page() noexcept = default;
-       virtual uint8_t readByte(uint8_t offset) noexcept { return 0; }
-       virtual uint32_t readWord(uint8_t offset) noexcept { return 0; }
-       virtual uint16_t readHalfWord(uint8_t offset) noexcept { return 0; }
-       virtual uint64_t readLongWord(uint8_t offset) noexcept { return 0; }
-       virtual void writeByte(uint8_t offset, uint8_t value) noexcept { }
-       virtual void writeWord(uint8_t offset, uint32_t value) noexcept { }
-       virtual void writeHalfWord(uint8_t offset, uint16_t value) noexcept { }
-       virtual void writeLongWord(uint8_t offset,uint64_t value) noexcept { }
+       inline uint8_t readByte(uint8_t offset) const noexcept { return readByte0(offset); }
+       inline uint32_t readWord(uint8_t offset) const noexcept { return readWord0(makeWordAddress(offset)); }
+       inline uint16_t readHalfWord(uint8_t offset) const noexcept { return readHalfWord0(makeHalfWordAddress(offset)); }
+       inline uint64_t readLongWord(uint8_t offset) const noexcept { return readLongWord0(makeLongWordAddress(offset)); }
+       inline void writeByte(uint8_t offset, uint8_t value) noexcept { writeByte0(offset, value); }
+       inline void writeWord(uint8_t offset, uint32_t value) noexcept { writeWord0(makeWordAddress(offset), value); }
+       inline void writeHalfWord(uint8_t offset, uint16_t value) noexcept { writeHalfWord0(makeHalfWordAddress(offset), value); }
+       inline void writeLongWord(uint8_t offset, uint64_t value) noexcept { writeLongWord0(makeLongWordAddress(offset), value); }
+       uint64_t getTypeField() const noexcept { return readLongWord(0); }
+   protected:
+       static constexpr uint8_t makeHalfWordAddress(uint8_t offset) noexcept { return offset >> 1; }
+       static constexpr uint8_t makeWordAddress(uint8_t offset) noexcept { return offset >> 2; }
+       static constexpr uint8_t makeLongWordAddress(uint8_t offset) noexcept { return offset >> 3; }
+   protected:
+       virtual uint8_t readByte0(uint8_t offset) const noexcept { return 0; }
+       virtual uint16_t readHalfWord0(uint8_t offset) const noexcept { return 0; }
+       virtual uint32_t readWord0(uint8_t offset) const noexcept { return 0; }
+       virtual uint64_t readLongWord0(uint8_t offset) const noexcept { return 0; }
+       virtual void writeByte0(uint8_t offset, uint8_t value) noexcept { }
+       virtual void writeWord0(uint8_t offset, uint32_t value) noexcept { }
+       virtual void writeHalfWord0(uint8_t offset, uint16_t value) noexcept { }
+       virtual void writeLongWord0(uint8_t offset,uint64_t value) noexcept { }
+
    };
 } // end namespace ConfigurationSpace
 
