@@ -36,29 +36,62 @@ namespace ConfigurationSpace {
    class Page {
    public:
        virtual ~Page() noexcept = default;
-       inline uint8_t readByte(uint8_t offset) const noexcept { return readByte0(offset); }
-       inline uint32_t readWord(uint8_t offset) const noexcept { return readWord0(makeWordAddress(offset)); }
-       inline uint16_t readHalfWord(uint8_t offset) const noexcept { return readHalfWord0(makeHalfWordAddress(offset)); }
-       inline uint64_t readLongWord(uint8_t offset) const noexcept { return readLongWord0(makeLongWordAddress(offset)); }
-       inline void writeByte(uint8_t offset, uint8_t value) noexcept { writeByte0(offset, value); }
-       inline void writeWord(uint8_t offset, uint32_t value) noexcept { writeWord0(makeWordAddress(offset), value); }
-       inline void writeHalfWord(uint8_t offset, uint16_t value) noexcept { writeHalfWord0(makeHalfWordAddress(offset), value); }
-       inline void writeLongWord(uint8_t offset, uint64_t value) noexcept { writeLongWord0(makeLongWordAddress(offset), value); }
-       uint64_t getTypeField() const noexcept { return readLongWord(0); }
+       virtual uint8_t readByte(uint8_t offset) const noexcept {
+            switch (offset) {
+                case 0: return getType();
+                case 1: return getType() >> 8;
+                case 2: return getType() >> 16;
+                case 3: return getType() >> 24;
+                case 4: return getFlags();
+                case 5: return getFlags() >> 8;
+                case 6: return getFlags() >> 16;
+                case 7: return getFlags() >> 24;
+            }
+           return readByte0(offset);
+       }
+       virtual uint32_t readWord(uint8_t offset) const noexcept { return readWord0(makeWordAddress(offset)); }
+       virtual uint16_t readHalfWord(uint8_t offset) const noexcept { return readHalfWord0(makeHalfWordAddress(offset)); }
+       virtual void writeByte(uint8_t offset, uint8_t value) noexcept { writeByte0(offset, value); }
+       virtual void writeWord(uint8_t offset, uint32_t value) noexcept { writeWord0(makeWordAddress(offset), value); }
+       virtual void writeHalfWord(uint8_t offset, uint16_t value) noexcept { writeHalfWord0(makeHalfWordAddress(offset), value); }
+       virtual uint32_t getType() const noexcept {
+           return readWord(0);
+       }
+       virtual uint32_t getFlags() const noexcept {
+           return readWord(1);
+       }
+       virtual uint32_t getBaseAddress() const noexcept {
+           // the format is type, flags, baseAddress with type and flags being a 64-bit value
+           return readWord(2);
+       }
+       virtual uint32_t getSize() const noexcept {
+           return readWord(3);
+       }
+       virtual void setBaseAddress(uint32_t baseAddress) noexcept {
+           writeWord(2, baseAddress);
+       }
    protected:
-       static constexpr uint8_t makeHalfWordAddress(uint8_t offset) noexcept { return offset >> 1; }
-       static constexpr uint8_t makeWordAddress(uint8_t offset) noexcept { return offset >> 2; }
-       static constexpr uint8_t makeLongWordAddress(uint8_t offset) noexcept { return offset >> 3; }
+       static constexpr uint8_t makeHalfWordAddress(uint8_t offset) noexcept { return offset << 1; }
+       static constexpr uint8_t makeWordAddress(uint8_t offset) noexcept { return offset << 2; }
    protected:
        virtual uint8_t readByte0(uint8_t offset) const noexcept { return 0; }
        virtual uint16_t readHalfWord0(uint8_t offset) const noexcept { return 0; }
        virtual uint32_t readWord0(uint8_t offset) const noexcept { return 0; }
-       virtual uint64_t readLongWord0(uint8_t offset) const noexcept { return 0; }
        virtual void writeByte0(uint8_t offset, uint8_t value) noexcept { }
        virtual void writeWord0(uint8_t offset, uint32_t value) noexcept { }
        virtual void writeHalfWord0(uint8_t offset, uint16_t value) noexcept { }
-       virtual void writeLongWord0(uint8_t offset,uint64_t value) noexcept { }
-
+   };
+   class StandardPage : public Page {
+   public:
+       StandardPage(uint64_t type, uint64_t flags, uint32_t defaultBar, uint32_t size) noexcept : type_(type), flags_(flags), bar_(defaultBar), size_(size) { }
+       ~StandardPage() override = default;
+       uint64_t getType() const override { return type_; }
+       uint64_t getFlags() const override { return flags_; }
+   private:
+       uint64_t type_;
+       uint64_t flags_;
+       uint32_t bar_;
+       uint32_t size_;
    };
 } // end namespace ConfigurationSpace
 
