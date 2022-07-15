@@ -30,6 +30,58 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SXCHIPSET_MANAGEMENTENGINE_CONFIGURATIONSPACE_H
 #include <cstdint>
 namespace ConfigurationSpace {
+    enum class DeviceGroup : uint8_t {
+        None,
+        Chipset,
+        Peripheral,
+        Storage,
+        AudioVideo,
+    };
+    enum class ChipsetDeviceType : uint8_t {
+        None,
+        Control,
+        InterruptControl,
+        MMU,
+        DMA,
+    };
+    enum class PeripheralDeviceType : uint8_t {
+        None,
+        GPIO,
+        AnalogToDigitalConverter,
+        DigitalToAnalogConverter,
+        PWM,
+        Timer,
+        SPI,
+        I2C,
+        UART,
+        WatchdogTimer,
+        EventSystem,
+        CustomConfigurableLogic,
+    };
+    enum class StorageType : uint8_t {
+        None,
+        Disk,
+    };
+    enum class DiskType : uint8_t {
+        None,
+        FixedDisk,
+        RemovableDisk,
+    };
+    enum class AudioVideoType : uint8_t {
+        None,
+        Audio,
+        Video,
+        Reserved,
+    };
+    enum class AudioDeviceType : uint8_t {
+        None,
+        MIDI,
+        Synthesizer,
+        Microphone,
+        Speaker,
+        Buzzer,
+        PCM,
+    };
     enum class DeviceKind : uint32_t {
         None,
         Disk,
