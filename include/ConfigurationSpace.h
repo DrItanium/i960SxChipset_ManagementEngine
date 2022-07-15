@@ -30,6 +30,34 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SXCHIPSET_MANAGEMENTENGINE_CONFIGURATIONSPACE_H
 #include <cstdint>
 namespace ConfigurationSpace {
+    enum class DeviceKind : uint32_t {
+        None,
+        Disk,
+        Display,
+        RealTimeClock,
+        SPI,
+        UART,
+        I2C,
+        WiFi,
+        Bluetooth,
+        BluetoothLE,
+        USBPort,
+        SoundCard,
+        MIDI,
+        GPIO,
+        Analog,
+        PWM,
+        DigitalToAnalogConverter,
+        MMU,
+        InterruptControl,
+        DMA,
+        Timer,
+        EventSystem,
+        CustomConfigurableLogic,
+        Sensor,
+        GPU,
+        HumanInterface,
+    };
     /**
      * @brief A single 256 byte page that is mapped into configuration space which describes a given device
      */
@@ -38,10 +66,10 @@ namespace ConfigurationSpace {
        virtual ~Page() noexcept = default;
        virtual uint8_t readByte(uint8_t offset) const noexcept {
             switch (offset) {
-                case 0: return getType();
-                case 1: return getType() >> 8;
-                case 2: return getType() >> 16;
-                case 3: return getType() >> 24;
+                case 0: return static_cast<uint32_t>(getType());
+                case 1: return static_cast<uint32_t>(getType()) >> 8;
+                case 2: return static_cast<uint32_t>(getType()) >> 16;
+                case 3: return static_cast<uint32_t>(getType()) >> 24;
                 case 4: return getFlags();
                 case 5: return getFlags() >> 8;
                 case 6: return getFlags() >> 16;
@@ -59,7 +87,7 @@ namespace ConfigurationSpace {
        }
        virtual uint32_t readWord(uint8_t offset) const noexcept {
            switch (makeWordAddress(offset)) {
-               case 0: return getType();
+               case 0: return static_cast<uint32_t>(getType());
                case 1: return getFlags();
                case 2: return getBaseAddress();
                case 3: return getSize();
@@ -68,8 +96,8 @@ namespace ConfigurationSpace {
        }
        virtual uint16_t readHalfWord(uint8_t offset) const noexcept {
            switch (makeHalfWordAddress(offset)) {
-               case 0: return getType();
-               case 1: return getType() >> 16;
+               case 0: return static_cast<uint32_t>(getType());
+               case 1: return static_cast<uint32_t>(getType()) >> 16;
                case 2: return getFlags();
                case 3: return getFlags() >> 16;
                case 4: return getBaseAddress();
@@ -148,7 +176,7 @@ namespace ConfigurationSpace {
                    break;
            }
        }
-       virtual uint32_t getType() const noexcept = 0;
+       virtual DeviceKind getType() const noexcept = 0;
        virtual uint32_t getFlags() const noexcept = 0;
        virtual uint32_t getBaseAddress() const noexcept = 0;
        virtual void setBaseAddress(uint32_t baseAddress) noexcept = 0;
@@ -166,15 +194,15 @@ namespace ConfigurationSpace {
    };
    class StandardPage : public Page {
    public:
-       StandardPage(uint32_t type, uint32_t flags, uint32_t defaultBar, uint32_t size) noexcept : type_(type), flags_(flags), bar_(defaultBar), size_(size) { }
+       StandardPage(DeviceKind type, uint32_t flags, uint32_t defaultBar, uint32_t size) noexcept : type_(type), flags_(flags), bar_(defaultBar), size_(size) { }
        ~StandardPage() override = default;
-       uint32_t getType() const noexcept override { return type_; }
+       DeviceKind getType() const noexcept override { return type_; }
        uint32_t getFlags() const noexcept override { return flags_; }
        uint32_t getBaseAddress() const noexcept override { return bar_; }
        void setBaseAddress(uint32_t value) noexcept override { bar_ = value; }
        uint32_t getSize() const noexcept override { return size_; }
    private:
-       uint32_t type_;
+       DeviceKind type_;
        uint32_t flags_;
        uint32_t bar_;
        uint32_t size_;
