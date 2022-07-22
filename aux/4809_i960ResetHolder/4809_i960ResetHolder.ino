@@ -186,6 +186,7 @@ struct PinAsserter final {
   }
 };
 
+[[noreturn]]
 void
 handleChecksumFail() noexcept {
   // keep an eye on the FAIL960 pin, if we run into an issue then tell the chipset this
@@ -313,6 +314,7 @@ void setup() {
 
 constexpr byte MaxNumberOfCyclesBeforePause = 64;
 volatile byte numCycles = 0;
+[[noreturn]]
 void loop() {
   for (;;) {
     if (DigitalPin<FAIL960>::isHigh()) {
