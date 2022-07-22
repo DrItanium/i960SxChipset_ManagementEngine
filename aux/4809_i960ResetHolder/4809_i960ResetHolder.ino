@@ -186,13 +186,13 @@ struct PinAsserter final {
   }
 };
 
-[[noreturn]] void
+void
 handleChecksumFail() noexcept {
-  // keep an eye on the FAIL960 pin, if we run into an issue then tell the chipset this
-  DigitalPin<SYSTEMBOOT>::deassertPin();
-  while (true) {
-    delay(1000);
-  }
+  // keep an eye on the FAIL960 pin, if we run into an issue then tell the chipset this 
+    DigitalPin<SYSTEMBOOT>::deassertPin();
+    while (true) {
+      delay(1000);
+    }  
 }
 
 void configureClockSource() noexcept {
@@ -281,15 +281,23 @@ void setup() {
     }
   }
   DigitalPin<SYSTEMBOOT>::assertPin();
+  attachInterrupt(digitalPinToInterrupt(FAIL960), handleChecksumFail, RISING);
+  // do the code body twice and then check to see if FAIL goes high again.
+  codeBody();
+  codeBody();
+  delay(500); // wait around 500 microsecond to see if we hit a failure state
+  detachInterrupt(digitalPinToInterrupt(FAIL960));
   //Serial1.println("SYSTEM BOOTED!");
   // after this point, if FAIL960 ever goes from LOW to HIGH again, then we have checksum failed!
-  attachInterrupt(digitalPinToInterrupt(FAIL960), handleChecksumFail, RISING);
+  
 }
 constexpr bool EnableOneCycleWaitStates = false;
 template<bool enable = EnableOneCycleWaitStates>
 [[gnu::always_inline]]
 inline void waitOneBusCycle() noexcept {
   if constexpr (enable) {
+    asm volatile ("nop");
+    asm volatile ("nop");
     asm volatile ("nop");
     asm volatile ("nop");
   }
@@ -312,15 +320,14 @@ inline void waitForCycleEnd() noexcept {
   // at this point we are outside a bus cycle
   waitOneBusCycle();
 }
-constexpr byte MaxNumberOfCyclesBeforePause = 64;
+constexpr byte MaxNumberOfCyclesBeforePause = 0;
 volatile byte numCycles = 0;
-[[noreturn]]
-void loop() {
-  for (;;) {
-    // introduce some delay to make sure the bus has time to recover properly
+void codeBody() {
+   // introduce some delay to make sure the bus has time to recover properly
     waitOneBusCycle();
     // okay so we need to wait for AS and DEN to go low
     while (DigitalPin<DEN>::isDeasserted());
+    if constexpr (MaxNumberOfCyclesBeforePause > 0) {
     if (numCycles >= MaxNumberOfCyclesBeforePause) {
       // Provide a pause/cooldown period after a new data request to make sure
       // that the bus has time to "cool". If you don't have this then the 
@@ -331,6 +338,7 @@ void loop() {
         // this away.
         --numCycles;
       }
+    }
     }
     // now do the logic
     {
@@ -347,9 +355,11 @@ void loop() {
 
         // okay now start the cycle
         DigitalPin<DO_CYCLE>::assertPin();
+        if constexpr (MaxNumberOfCyclesBeforePause > 0) {
         // we have entered a new transaction (burst or non) so increment the counter
         // we want to count the number of cycles
         ++numCycles;
+        }
         // now wait for the chipset to tell us it has satisified the current part of the transaction
         if (DigitalPin<BLAST>::isAsserted()) {
           // break out of the current loop if we are in the last transaction
@@ -371,5 +381,10 @@ void loop() {
     informCPUAndWait();
     // to make sure the bus has time to recover we need to introduce an i960 bus cycle worth of delay
     waitOneBusCycle();
+}
+[[noreturn]]
+void loop() {
+  for (;;) {
+    codeBody();
   }
 }
