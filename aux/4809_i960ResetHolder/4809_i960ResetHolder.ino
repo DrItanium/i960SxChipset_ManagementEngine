@@ -188,11 +188,11 @@ struct PinAsserter final {
 
 void
 handleChecksumFail() noexcept {
-  // keep an eye on the FAIL960 pin, if we run into an issue then tell the chipset this 
-    DigitalPin<SYSTEMBOOT>::deassertPin();
-    while (true) {
-      delay(1000);
-    }  
+  // keep an eye on the FAIL960 pin, if we run into an issue then tell the chipset this
+  DigitalPin<SYSTEMBOOT>::deassertPin();
+  while (true) {
+    delay(1000);
+  }
 }
 
 void configureClockSource() noexcept {
@@ -285,19 +285,17 @@ void setup() {
   // do the code body twice and then check to see if FAIL goes high again.
   codeBody();
   codeBody();
-  delay(500); // wait around 500 microsecond to see if we hit a failure state
+  delay(10); // wait around 10 microsecond to see if we hit a failure state
   detachInterrupt(digitalPinToInterrupt(FAIL960));
   //Serial1.println("SYSTEM BOOTED!");
   // after this point, if FAIL960 ever goes from LOW to HIGH again, then we have checksum failed!
-  
+
 }
-constexpr bool EnableOneCycleWaitStates = false;
+constexpr bool EnableOneCycleWaitStates = true;
 template<bool enable = EnableOneCycleWaitStates>
 [[gnu::always_inline]]
 inline void waitOneBusCycle() noexcept {
   if constexpr (enable) {
-    asm volatile ("nop");
-    asm volatile ("nop");
     asm volatile ("nop");
     asm volatile ("nop");
   }
@@ -320,71 +318,72 @@ inline void waitForCycleEnd() noexcept {
   // at this point we are outside a bus cycle
   waitOneBusCycle();
 }
-constexpr byte MaxNumberOfCyclesBeforePause = 0;
+constexpr byte MaxNumberOfCyclesBeforePause = 64;
 volatile byte numCycles = 0;
 void codeBody() {
-   // introduce some delay to make sure the bus has time to recover properly
-    waitOneBusCycle();
-    // okay so we need to wait for AS and DEN to go low
-    while (DigitalPin<DEN>::isDeasserted());
+  // introduce some delay to make sure the bus has time to recover properly
+  waitOneBusCycle();
+  // okay so we need to wait for AS and DEN to go low
+  while (DigitalPin<DEN>::isDeasserted());
+  
+  {
     if constexpr (MaxNumberOfCyclesBeforePause > 0) {
-    if (numCycles >= MaxNumberOfCyclesBeforePause) {
-      // Provide a pause/cooldown period after a new data request to make sure
-      // that the bus has time to "cool". If you don't have this then the 
-      // i960 can chipset fault when it shouldn't... very strange
-      while (numCycles > 0) {
-        // use the loop itself to provide some amount of time to cool off
-        // numTransactions is volatile to prevent the compiler from optimizing any of 
-        // this away.
-        --numCycles;
+      if (numCycles >= MaxNumberOfCyclesBeforePause) {
+        // Provide a pause/cooldown period after a new data request to make sure
+        // that the bus has time to "cool". If you don't have this then the
+        // i960 can chipset fault when it shouldn't... very strange
+        while (numCycles > 0) {
+          // use the loop itself to provide some amount of time to cool off
+          // numTransactions is volatile to prevent the compiler from optimizing any of
+          // this away.
+          --numCycles;
+        }
       }
     }
-    }
-    // now do the logic
-    {
-      PinAsserter<IN_TRANSACTION> transactionEnter; // tell the chipset that we are starting a transaction
-      // okay now we need to emulate the wait loop
-      for (;;) {
-        // instead of pulsing do cycle, we just assert do cycle while we wait
-        if (DigitalPin<BLAST>::isAsserted()) {
-          // BLAST being low means that we set BURST NEXT LOW
-          DigitalPin<BURST_NEXT>::deassertPin();
-        } else {
-          DigitalPin<BURST_NEXT>::assertPin();
-        }
+  }
+  // now do the logic
+  {
+    PinAsserter<IN_TRANSACTION> transactionEnter; // tell the chipset that we are starting a transaction
+    // okay now we need to emulate the wait loop
+    for (;;) {
+      // instead of pulsing do cycle, we just assert do cycle while we wait
+      if (DigitalPin<BLAST>::isAsserted()) {
+        // BLAST being low means that we set BURST NEXT LOW
+        DigitalPin<BURST_NEXT>::deassertPin();
+      } else {
+        DigitalPin<BURST_NEXT>::assertPin();
+      }
 
-        // okay now start the cycle
-        DigitalPin<DO_CYCLE>::assertPin();
-        if constexpr (MaxNumberOfCyclesBeforePause > 0) {
+      // okay now start the cycle
+      DigitalPin<DO_CYCLE>::assertPin();
+      if constexpr (MaxNumberOfCyclesBeforePause > 0) {
         // we have entered a new transaction (burst or non) so increment the counter
         // we want to count the number of cycles
         ++numCycles;
-        }
-        // now wait for the chipset to tell us it has satisified the current part of the transaction
-        if (DigitalPin<BLAST>::isAsserted()) {
-          // break out of the current loop if we are in the last transaction
-          break;
-        }
-        // we are dealing with a burst transaction at this point
-        waitForCycleEnd();
-        {
-          // let the chipset know that the operation will continue
-          PinAsserter<BURST_NEXT> letChipsetKnowBurstNext;
-          // let the i960 know and then wait for the chipset to pull MCU READY high
-          informCPUAndWait();
-        }
       }
-      // the end of the current transaction needs to be straightline code
+      // now wait for the chipset to tell us it has satisified the current part of the transaction
+      if (DigitalPin<BLAST>::isAsserted()) {
+        // break out of the current loop if we are in the last transaction
+        break;
+      }
+      // we are dealing with a burst transaction at this point
       waitForCycleEnd();
+      {
+        // let the chipset know that the operation will continue
+        PinAsserter<BURST_NEXT> letChipsetKnowBurstNext;
+        // let the i960 know and then wait for the chipset to pull MCU READY high
+        informCPUAndWait();
+      }
     }
-    // let the i960 know and then wait for chipset to pull MCU READY high
-    informCPUAndWait();
-    // to make sure the bus has time to recover we need to introduce an i960 bus cycle worth of delay
-    waitOneBusCycle();
-}
-[[noreturn]]
-void loop() {
-  for (;;) {
-    codeBody();
+    // the end of the current transaction needs to be straightline code
+    waitForCycleEnd();
   }
+  // let the i960 know and then wait for chipset to pull MCU READY high
+  informCPUAndWait();
+  // to make sure the bus has time to recover we need to introduce an i960 bus cycle worth of delay
+  waitOneBusCycle();
+}
+
+void loop() {
+  codeBody();
 }
